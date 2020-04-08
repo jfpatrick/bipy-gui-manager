@@ -8,7 +8,7 @@ variables:
 
 # A full installation of project, tested with pytest.
 Test Full Install:
- image: gitlab-registry.cern.ch/acc-co/accsoft/gui/accsoft-gui-pyqt-distro/acc-py-pyqt:ci
+  image: gitlab-registry.cern.ch/acc-co/accsoft/gui/accsoft-gui-pyqt-distro/acc-py-pyqt:ci
   script:
    - pip install .[all]
    - run_headless python -m pytest --log-cli-level=DEBUG --random-order --junitxml=report.xml  \
