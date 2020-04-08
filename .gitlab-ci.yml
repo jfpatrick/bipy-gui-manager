@@ -1,0 +1,27 @@
+include:
+ - project: acc-co/devops/python/acc-py-devtools
+   file: acc_py_devtools/templates/gitlab-ci/python.yml
+
+variables:
+  project_name: be_bi_pyqt_project_manager
+
+
+# A full installation of project, tested with pytest.
+Test Full Install:
+  extends: .acc_py_full_test
+
+
+# A development installation of project tested with pytest.
+Test Dev Install:
+  extends: .acc_py_dev_test
+
+
+# A push of the source distribution to the acc-py PyPI, only on git tag.
+Release on Tag:
+  extends: .acc_py_release_sdist
+
+
+# A push of the source distribution to the acc-py PyPI, to be triggered manually.
+Manual Release:
+  extends: ._acc_py_release_sdist_base
+  when: manual
