@@ -22,7 +22,8 @@ For a detailed explanation of the project structure, head over to
 ## Getting started
 
 #### Install
-Assuming Python 3.6 is installed and `acc-pyqt` is active in your shell
+
+Assuming Python 3.6 is installed, or `acc-pyqt` is active in your shell
 ([more info here](https://wikis.cern.ch/display/ACCPY/PyQt+distribution)), type:
 ```bash
 pip install --user be-bi-pyqt-project-manager

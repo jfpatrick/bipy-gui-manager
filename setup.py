@@ -15,7 +15,6 @@ with (HERE / 'README.md').open('rt') as fh:
 
 REQUIREMENTS: dict = {
     'core': [
-        "pyqt5"
     ],
     'test': [
         "pytest",
