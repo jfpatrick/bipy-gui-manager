@@ -10,7 +10,7 @@ from be_bi_pyqt_project_manager import cli_utils as cli
 def create_project(parameters):
 
     cli.draw_line()
-    print("\n  Welcome to BI's PyQt5 Project Setup Wizard!                            ")
+    print("\n  Welcome to BI's PyQt5 Project Setup Wizard!")
     cli.draw_line()
     print("  Setup:\n")
 
