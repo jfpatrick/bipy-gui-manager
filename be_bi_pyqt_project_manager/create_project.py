@@ -7,6 +7,32 @@ from subprocess import Popen, PIPE
 from be_bi_pyqt_project_manager import cli_utils as cli
 
 
+def validate_and_fail(value, validator, feedback):
+    if validator(value):
+        return value
+    raise ValueError(feedback)
+
+
+def validate_and_ask(validator, question, neg_feedback, start_value="", pos_feedback=None, hints=()):
+    value = start_value
+    while not validator(value):
+        if value != "":
+            cli.negative_feedback(neg_feedback)
+            for hint in hints:
+                cli.give_hint(hint)
+        value = cli.ask_input(question)
+    if pos_feedback:
+        cli.positive_feedback(pos_feedback.format(value))
+    return value
+
+
+def validate_as_arg_or_ask(cli_value, validator, question, neg_feedback, pos_feedback=None, hints=()):
+    if cli_value and cli_value != "":
+        return validate_and_fail(cli_value, validator, neg_feedback)
+    else:
+        return validate_and_ask(validator, question, neg_feedback, pos_feedback=pos_feedback, hints=hints)
+
+
 def create_project(parameters):
 
     cli.draw_line()
@@ -14,63 +40,52 @@ def create_project(parameters):
     cli.draw_line()
     print("\n  Setup:\n")
 
-    project_name: str = None
-    project_desc: str = None
-    project_author: str = None
-    author_email: str = None
-    gitlab_repo : str = None
-    project_name_validator = re.compile("^[a-z0-9\-]+$")
-    author_email_validator = re.compile("[a-zA-Z0-9._%+\-]+@cern\.ch")
-    repo_validator_ssh = re.compile("^ssh://git@gitlab\.cern\.ch:7999/[a-zA-Z0-9_%\-]+/[a-zA-Z0-9_%/\-]+\.git$")
-    repo_validator_https = re.compile("^https://gitlab\.cern\.ch/[a-zA-Z0-9_%\-]+/[a-zA-Z0-9_%/\-]+\.git$")
-    repo_validator_kerb = re.compile("^https://:@gitlab\.cern\.ch:8443/[a-zA-Z0-9_%\-]+/[a-zA-Z0-9_%/\-]+\.git$")
+    project_name_validator = re.compile("^[a-z0-9-]+$")
+    author_email_validator = re.compile("[a-zA-Z0-9._%+-]+@cern.ch")
+    repo_validator_ssh = re.compile("^ssh://git@gitlab.cern.ch:7999/[a-zA-Z0-9_%-]+/[a-zA-Z0-9_%/-]+.git$")
+    repo_validator_https = re.compile("^https://gitlab.cern.ch/[a-zA-Z0-9_%-]+/[a-zA-Z0-9_%/-]+.git$")
+    repo_validator_kerb = re.compile("^https://:@gitlab.cern.ch:8443/[a-zA-Z0-9_%-]+/[a-zA-Z0-9_%/-]+.git$")
 
-    # ssh://git@gitlab.cern.ch:7999/szanzott/be-bi-pyqt-template.git
-    # https://gitlab.cern.ch/szanzott/be-bi-pyqt-template.git
-    # https://:@gitlab.cern.ch:8443/szanzott/be-bi-pyqt-template.git
-
-    project_name = parameters.project_name
-    while not project_name_validator.match(project_name):
-        if project_name != "":
-            cli.negative_feedback("The project name can contain only lowercase letters, numbers and dashes. ({})".format(project_name))
-        project_name = cli.ask_input("Please enter your \033[0;32mproject's name\033[0;m:")
-    cli.positive_feedback("The project name is set to: {}".format(project_name))
-
-    project_desc = parameters.project_desc
-    while project_desc == "" or "\"" in project_desc:
-        if project_desc != "":
-            cli.negative_feedback("The project description cannot contain the character \".")
-        project_desc = cli.ask_input("Please enter a \033[0;32mone-line description\033[0;m of your project:")
-    cli.positive_feedback("The project description is set to: {}".format(project_desc))
-
-    project_author = parameters.project_author
-    while project_author == "" or "\"" in project_author:
-        if project_author != "":
-            cli.negative_feedback("The name cannot contain the character \".")
-        project_author = cli.ask_input("Please enter the project's \033[0;32mauthor name\033[0;m:")
-    cli.positive_feedback("The project author's name is set to: {}".format(project_author))
-
-    author_email = parameters.author_email
-    while not author_email_validator.match(author_email):
-        if author_email != "":
-            cli.negative_feedback("Invalid CERN email, try again")
-        author_email = cli.ask_input("Please enter the author's \033[0;32mCERN email address\033[0;m:")
-    cli.positive_feedback("The project author's email is set to: {}".format(author_email))
-
+    project_name = validate_as_arg_or_ask(
+        cli_value=parameters.project_name,
+        validator=lambda v: project_name_validator.match(v),
+        question="Please enter your \033[0;32mproject's name\033[0;m:",
+        neg_feedback="The project name can contain only lowercase letters, numbers and dashes.",
+        pos_feedback="The project name is set to: {}"
+    )
+    project_desc = validate_as_arg_or_ask(
+        cli_value=parameters.project_desc,
+        validator=lambda v: v != "" and "\"" not in v,
+        question="Please enter a \033[0;32mone-line description\033[0;m of your project:",
+        neg_feedback="The project description cannot contain the character \".",
+        pos_feedback="The project description is set to: {}"
+    )
+    project_author = validate_as_arg_or_ask(
+        cli_value=parameters.project_author,
+        validator=lambda v: v != "" and "\"" not in v,
+        question="Please enter the project's \033[0;32mauthor name\033[0;m:",
+        neg_feedback="The author name cannot contain the character \".",
+        pos_feedback="The project author name is set to: {}"
+    )
+    author_email = validate_as_arg_or_ask(
+        cli_value=parameters.author_email,
+        validator=lambda v: author_email_validator.match(v),
+        question="Please enter the author's \033[0;32mCERN email address\033[0;m:",
+        neg_feedback="Invalid CERN email.",
+        pos_feedback="The project author's email name is set to: {}"
+    )
     if parameters.gitlab:
-        gitlab_repo = parameters.gitlab_repo
-        while not (repo_validator_https.match(gitlab_repo) or
-                   repo_validator_ssh.match(gitlab_repo) or
-                   repo_validator_kerb.match(gitlab_repo)):
-            if gitlab_repo != "":
-                cli.negative_feedback("Invalid GitLab address, try again")
-                cli.give_hint("copy the address from the Clone button, choosing the protocol you prefer "
-                              "(HTTPS, SSH, KRB5)")
-            gitlab_repo = cli.ask_input("Please create a new project on GitLab and past here the project's \033[0;32m"
-                                        "repository URL\033[0;m:")
-        cli.positive_feedback("The project GitLab repository address is set to: {}".format(gitlab_repo))
+        gitlab_repo = validate_as_arg_or_ask(
+            cli_value=parameters.gitlab_repo,
+            validator=lambda v: (repo_validator_https.match(v) or
+                                 repo_validator_ssh.match(v) or
+                                 repo_validator_kerb.match(v)),
+            question="Please create a new project on GitLab and past here the \033[0;32m repository URL\033[0;m:",
+            neg_feedback="Invalid GitLab repository URL.",
+            pos_feedback="The project GitLab repository address is set to: {}",
+            hints=("copy the address from the Clone button, choosing the protocol you prefer (HTTPS, SSH, KRB5)", )
+        )
 
-    cli.draw_line()
     print("\n  Installation:\n")
     project_path = os.path.join(os.getcwd(), project_name)
 
@@ -95,6 +110,7 @@ def create_project(parameters):
         cli.positive_feedback("Uploading to GitLab...")
     else:
         cli.positive_feedback("Setting up local Git repository...")
+        gitlab_repo = None
     if not push_first_commit(project_path, gitlab_repo, parameters.gitlab):
         return
 
@@ -115,6 +131,7 @@ def download_template(project_path, clone_protocol,  custom_path):
                 shutil.rmtree(project_path)
             else:
                 cli.negative_feedback("Directory '{}' already exists. Exiting.".format(project_path))
+                return False
 
         # Copy from custom path
         if custom_path:
