@@ -31,6 +31,7 @@ def mock_all_subtasks():
     create_project_module.download_template = lambda *args, **kwargs: True
     create_project_module.create_directories = lambda *args, **kwargs: True
     create_project_module.apply_customizations = lambda *args, **kwargs: True
+    create_project_module.remove_demo = lambda *args, **kwargs: True
     create_project_module.generate_readme = lambda *args, **kwargs: True
     create_project_module.push_first_commit = lambda *args, **kwargs: True
     create_project_module.install_project = lambda *args, **kwargs: True
@@ -299,4 +300,15 @@ def test_create_project_main_function_repo_not_given(monkeypatch):
         parameters = create_project_parameters(name="test-project", desc="A test project", author="Me",
                                                email="me@cern.ch")
         create_project_module.create_project(parameters)
+
+def test_create_project_main_function_repo_not_checked_if_gitlab_false(monkeypatch):
+    mock_all_subtasks()
+    # If gitlab=False, repo is not needed
+    parameters = create_project_parameters(name="test-project", desc="A test project", author="Me",
+                                           email="me@cern.ch", gitlab=False)
+    create_project_module.create_project(parameters)
+    # If gitlab=False, repo is not checked
+    parameters = create_project_parameters(name="test-project", desc="A test project", author="Me",
+                                           email="me@cern.ch", repo="T0t@l_g@rbage!!&$", gitlab=False)
+    create_project_module.create_project(parameters)
 

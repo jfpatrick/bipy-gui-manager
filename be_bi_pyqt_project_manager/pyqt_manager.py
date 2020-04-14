@@ -27,11 +27,11 @@ def main():
                                     help="Sets the project author's email.")
     new_project_parser.add_argument('--repo', dest='gitlab_repo', default="",
                                     help="Sets the project's GitLab repository address'.")
+    new_project_parser.add_argument('--no-gitlab', dest='gitlab', action='store_false',
+                                    help="Skips the GitLab upload, but still inits the repository locally.")
     new_project_parser.add_argument('--clone-protocol', dest='clone_protocol', default="https",
                                     choices=('kerberos', 'ssh', 'https'),
                                     help="Protocol to use to clone the template from GitLab")
-    new_project_parser.add_argument('--no-gitlab', dest='gitlab', action='store_false',
-                                    help="Skips the GitLab upload, but still inits the repository locally.")
     new_project_parser.add_argument('--template-path', dest='template_path',
                                     help="[DEBUG] Copy the template from a custom location on the filesystem. "
                                          "NOTE: further customizations might break if the template does not correspond "

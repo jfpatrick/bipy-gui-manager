@@ -1,7 +1,6 @@
 import re
 import os
 import shutil
-from pathlib import Path
 from subprocess import Popen, PIPE
 
 from be_bi_pyqt_project_manager import cli_utils as cli
@@ -28,7 +27,9 @@ def validate_and_ask(validator, question, neg_feedback, start_value="", pos_feed
 
 def validate_as_arg_or_ask(cli_value, validator, question, neg_feedback, pos_feedback=None, hints=()):
     if cli_value and cli_value != "":
-        return validate_and_fail(cli_value, validator, neg_feedback)
+        result = validate_and_fail(cli_value, validator, neg_feedback)
+        cli.positive_feedback(pos_feedback.format(result))
+        return result
     else:
         return validate_and_ask(validator, question, neg_feedback, pos_feedback=pos_feedback, hints=hints)
 
@@ -90,7 +91,7 @@ def create_project(parameters):
     project_path = os.path.join(os.getcwd(), project_name)
 
     cli.positive_feedback("Preparing to get template code...")
-    if not download_template(project_path, parameters.clone_protocol, parameters.template_path):
+    if not download_template(project_path, parameters.clone_protocol, parameters.template_path, parameters.demo):
         return
 
     cli.positive_feedback("Creating project under {}/...".format(project_name))
@@ -119,7 +120,7 @@ def create_project(parameters):
         return
 
 
-def download_template(project_path, clone_protocol,  custom_path):
+def download_template(project_path, clone_protocol,  custom_path, get_demo):
     success = False
     while not success:
 
@@ -165,8 +166,11 @@ def download_template(project_path, clone_protocol,  custom_path):
                 cli.negative_feedback("Pull protocol not recognized: {}".format(clone_protocol))
                 return False
 
-            git_command = ['/usr/bin/git', 'clone', template_url,
-                           project_path]
+            if get_demo:
+                git_command = ['/usr/bin/git', 'clone', template_url, project_path]
+            else:
+                git_command = ['/usr/bin/git', 'clone', '--single-branch', '--branch', 'no-demo', template_url,
+                               project_path]
             git_query = Popen(git_command, cwd=os.getcwd(), stdout=PIPE, stderr=PIPE)
             (stdout, stderr) = git_query.communicate()
 
