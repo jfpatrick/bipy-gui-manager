@@ -29,7 +29,7 @@ def main():
                                     help="Sets the project's GitLab repository address'.")
     new_project_parser.add_argument('--no-gitlab', dest='gitlab', action='store_false',
                                     help="Skips the GitLab upload, but still inits the repository locally.")
-    new_project_parser.add_argument('--clone-protocol', dest='clone_protocol', default="https",
+    new_project_parser.add_argument('--clone-protocol', dest='clone_protocol', default="kerberos",
                                     choices=('kerberos', 'ssh', 'https'),
                                     help="Protocol to use to clone the template from GitLab")
     new_project_parser.add_argument('--template-path', dest='template_path',

@@ -28,7 +28,8 @@ def validate_and_ask(validator, question, neg_feedback, start_value="", pos_feed
 def validate_as_arg_or_ask(cli_value, validator, question, neg_feedback, pos_feedback=None, hints=()):
     if cli_value and cli_value != "":
         result = validate_and_fail(cli_value, validator, neg_feedback)
-        cli.positive_feedback(pos_feedback.format(result))
+        if pos_feedback:
+            cli.positive_feedback(pos_feedback.format(result))
         return result
     else:
         return validate_and_ask(validator, question, neg_feedback, pos_feedback=pos_feedback, hints=hints)
@@ -87,6 +88,7 @@ def create_project(parameters):
             hints=("copy the address from the Clone button, choosing the protocol you prefer (HTTPS, SSH, KRB5)", )
         )
 
+    cli.draw_line()
     print("\n  Installation:\n")
     project_path = os.path.join(os.getcwd(), project_name)
 
@@ -105,7 +107,7 @@ def create_project(parameters):
     cli.positive_feedback("Preparing README...")
     if not generate_readme(project_path, project_name, project_desc, project_author, author_email):
         return
-    cli.give_hint("check the README for typos, as it was auto-generated")
+    cli.give_hint("check the README for typos and complete it with a more in-depth description of your project.")
 
     if parameters.gitlab:
         cli.positive_feedback("Uploading to GitLab...")
@@ -120,7 +122,7 @@ def create_project(parameters):
         return
 
 
-def download_template(project_path, clone_protocol,  custom_path, get_demo):
+def download_template(project_path, clone_protocol, custom_path, get_demo):
     success = False
     while not success:
 
