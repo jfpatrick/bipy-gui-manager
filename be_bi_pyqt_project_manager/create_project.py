@@ -21,9 +21,9 @@ def create_project(parameters):
     gitlab_repo : str = None
     project_name_validator = re.compile("^[a-z0-9\-]+$")
     author_email_validator = re.compile("[a-zA-Z0-9._%+\-]+@cern\.ch")
-    gitlab_repo_validator = re.compile(
-        "^{ssh://git@gitlab\.cern\.ch:7999/|https://gitlab\.cern\.ch/|https://:@gitlab\.cern\.ch:8443/}"
-        "[a-zA-Z0-9_%\-]+/[a-zA-Z0-9_%\-]+\.git$")
+    repo_validator_ssh = re.compile("^ssh://git@gitlab\.cern\.ch:7999/[a-zA-Z0-9_%\-]+/[a-zA-Z0-9_%/\-]+\.git$")
+    repo_validator_https = re.compile("^https://gitlab\.cern\.ch/[a-zA-Z0-9_%\-]+/[a-zA-Z0-9_%/\-]+\.git$")
+    repo_validator_kerb = re.compile("^https://:@gitlab\.cern\.ch:8443/[a-zA-Z0-9_%\-]+/[a-zA-Z0-9_%/\-]+\.git$")
 
     # ssh://git@gitlab.cern.ch:7999/szanzott/be-bi-pyqt-template.git
     # https://gitlab.cern.ch/szanzott/be-bi-pyqt-template.git
@@ -57,14 +57,18 @@ def create_project(parameters):
         author_email = cli.ask_input("Please enter the author's \033[0;32mCERN email address\033[0;m:")
     cli.positive_feedback("The project author's email is set to: {}".format(author_email))
 
-    gitlab_repo = parameters.gitlab_repo
-    while not gitlab_repo_validator.match(gitlab_repo):
-        if gitlab_repo != "":
-            cli.negative_feedback("Invalid GitLab address, try again")
-            cli.give_hint("copy the address from the Clone button, choosing the protocol you prefer (HTTPS, SSH, KRB5)")
-        gitlab_repo = cli.ask_input("Please create a new project on GitLab and past here the project's \033[0;32m"
-                                     "repository URL\033[0;m:")
-    cli.positive_feedback("The project GitLab repository address is set to: {}".format(gitlab_repo))
+    if parameters.gitlab:
+        gitlab_repo = parameters.gitlab_repo
+        while not (repo_validator_https.match(gitlab_repo) or
+                   repo_validator_ssh.match(gitlab_repo) or
+                   repo_validator_kerb.match(gitlab_repo)):
+            if gitlab_repo != "":
+                cli.negative_feedback("Invalid GitLab address, try again")
+                cli.give_hint("copy the address from the Clone button, choosing the protocol you prefer "
+                              "(HTTPS, SSH, KRB5)")
+            gitlab_repo = cli.ask_input("Please create a new project on GitLab and past here the project's \033[0;32m"
+                                        "repository URL\033[0;m:")
+        cli.positive_feedback("The project GitLab repository address is set to: {}".format(gitlab_repo))
 
     cli.draw_line()
     print("\n  Installation:\n")
@@ -87,8 +91,11 @@ def create_project(parameters):
         return
     cli.give_hint("check the README for typos, as it was auto-generated")
 
-    cli.positive_feedback("Uploading to GitLab...")
-    if not push_first_commit(project_path, gitlab_repo):
+    if parameters.gitlab:
+        cli.positive_feedback("Uploading to GitLab...")
+    else:
+        cli.positive_feedback("Setting up local Git repository...")
+    if not push_first_commit(project_path, gitlab_repo, parameters.gitlab):
         return
 
     cli.positive_feedback("Installing the project in a new virtualenv...")
@@ -241,7 +248,7 @@ def generate_readme(project_path, project_name, project_desc, project_author, pr
     return True
 
 
-def push_first_commit(project_path, gitlab_repo):
+def push_first_commit(project_path, gitlab_repo, perform_upload):
     success = False
     while not success:
 
@@ -258,17 +265,18 @@ def push_first_commit(project_path, gitlab_repo):
                 cli.give_hint("You can debug this issue by checking the logs of 'git init' in the project directory.")
                 return False
 
-            git_command = ['/usr/bin/git', 'remote', 'add', 'origin', gitlab_repo]
-            git_query = Popen(git_command, cwd=project_path, stdout=PIPE, stderr=PIPE)
-            (stdout, stderr) = git_query.communicate()
+            if perform_upload:
+                git_command = ['/usr/bin/git', 'remote', 'add', 'origin', gitlab_repo]
+                git_query = Popen(git_command, cwd=project_path, stdout=PIPE, stderr=PIPE)
+                (stdout, stderr) = git_query.communicate()
 
-            if git_query.poll() != 0:
-                cli.negative_feedback("Failed to add the remote on the project's local repo!")
-                cli.negative_feedback(stderr)
-                cli.give_hint("You can debug this issue by checking the logs of "
-                              "'git remote add origin {}' and 'git remote -v' "
-                              "in the project directory.".format(gitlab_repo))
-                return False
+                if git_query.poll() != 0:
+                    cli.negative_feedback("Failed to add the remote on the project's local repo!")
+                    cli.negative_feedback(stderr)
+                    cli.give_hint("You can debug this issue by checking the logs of "
+                                  "'git remote add origin {}' and 'git remote -v' "
+                                  "in the project directory.".format(gitlab_repo))
+                    return False
 
             git_command = ['/usr/bin/git', 'add', '--all']
             git_query = Popen(git_command, cwd=project_path, stdout=PIPE, stderr=PIPE)
@@ -293,20 +301,22 @@ def push_first_commit(project_path, gitlab_repo):
                               "'git commit -m \"Initial commit\"' in the project directory.".format(gitlab_repo))
                 return False
 
-            git_command = ['/usr/bin/git', 'push', '-u', 'origin', 'master']
-            git_query = Popen(git_command, cwd=project_path, stdout=PIPE, stderr=PIPE)
-            (stdout, stderr) = git_query.communicate()
+            if perform_upload:
+                git_command = ['/usr/bin/git', 'push', '-u', 'origin', 'master']
+                git_query = Popen(git_command, cwd=project_path, stdout=PIPE, stderr=PIPE)
+                (stdout, stderr) = git_query.communicate()
 
-            if git_query.poll() != 0:
-                cli.negative_feedback("Failed to push the first commit to GitLab!")
-                cli.negative_feedback(stderr)
-                cli.give_hint("You can debug this issue by checking the logs of "
-                              "'git push -u origin master' "
-                              "in the project directory.".format(gitlab_repo))
-                return False
+                if git_query.poll() != 0:
+                    cli.negative_feedback("Failed to push the first commit to GitLab!")
+                    cli.negative_feedback(stderr)
+                    cli.give_hint("You can debug this issue by checking the logs of "
+                                  "'git push -u origin master' "
+                                  "in the project directory.".format(gitlab_repo))
+                    return False
             success = True
+
         except Exception as e:
-            cli.negative_feedback("Failed to push the first commit. "
+            cli.negative_feedback("Failed to setup the repository. "
                                   "Please make sure git is installed and working and retry.")
             print(e)
             return False
@@ -328,7 +338,7 @@ def install_project(project_path, project_name):
 
         cli.success_feedback()
         cli.draw_line()
-        print("\n")
+        print("")
         cli.positive_feedback("New project '{}' installed successfully".format(project_name))
         cli.positive_feedback("Please make sure by typing 'source activate.sh' and '{}' in the console".format(project_name))
         cli.give_hint("type 'pyqt-manager --help' to see more workflows.")
