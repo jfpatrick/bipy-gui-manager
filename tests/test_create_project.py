@@ -1,5 +1,4 @@
 import pytest
-import mock
 from argparse import Namespace
 import be_bi_pyqt_project_manager
 import be_bi_pyqt_project_manager.create_project as create_project_module
