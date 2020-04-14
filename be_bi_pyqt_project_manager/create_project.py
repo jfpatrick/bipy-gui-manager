@@ -18,59 +18,85 @@ def create_project(parameters):
     project_desc: str = None
     project_author: str = None
     author_email: str = None
+    gitlab_repo : str = None
     project_name_validator = re.compile("^[a-z0-9\-]+$")
-    author_email_validator = re.compile("[a-zA-Z0-9._%+-]+@cern\.ch")
+    author_email_validator = re.compile("[a-zA-Z0-9._%+\-]+@cern\.ch")
+    gitlab_repo_validator = re.compile(
+        "^{ssh://git@gitlab\.cern\.ch:7999/|https://gitlab\.cern\.ch/|https://:@gitlab\.cern\.ch:8443/}"
+        "[a-zA-Z0-9_%\-]+/[a-zA-Z0-9_%\-]+\.git$")
 
-    while not project_name:
+    # ssh://git@gitlab.cern.ch:7999/szanzott/be-bi-pyqt-template.git
+    # https://gitlab.cern.ch/szanzott/be-bi-pyqt-template.git
+    # https://:@gitlab.cern.ch:8443/szanzott/be-bi-pyqt-template.git
+
+    project_name = parameters.project_name
+    while not project_name_validator.match(project_name):
+        if project_name != "":
+            cli.negative_feedback("The project name can contain only lowercase letters, numbers and dashes. ({})".format(project_name))
         project_name = cli.ask_input("Please enter your \033[0;32mproject's name\033[0;m:")
-        if not project_name_validator.match(project_name):
-            project_name = None
-            cli.negative_feedback("The project name can contain only letters, numbers and dashes.")
+    cli.positive_feedback("The project name is set to: {}".format(project_name))
 
-    while not project_desc:
-        project_desc = cli.ask_input("Please enter a \033[0;32mone-line description\033[0;m of your project:")
-        if "\"" in project_desc:
-            project_desc = None
+    project_desc = parameters.project_desc
+    while project_desc == "" or "\"" in project_desc:
+        if project_desc != "":
             cli.negative_feedback("The project description cannot contain the character \".")
+        project_desc = cli.ask_input("Please enter a \033[0;32mone-line description\033[0;m of your project:")
+    cli.positive_feedback("The project description is set to: {}".format(project_desc))
 
-    while not project_author:
-        project_author = cli.ask_input("Please enter the project's \033[0;32mauthor name\033[0;m:")
-        if "\"" in project_author:
-            project_author = None
+    project_author = parameters.project_author
+    while project_author == "" or "\"" in project_author:
+        if project_author != "":
             cli.negative_feedback("The name cannot contain the character \".")
+        project_author = cli.ask_input("Please enter the project's \033[0;32mauthor name\033[0;m:")
+    cli.positive_feedback("The project author's name is set to: {}".format(project_author))
 
-    while not author_email:
-        author_email = cli.ask_input("Please enter the author's \033[0;32mCERN email address\033[0;m:")
-        if not author_email_validator.match(author_email):
-            author_email = None
+    author_email = parameters.author_email
+    while not author_email_validator.match(author_email):
+        if author_email != "":
             cli.negative_feedback("Invalid CERN email, try again")
+        author_email = cli.ask_input("Please enter the author's \033[0;32mCERN email address\033[0;m:")
+    cli.positive_feedback("The project author's email is set to: {}".format(author_email))
+
+    gitlab_repo = parameters.gitlab_repo
+    while not gitlab_repo_validator.match(gitlab_repo):
+        if gitlab_repo != "":
+            cli.negative_feedback("Invalid GitLab address, try again")
+            cli.give_hint("copy the address from the Clone button, choosing the protocol you prefer (HTTPS, SSH, KRB5)")
+        gitlab_repo = cli.ask_input("Please create a new project on GitLab and past here the project's \033[0;32m"
+                                     "repository URL\033[0;m:")
+    cli.positive_feedback("The project GitLab repository address is set to: {}".format(gitlab_repo))
 
     cli.draw_line()
     print("\n  Installation:\n")
     project_path = os.path.join(os.getcwd(), project_name)
 
-    cli.positive_feedback("Downloading template from GitLab...")
-    if not download_template(project_path): return
-    cli.success_feedback()
+    cli.positive_feedback("Preparing to get template code...")
+    if not download_template(project_path, parameters.clone_protocol, parameters.template_path):
+        return
 
     cli.positive_feedback("Creating project under {}/...".format(project_name))
-    if not create_directories(project_path, project_name): return
-    cli.success_feedback()
+    if not create_directories(project_path, project_name):
+        return
 
     cli.positive_feedback("Applying customizations...")
-    if not apply_customizations(project_path, project_name, project_desc, project_author, author_email): return
-    cli.success_feedback()
+    if not apply_customizations(project_path, project_name, project_desc, project_author, author_email):
+        return
 
     cli.positive_feedback("Preparing README...")
-    if not generate_readme(project_path, project_name, project_desc, project_author, author_email): return
+    if not generate_readme(project_path, project_name, project_desc, project_author, author_email):
+        return
     cli.give_hint("check the README for typos, as it was auto-generated")
-    cli.success_feedback()
+
+    cli.positive_feedback("Uploading to GitLab...")
+    if not push_first_commit(project_path, gitlab_repo):
+        return
 
     cli.positive_feedback("Installing the project in a new virtualenv...")
-    if not install_project(project_path, project_name): return
+    if not install_project(project_path, project_name):
+        return
 
 
-def download_template(project_path):
+def download_template(project_path, clone_protocol,  custom_path):
     success = False
     while not success:
 
@@ -83,9 +109,39 @@ def download_template(project_path):
             else:
                 cli.negative_feedback("Directory '{}' already exists. Exiting.".format(project_path))
 
+        # Copy from custom path
+        if custom_path:
+            cli.positive_feedback("Copying the template from {} ...".format(custom_path))
+            os.system("mkdir {}".format(project_path))
+            copy_process = Popen(["cp", "-r", custom_path, project_path], stdout=PIPE, stderr=PIPE)
+            (stdout, stderr) = copy_process.communicate()
+
+            if copy_process.poll() == 0:
+                return True
+            else:
+                cli.negative_feedback(stderr)
+                answer = cli.handle_failure("Failed to copy the template! Do you want to retry? (yes/no)")
+                if answer == "no" or answer == "n":
+                    cli.give_hint("You can debug this issue by checking the logs of " +
+                                  "'cp -r {} {}' ".format(custom_path, project_path) +
+                                  "in the current directory.")
+                    # Terminate here
+                    return False
+
         # Invoke git
         try:
-            git_command = ['/usr/bin/git', 'clone', 'https://gitlab.cern.ch/szanzott/be-bi-pyqt-template.git',
+            cli.positive_feedback("Downloading template from GitLab...")
+            if clone_protocol == 'https':
+                template_url = 'https://gitlab.cern.ch/szanzott/be-bi-pyqt-template.git'
+            elif clone_protocol == 'kerberos':
+                template_url = 'https://:@gitlab.cern.ch:8443/szanzott/be-bi-pyqt-template.git'
+            elif clone_protocol == 'ssh':
+                template_url = 'ssh://git@gitlab.cern.ch:7999/szanzott/be-bi-pyqt-template.git'
+            else:
+                cli.negative_feedback("Pull protocol not recognized: {}".format(clone_protocol))
+                return False
+
+            git_command = ['/usr/bin/git', 'clone', template_url,
                            project_path]
             git_query = Popen(git_command, cwd=os.getcwd(), stdout=PIPE, stderr=PIPE)
             (stdout, stderr) = git_query.communicate()
@@ -96,14 +152,14 @@ def download_template(project_path):
                 cli.negative_feedback(stderr)
                 answer = cli.handle_failure("Failed to clone the template! Do you want to retry? (yes/no)")
                 if answer == "no" or answer == "n":
-                    cli.give_hint("You can debug this issue by checking the logs of "
-                                  "'git clone https://gitlab.cern.ch/szanzott/be-bi-pyqt-template.git' "
+                    cli.give_hint("You can debug this issue by checking the logs of " +
+                                  "'git clone {}' ".format(template_url) +
                                   "in the current directory.")
                     # Terminate here
                     return False
 
         except Exception as e:
-            cli.negative_feedback("Failed to invoke git. Please make sure git is installed and retry.")
+            cli.negative_feedback("Failed to invoke git. Please make sure git is installed and working and retry.")
             print(e)
             return False
     return True
@@ -116,7 +172,6 @@ def create_directories(project_path, project_name):
         try:
             shutil.move("{}/be_bi_pyqt_template".format(project_path), "{}/{}".format(project_path, project_name_underscores))
             shutil.rmtree("{}/images".format(project_path))
-            os.remove("{}/setup.sh".format(project_path))
             success = True
         except Exception as e:
             cli.negative_feedback("Failed to refactor the template! Exiting.")
@@ -155,7 +210,7 @@ def apply_customizations(project_path, project_name, project_desc, project_autho
                         os.rename(dirpath, dirpath.replace("be-bi-pyqt-template", project_name))
             success = True
         except Exception as e:
-            cli.negative_feedback("Failed to apply customizations! Exiting.")
+            cli.negative_feedback("Failed to apply customizations!")
             print(e)
             return False
     return True
@@ -186,6 +241,78 @@ def generate_readme(project_path, project_name, project_desc, project_author, pr
     return True
 
 
+def push_first_commit(project_path, gitlab_repo):
+    success = False
+    while not success:
+
+        # Invoke git
+        try:
+            os.system("rm -rf {}/.git".format(project_path))
+            git_command = ['/usr/bin/git', 'init']
+            git_query = Popen(git_command, cwd=project_path, stdout=PIPE, stderr=PIPE)
+            (stdout, stderr) = git_query.communicate()
+
+            if git_query.poll() != 0:
+                cli.negative_feedback("Failed to init the repo in the project folder!")
+                cli.negative_feedback(stderr)
+                cli.give_hint("You can debug this issue by checking the logs of 'git init' in the project directory.")
+                return False
+
+            git_command = ['/usr/bin/git', 'remote', 'add', 'origin', gitlab_repo]
+            git_query = Popen(git_command, cwd=project_path, stdout=PIPE, stderr=PIPE)
+            (stdout, stderr) = git_query.communicate()
+
+            if git_query.poll() != 0:
+                cli.negative_feedback("Failed to add the remote on the project's local repo!")
+                cli.negative_feedback(stderr)
+                cli.give_hint("You can debug this issue by checking the logs of "
+                              "'git remote add origin {}' and 'git remote -v' "
+                              "in the project directory.".format(gitlab_repo))
+                return False
+
+            git_command = ['/usr/bin/git', 'add', '--all']
+            git_query = Popen(git_command, cwd=project_path, stdout=PIPE, stderr=PIPE)
+            (stdout, stderr) = git_query.communicate()
+
+            if git_query.poll() != 0:
+                cli.negative_feedback("Failed to stage the template!")
+                cli.negative_feedback(stderr)
+                cli.give_hint("You can debug this issue by checking the logs of "
+                              "'git add --all' in the project directory.".format(gitlab_repo))
+                return False
+
+            git_command = ['/usr/bin/git', 'commit', '-m', 'Initial commit ' +
+                           '(from pyqt-manager https://gitlab.cern.ch/szanzott/be-bi-pyqt-project-manager )']
+            git_query = Popen(git_command, cwd=project_path, stdout=PIPE, stderr=PIPE)
+            (stdout, stderr) = git_query.communicate()
+
+            if git_query.poll() != 0:
+                cli.negative_feedback("Failed to commit the template!")
+                cli.negative_feedback(stderr)
+                cli.give_hint("You can debug this issue by checking the logs of "
+                              "'git commit -m \"Initial commit\"' in the project directory.".format(gitlab_repo))
+                return False
+
+            git_command = ['/usr/bin/git', 'push', '-u', 'origin', 'master']
+            git_query = Popen(git_command, cwd=project_path, stdout=PIPE, stderr=PIPE)
+            (stdout, stderr) = git_query.communicate()
+
+            if git_query.poll() != 0:
+                cli.negative_feedback("Failed to push the first commit to GitLab!")
+                cli.negative_feedback(stderr)
+                cli.give_hint("You can debug this issue by checking the logs of "
+                              "'git push -u origin master' "
+                              "in the project directory.".format(gitlab_repo))
+                return False
+            success = True
+        except Exception as e:
+            cli.negative_feedback("Failed to push the first commit. "
+                                  "Please make sure git is installed and working and retry.")
+            print(e)
+            return False
+    return True
+
+
 def install_project(project_path, project_name):
     try:
         # Copy shell script in project
@@ -197,13 +324,16 @@ def install_project(project_path, project_name):
         # Remove temporary script
         os.remove(script_temp_location)
         if error:
-            raise OSError("New project failed to install.")
+            raise OSError("New project failed to install: {}.".format(error))
 
         cli.success_feedback()
         cli.draw_line()
-        cli.positive_feedback("New project '{}' installed successfully!".format(project_name))
+        print("\n")
+        cli.positive_feedback("New project '{}' installed successfully".format(project_name))
         cli.positive_feedback("Please make sure by typing 'source activate.sh' and '{}' in the console".format(project_name))
         cli.give_hint("type 'pyqt-manager --help' to see more workflows.")
+        cli.give_hint("launch PyCharm from the project folder to start working - "
+                      "remember to type 'source activate.sh' in PyCharm terminal too")
         cli.draw_line()
 
     except Exception as e:

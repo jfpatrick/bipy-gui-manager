@@ -16,7 +16,7 @@ source venv/bin/activate
 echo -e "    - Activating local virtualenv"
 
 # Install with pip
-echo -e "    - Installing (can take a minute)"
+echo -e "    - Installing (can take a minute - please ignore requirements errors)"
 if pip install -e . -qqq; then
   # Success!
   exit 0
