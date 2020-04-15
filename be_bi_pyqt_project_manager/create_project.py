@@ -140,13 +140,13 @@ def download_template(project_path, clone_protocol, custom_path, get_demo):
         if custom_path:
             cli.positive_feedback("Copying the template from {} ...".format(custom_path))
             os.system("mkdir {}".format(project_path))
-            copy_process = Popen(["cp", "-r", custom_path, project_path], stdout=PIPE, stderr=PIPE)
+            copy_process = Popen(["cp", "-R", "{}/.".format(custom_path), project_path], stdout=PIPE, stderr=PIPE)
             (stdout, stderr) = copy_process.communicate()
 
             if copy_process.poll() == 0:
                 return True
             else:
-                cli.negative_feedback(stderr)
+                cli.negative_feedback(stderr.decode('utf-8'))
                 answer = cli.handle_failure("Failed to copy the template! Do you want to retry? (yes/no)")
                 if answer == "no" or answer == "n":
                     cli.give_hint("You can debug this issue by checking the logs of " +

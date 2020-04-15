@@ -13,13 +13,13 @@ def raise_on_input():
 
 
 @pytest.fixture
-def mock_all_subtasks():
-    create_project_module.download_template = lambda *args, **kwargs: True
-    create_project_module.create_directories = lambda *args, **kwargs: True
-    create_project_module.apply_customizations = lambda *args, **kwargs: True
-    create_project_module.generate_readme = lambda *args, **kwargs: True
-    create_project_module.push_first_commit = lambda *args, **kwargs: True
-    create_project_module.install_project = lambda *args, **kwargs: True
+def mock_all_subtasks(monkeypatch):
+    monkeypatch.setattr('be_bi_pyqt_project_manager.create_project.download_template', lambda *args, **kwargs: True)
+    monkeypatch.setattr('be_bi_pyqt_project_manager.create_project.create_directories', lambda *args, **kwargs: True)
+    monkeypatch.setattr('be_bi_pyqt_project_manager.create_project.apply_customizations', lambda *args, **kwargs: True)
+    monkeypatch.setattr('be_bi_pyqt_project_manager.create_project.generate_readme', lambda *args, **kwargs: True)
+    monkeypatch.setattr('be_bi_pyqt_project_manager.create_project.push_first_commit', lambda *args, **kwargs: True)
+    monkeypatch.setattr('be_bi_pyqt_project_manager.create_project.install_project', lambda *args, **kwargs: True)
     yield
 
 
@@ -289,18 +289,62 @@ def test_repo_not_checked_if_gitlab_false(mock_all_subtasks):
 
 
 
-# def test_download_repo_default_params(tmpdir):
-#     project_name = "test_project"
-#     project_path = os.path.join(tmpdir, "test_project")
-#     create_project_module.download_template(project_path, 'kerberos', get_demo=True, custom_path=None)
-#     assert os.path.exists(project_path)
-#     assert os.path.exists(os.path.join(project_path, "be_bi_pyqt_template"))
+def test_download_repo_default_params(tmpdir):
+    project_path = os.path.join(tmpdir, "test_project")
+    create_project_module.download_template(project_path, 'kerberos', get_demo=True, custom_path=None)
+    assert os.path.exists(project_path)
+    assert os.path.exists(os.path.join(project_path, "be_bi_pyqt_template"))
 
-# def test_download_repo_folder_exists(tmpdir, monkeypatch):
-#     project_name = "test_project"
-#     project_path = os.path.join(tmpdir, "test_project")
-#     os.mkdir(project_path)
-#     monkeypatch.setattr('builtins.input', lambda _: "yes")
-#     create_project_module.download_template(project_path, 'kerberos', get_demo=True, custom_path=None)
-#     assert os.path.exists(project_path)
-#     assert os.path.exists(os.path.join(project_path, "be_bi_pyqt_template"))
+def test_download_repo_folder_exists_ask(tmpdir, monkeypatch):
+    # Will ask whether to overwrite or not
+    project_path = os.path.join(tmpdir, "test_project")
+    os.mkdir(project_path)
+    monkeypatch.setattr('builtins.input', lambda _: 1/0)
+    with pytest.raises(ZeroDivisionError):
+        create_project_module.download_template(project_path, 'kerberos', get_demo=True, custom_path=None)
+
+def test_download_repo_folder_exists_say_no(tmpdir, monkeypatch):
+    # if is being said no, leave folder intact
+    project_path = os.path.join(tmpdir, "test_project")
+    os.mkdir(project_path)
+    with open(os.path.join(project_path, "test_file"), "w") as testfile:
+        testfile.write("Something")
+    monkeypatch.setattr('builtins.input', lambda _: "no")
+    create_project_module.download_template(project_path, 'kerberos', get_demo=True, custom_path=None)
+    assert os.path.isdir(project_path)
+    assert not os.path.exists(os.path.join(project_path, "be_bi_pyqt_template"))
+    assert os.path.exists(os.path.join(project_path, "test_file"))
+    with open(os.path.join(project_path, "test_file"), "r") as testfile:
+        assert testfile.read() == "Something"
+
+def test_download_repo_folder_exists_say_yes(tmpdir, monkeypatch):
+    # if is being said yes, overwrites
+    project_path = os.path.join(tmpdir, "test_project")
+    os.mkdir(project_path)
+    with open(os.path.join(project_path, "test_file"), "w") as testfile:
+        testfile.write("Something")
+    monkeypatch.setattr('builtins.input', lambda _: "yes")
+    create_project_module.download_template(project_path, 'kerberos', get_demo=True, custom_path=None)
+    assert os.path.isdir(project_path)
+    assert os.path.isdir(os.path.join(project_path, "be_bi_pyqt_template"))
+    assert not os.path.exists(os.path.join(project_path, "test_file"))
+
+def test_download_repo_custom_path(tmpdir, monkeypatch):
+    # Make template folder
+    template_folder = os.path.join(tmpdir, "template_folder")
+    os.mkdir(template_folder)
+    os.mkdir(os.path.join(template_folder, "inner_folder"))
+    with open(os.path.join(template_folder, "inner_folder", "template_file"), "w") as template:
+        template.write("Something")
+    with open(os.path.join(template_folder, ".hidden_file"), "w") as template:
+        template.write("Something hidden")
+    # Ensure it's copied instead of cloning from Git
+    project_path = os.path.join(tmpdir, "test_project")
+    create_project_module.download_template(project_path, 'kerberos', get_demo=True, custom_path=template_folder)
+    assert os.path.isdir(project_path)
+    assert os.path.exists(os.path.join(project_path, "inner_folder"))
+    with open(os.path.join(project_path, "inner_folder", "template_file"), "r") as testfile:
+        assert testfile.read() == "Something"
+    with open(os.path.join(project_path, ".hidden_file"), "r") as testfile:
+        assert testfile.read() == "Something hidden"
+    assert not os.path.exists(os.path.join(project_path, "be_bi_pyqt_template"))
