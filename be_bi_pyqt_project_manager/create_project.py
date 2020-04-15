@@ -120,14 +120,19 @@ def create_project(parameters):
     if parameters.gitlab:
         gitlab_repo = validate_as_arg_or_ask(
             cli_value=parameters.gitlab_repo,
-            validator=lambda v: (repo_validator_https.match(v) or
+            validator=lambda v: (v == "no-gitlab" or
+                                 repo_validator_https.match(v) or
                                  repo_validator_ssh.match(v) or
                                  repo_validator_kerb.match(v)),
-            question="Please create a new project on GitLab and past here the \033[0;32m repository URL\033[0;m:",
+            question="Please create a new project on GitLab and paste here the \033[0;32m repository URL\033[0;m "
+                     "(or type 'no-gitlab' to skip this step):",
             neg_feedback="Invalid GitLab repository URL.",
             pos_feedback="The project GitLab repository address is set to: {}",
             hints=("copy the address from the Clone button, choosing the protocol you prefer (HTTPS, SSH, KRB5)", )
         )
+        if gitlab_repo == 'no-gitlab':
+            gitlab_repo = None
+            parameters.gitlab = False
 
     cli.draw_line()
     print("\n  Installation:\n")
@@ -226,9 +231,7 @@ def download_template(project_path: str, clone_protocol: str, get_demo: bool) ->
         parameters=git_command,
         cwd=os.getcwd(),
         allow_retry=True,
-        neg_feedback="Failed to clone the template!",
-        hints_on_failure=("You can debug this issue by checking the logs of 'git clone {}' ".format(template_url) +
-                          "in the current directory.", )
+        neg_feedback="Failed to clone the template!"
     )
 
 
@@ -318,26 +321,20 @@ def init_local_repo(project_path: str) -> None:
         parameters=['init'],
         cwd=project_path,
         allow_retry=False,
-        neg_feedback="Failed to init the repo in the project folder.",
-        hints_on_failure=("You can debug this issue by checking the logs of 'git init' in the project "
-                          "directory.",)
+        neg_feedback="Failed to init the repo in the project folder."
     )
     invoke_git(
         parameters=['add', '--all'],
         cwd=project_path,
         allow_retry=False,
-        neg_feedback="Failed to stage the template.",
-        hints_on_failure=("You can debug this issue by checking the logs of "
-                          "'git add --all' in the project directory.",)
+        neg_feedback="Failed to stage the template."
     )
     invoke_git(
         parameters=['commit', '-m', 'Initial commit ' +
                     '(from pyqt-manager https://gitlab.cern.ch/szanzott/be-bi-pyqt-project-manager )'],
         cwd=project_path,
         allow_retry=False,
-        neg_feedback="Failed to commit the template.",
-        hints_on_failure=("You can debug this issue by checking the logs of "
-                          "'git commit -m \"Initial commit\"' in the project directory.",)
+        neg_feedback="Failed to commit the template."
     )
 
 
@@ -351,19 +348,13 @@ def push_first_commit(project_path: str, gitlab_repo: str) -> None:
         parameters=['remote', 'add', 'origin', gitlab_repo],
         cwd=project_path,
         allow_retry=False,
-        neg_feedback="Failed to add the remote on the project's local repo.",
-        hints_on_failure=("You can debug this issue by checking the logs of "
-                          "'git remote add origin {}' and 'git remote -v' "
-                          "in the project directory.".format(gitlab_repo),)
+        neg_feedback="Failed to add the remote on the project's local repo."
     )
     invoke_git(
         parameters=['push', '-u', 'origin', 'master'],
         cwd=project_path,
         allow_retry=False,
-        neg_feedback="Failed to push the first commit to GitLab.",
-        hints_on_failure=("You can debug this issue by checking the logs of "
-                          "'git push -u origin master' "
-                          "in the project directory.".format(gitlab_repo),)
+        neg_feedback="Failed to push the first commit to GitLab."
     )
 
 
