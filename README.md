@@ -2,22 +2,13 @@
 
 This is the repository for the BE-BI PyQt Project Manager.
 
-It is a tool for bootstrapping PyQt GUI projects. It provides:
-- A command-line wizard to help you get started & perform basic
-maintenance operations
-- A sane folder structure for your code, based on the MVP architecture.
-- A test setup ready for unit tests and GUI tests (based on `pytest-qt`)
-- A minimal simulation environment for your tests (based on 
-[`papc`](https://gitlab.cern.ch/pelson/papc)), 
-that can be extended to mimick your real data sources (FESA, NXCALS, ...)
-- A `setup.py` to customize for quick packaging & release, with `entry_points`
-- `.gitignore` with common Python artifacts
-- `.gitlab-ci.yml` supporting GUI testing out of the box and coverage reports
-- A small `activate.sh` activation script to activate both your virtualenv and Acc-Py, and
-sets up some env vars for QtDesigner
-
-For a detailed explanation of the project structure, head over to
-[BE BI Pyqt Template](https://gitlab.cern.ch/szanzott/be-bi-pyqt-template).
+It is a tool for bootstrapping PyQt GUI projects, which:
+- Provides a wizard to create and setup new projects with a predefined project structure (
+see [BE BI Pyqt Template](https://gitlab.cern.ch/szanzott/be-bi-pyqt-template))
+- Configures existing projects (modify author name, email description, GitLab repo, etc...)
+- Releases the project on the CERN Python repository
+- Manages the project's entry points (commands available in the console to launch the PyQt application)
+- Self-updates
 
 ## Getting started
 
@@ -29,7 +20,7 @@ Assuming Python 3.6 is installed, or `acc-pyqt` is active in your shell
 pip install --user be-bi-pyqt-project-manager
 ```
 
-If pip is not present in your system, try instead:
+If `pip` is not present in your system, try instead:
 ```bash
 python3 -m pip install --user be-bi-pyqt-project-manager
 ```
@@ -38,6 +29,7 @@ To make sure the installation was successful, type:
 ```bash
 pyqt-manager
 ```
+You should see a help message.
 
 ## Usage
 
@@ -49,16 +41,14 @@ pyqt-manager --help
 The most important are:
  - `pyqt-manager create-project`: starts a wizard that guides
 you through the setup of a new PyQt project.
- - `pyqt-manager release`: release the project on CERN's repos.
- - `pyqt-manager dev-release`: _TODO_.
- - `pyqt-manager self-update`: checks whether any update for itself
+ - `pyqt-manager release`: release the project on CERN's repos _TODO_ .
+ - `pyqt-manager dev-release`: _TODO when CO will have a strategy for this_.
+ - `pyqt-manager self-update`: checks whether any update for itself _TODO_
 is available and, if so, update itself. Does not affect the application's code.
  - `pyqt-manager update-project`: checks whether any update for the
-project's dependencies is available and, if so, install them.
- - `pyqt-manager entry-points list`: lists all the entry-points of your application,
-if any.
- - `pyqt-manager entry-points add`: adds an entry-points to your application.
- - `pyqt-manager entry-points delete`: adds an entry-points to your application.
+project's dependencies is available and, if so, install them _TODO_.
+ - `pyqt-manager entry-points`: manages the entry-points of your application,
+if any. _TODO_
 
 
 ## Contribute
