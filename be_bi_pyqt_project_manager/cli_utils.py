@@ -15,6 +15,9 @@ def positive_feedback(string):
 def success_feedback():
     print("   \033[0;32mDone\033[0;m ")
 
+def list_subtask(string):
+    print("    -  {}".format(string))
+
 def give_hint(string):
     print("    - Hint: {}".format(string))
 

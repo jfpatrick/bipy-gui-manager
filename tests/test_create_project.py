@@ -1,26 +1,7 @@
 import os
 import pytest
 from argparse import Namespace
-import be_bi_pyqt_project_manager
 import be_bi_pyqt_project_manager.create_project as create_project_module
-
-
-@pytest.fixture
-def raise_on_input():
-    be_bi_pyqt_project_manager.create_project.input = lambda: 1/0
-    yield
-    be_bi_pyqt_project_manager.create_project.input = input
-
-
-@pytest.fixture
-def mock_all_subtasks(monkeypatch):
-    monkeypatch.setattr('be_bi_pyqt_project_manager.create_project.download_template', lambda *args, **kwargs: True)
-    monkeypatch.setattr('be_bi_pyqt_project_manager.create_project.create_directories', lambda *args, **kwargs: True)
-    monkeypatch.setattr('be_bi_pyqt_project_manager.create_project.apply_customizations', lambda *args, **kwargs: True)
-    monkeypatch.setattr('be_bi_pyqt_project_manager.create_project.generate_readme', lambda *args, **kwargs: True)
-    monkeypatch.setattr('be_bi_pyqt_project_manager.create_project.push_first_commit', lambda *args, **kwargs: True)
-    monkeypatch.setattr('be_bi_pyqt_project_manager.create_project.install_project', lambda *args, **kwargs: True)
-    yield
 
 
 def create_project_parameters(demo=True, name=None, desc=None, author=None, email=None, repo=None,
@@ -39,8 +20,6 @@ def create_project_parameters(demo=True, name=None, desc=None, author=None, emai
     return args
 
 
-
-
 def test_most_common_right_values(mock_all_subtasks):
     parameters = create_project_parameters(name="test-project", desc="A test project", author="Me", email="me@cern.ch",
                                            repo="ssh://git@gitlab.cern.ch:7999/user/project.git")
@@ -53,12 +32,14 @@ def test_name_valid(mock_all_subtasks):
                                            repo="ssh://git@gitlab.cern.ch:7999/user/project.git")
     create_project_module.create_project(parameters)
 
+
 def test_name_no_underscores(mock_all_subtasks):
     # Underscores not allowed
     with pytest.raises(ValueError):
         parameters = create_project_parameters(name="test_project", desc="A test project", author="Me",
                                                email="m@cern.ch", repo="ssh://git@gitlab.cern.ch:7999/user/project.git")
         create_project_module.create_project(parameters)
+
 
 def test_name_no_whitespace(mock_all_subtasks):
     # Whitespace not allowed
@@ -67,6 +48,7 @@ def test_name_no_whitespace(mock_all_subtasks):
                                                email="m@cern.ch", repo="ssh://git@gitlab.cern.ch:7999/user/project.git")
         create_project_module.create_project(parameters)
 
+
 def test_name_no_not_alphanumeric(mock_all_subtasks):
     # Non-alphanumeric not allowed
     with pytest.raises(ValueError):
@@ -74,12 +56,14 @@ def test_name_no_not_alphanumeric(mock_all_subtasks):
                                                email="m@cern.ch", repo="ssh://git@gitlab.cern.ch:7999/user/project.git")
         create_project_module.create_project(parameters)
 
+
 def test_name_no_uppercase(mock_all_subtasks):
     # Uppercase not allowed
     with pytest.raises(ValueError):
         parameters = create_project_parameters(name="TestProject", desc="A test project", author="Me",
                                                email="m@cern.ch", repo="ssh://git@gitlab.cern.ch:7999/user/project.git")
         create_project_module.create_project(parameters)
+
 
 def test_name_no_empty_string(monkeypatch, mock_all_subtasks):
     # Empty string not allowed - will treat as None and ask
@@ -89,6 +73,7 @@ def test_name_no_empty_string(monkeypatch, mock_all_subtasks):
                                                email="m@cern.ch",
                                                repo="ssh://git@gitlab.cern.ch:7999/user/project.git")
         create_project_module.create_project(parameters)
+
 
 def test_name_not_given(monkeypatch, mock_all_subtasks):
     # If not given as parameter will ask
@@ -172,12 +157,14 @@ def test_email_valid(mock_all_subtasks):
                                            repo="ssh://git@gitlab.cern.ch:7999/user/project.git")
     create_project_module.create_project(parameters)
 
+
 def test_email_cern_domain_required(mock_all_subtasks):
     # Domain name must be CERN domain
     with pytest.raises(ValueError):
         parameters = create_project_parameters(name="test-project", desc="A test", author="Me", email="me@email.com",
                                                repo="ssh://git@gitlab.cern.ch:7999/user/project.git")
         create_project_module.create_project(parameters)
+
 
 def test_email_local_part_is_required(monkeypatch, mock_all_subtasks):
     # Local part must be present
@@ -186,12 +173,14 @@ def test_email_local_part_is_required(monkeypatch, mock_all_subtasks):
                                                repo="ssh://git@gitlab.cern.ch:7999/user/project.git")
         create_project_module.create_project(parameters)
 
+
 def test_email_local_part_is_valid(monkeypatch, mock_all_subtasks):
     # Local part cannot contain any special char
     with pytest.raises(ValueError):
         parameters = create_project_parameters(name="test-project", desc="A test", author="Me", email="m^)df@cern.ch",
                                                repo="ssh://git@gitlab.cern.ch:7999/user/project.git")
         create_project_module.create_project(parameters)
+
 
 def test_email_no_empty_string(monkeypatch, mock_all_subtasks):
     # Empty string not allowed - will treat as None and ask
@@ -200,6 +189,7 @@ def test_email_no_empty_string(monkeypatch, mock_all_subtasks):
         parameters = create_project_parameters(name="test-project", desc="A test project", author="Me",
                                                email="", repo="ssh://git@gitlab.cern.ch:7999/user/project.git")
         create_project_module.create_project(parameters)
+
 
 def test_email_not_given(monkeypatch, mock_all_subtasks):
     # If not given as parameter will ask
@@ -225,6 +215,7 @@ def test_repo_https(mock_all_subtasks):
                                                repo="https://gitlab.cern.ch/project.git")
         create_project_module.create_project(parameters)
 
+
 def test_repo_ssh(mock_all_subtasks):
     # Right value
     parameters = create_project_parameters(name="test-project", desc="A test project", author="Me", email="me@cern.ch",
@@ -239,6 +230,7 @@ def test_repo_ssh(mock_all_subtasks):
         parameters = create_project_parameters(name="test-project", desc="A test", author="Me", email="me@cern.ch",
                                                repo="ssh://git@gitlab.cern.ch:7999/project.git")
         create_project_module.create_project(parameters)
+
 
 def test_repo_krb5(mock_all_subtasks):
     # Right value
@@ -255,11 +247,13 @@ def test_repo_krb5(mock_all_subtasks):
                                                repo="https://:@gitlab.cern.ch:8443/project.git")
         create_project_module.create_project(parameters)
 
+
 def test_repo_no_garbage_address(mock_all_subtasks):
     with pytest.raises(ValueError):
         parameters = create_project_parameters(name="test-project", desc="A test", author="Me", email="me@cern.ch",
                                                repo="https://gitlab.cern.ch.git")
         create_project_module.create_project(parameters)
+
 
 def test_repo_no_empty_string(monkeypatch, mock_all_subtasks):
     # Empty string not allowed - will treat as None and ask
@@ -269,6 +263,7 @@ def test_repo_no_empty_string(monkeypatch, mock_all_subtasks):
                                                email="me@cern.ch", repo="")
         create_project_module.create_project(parameters)
 
+
 def test_repo_not_given(monkeypatch, mock_all_subtasks):
     # If not given as parameter will ask
     monkeypatch.setattr('builtins.input', lambda _: 1/0)
@@ -276,6 +271,7 @@ def test_repo_not_given(monkeypatch, mock_all_subtasks):
         parameters = create_project_parameters(name="test-project", desc="A test project", author="Me",
                                                email="me@cern.ch")
         create_project_module.create_project(parameters)
+
 
 def test_repo_not_checked_if_gitlab_false(mock_all_subtasks):
     # If gitlab=False, repo is not needed
@@ -288,48 +284,47 @@ def test_repo_not_checked_if_gitlab_false(mock_all_subtasks):
     create_project_module.create_project(parameters)
 
 
-
-def test_download_repo_default_params(tmpdir):
+def test_check_path_is_available_no_dir(tmpdir):
     project_path = os.path.join(tmpdir, "test_project")
-    create_project_module.download_template(project_path, 'kerberos', get_demo=True, custom_path=None)
-    assert os.path.exists(project_path)
-    assert os.path.exists(os.path.join(project_path, "be_bi_pyqt_template"))
+    create_project_module.check_path_is_available(project_path)
+    assert not os.path.exists(project_path)
 
-def test_download_repo_folder_exists_ask(tmpdir, monkeypatch):
+
+def test_check_path_is_available_ask(tmpdir, monkeypatch):
     # Will ask whether to overwrite or not
     project_path = os.path.join(tmpdir, "test_project")
     os.mkdir(project_path)
     monkeypatch.setattr('builtins.input', lambda _: 1/0)
     with pytest.raises(ZeroDivisionError):
-        create_project_module.download_template(project_path, 'kerberos', get_demo=True, custom_path=None)
+        create_project_module.check_path_is_available(project_path)
 
-def test_download_repo_folder_exists_say_no(tmpdir, monkeypatch):
+
+def test_check_path_is_available_say_no(tmpdir, monkeypatch):
     # if is being said no, leave folder intact
     project_path = os.path.join(tmpdir, "test_project")
     os.mkdir(project_path)
     with open(os.path.join(project_path, "test_file"), "w") as testfile:
         testfile.write("Something")
     monkeypatch.setattr('builtins.input', lambda _: "no")
-    create_project_module.download_template(project_path, 'kerberos', get_demo=True, custom_path=None)
+    with pytest.raises(OSError):
+        create_project_module.check_path_is_available(project_path)
     assert os.path.isdir(project_path)
     assert not os.path.exists(os.path.join(project_path, "be_bi_pyqt_template"))
     assert os.path.exists(os.path.join(project_path, "test_file"))
     with open(os.path.join(project_path, "test_file"), "r") as testfile:
         assert testfile.read() == "Something"
 
-def test_download_repo_folder_exists_say_yes(tmpdir, monkeypatch):
-    # if is being said yes, overwrites
+
+def test_check_path_is_available_say_yes(tmpdir, monkeypatch):
+    # if is being said yes, remove folder
     project_path = os.path.join(tmpdir, "test_project")
     os.mkdir(project_path)
-    with open(os.path.join(project_path, "test_file"), "w") as testfile:
-        testfile.write("Something")
     monkeypatch.setattr('builtins.input', lambda _: "yes")
-    create_project_module.download_template(project_path, 'kerberos', get_demo=True, custom_path=None)
-    assert os.path.isdir(project_path)
-    assert os.path.isdir(os.path.join(project_path, "be_bi_pyqt_template"))
-    assert not os.path.exists(os.path.join(project_path, "test_file"))
+    create_project_module.check_path_is_available(project_path)
+    assert not os.path.isdir(project_path)
 
-def test_download_repo_custom_path(tmpdir, monkeypatch):
+
+def test_copy_folder_from_path_valid(tmpdir, monkeypatch):
     # Make template folder
     template_folder = os.path.join(tmpdir, "template_folder")
     os.mkdir(template_folder)
@@ -338,9 +333,9 @@ def test_download_repo_custom_path(tmpdir, monkeypatch):
         template.write("Something")
     with open(os.path.join(template_folder, ".hidden_file"), "w") as template:
         template.write("Something hidden")
-    # Ensure it's copied instead of cloning from Git
+    # Ensure it's copied
     project_path = os.path.join(tmpdir, "test_project")
-    create_project_module.download_template(project_path, 'kerberos', get_demo=True, custom_path=template_folder)
+    create_project_module.copy_folder_from_path(template_folder, project_path)
     assert os.path.isdir(project_path)
     assert os.path.exists(os.path.join(project_path, "inner_folder"))
     with open(os.path.join(project_path, "inner_folder", "template_file"), "r") as testfile:
@@ -348,3 +343,4 @@ def test_download_repo_custom_path(tmpdir, monkeypatch):
     with open(os.path.join(project_path, ".hidden_file"), "r") as testfile:
         assert testfile.read() == "Something hidden"
     assert not os.path.exists(os.path.join(project_path, "be_bi_pyqt_template"))
+
