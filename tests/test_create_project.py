@@ -186,18 +186,18 @@ def test_email_local_part_is_valid(monkeypatch, mock_all_subtasks):
 def test_email_no_empty_string(monkeypatch, mock_all_subtasks):
     # Empty string not allowed - will treat as None and ask
     monkeypatch.setattr('builtins.input', lambda _: 1/0)
+    parameters = create_project_parameters(name="test-project", desc="A test project", author="Me",
+                                           email="", repo="ssh://git@gitlab.cern.ch:7999/user/project.git")
     with pytest.raises(ZeroDivisionError):
-        parameters = create_project_parameters(name="test-project", desc="A test project", author="Me",
-                                               email="", repo="ssh://git@gitlab.cern.ch:7999/user/project.git")
         create_project_module.create_project(parameters)
 
 
 def test_email_not_given(monkeypatch, mock_all_subtasks):
     # If not given as parameter will ask
     monkeypatch.setattr('builtins.input', lambda _: 1/0)
+    parameters = create_project_parameters(name="test-project", desc="A test project", author="Me",
+                                           repo="ssh://git@gitlab.cern.ch:7999/user/project.git")
     with pytest.raises(ZeroDivisionError):
-        parameters = create_project_parameters(name="test-project", desc="A test project", author="Me",
-                                               repo="ssh://git@gitlab.cern.ch:7999/user/project.git")
         create_project_module.create_project(parameters)
 
 
@@ -211,9 +211,9 @@ def test_repo_https(mock_all_subtasks):
                                            repo="https://gitlab.cern.ch/group/subgroup/project.git")
     create_project_module.create_project(parameters)
     # Too short
+    parameters = create_project_parameters(name="test-project", desc="A test", author="Me", email="me@cern.ch",
+                                           repo="https://gitlab.cern.ch/project.git")
     with pytest.raises(ValueError):
-        parameters = create_project_parameters(name="test-project", desc="A test", author="Me", email="me@cern.ch",
-                                               repo="https://gitlab.cern.ch/project.git")
         create_project_module.create_project(parameters)
 
 
@@ -227,9 +227,9 @@ def test_repo_ssh(mock_all_subtasks):
                                            repo="ssh://git@gitlab.cern.ch:7999/group/subgroup/project.git")
     create_project_module.create_project(parameters)
     # Too short
+    parameters = create_project_parameters(name="test-project", desc="A test", author="Me", email="me@cern.ch",
+                                           repo="ssh://git@gitlab.cern.ch:7999/project.git")
     with pytest.raises(ValueError):
-        parameters = create_project_parameters(name="test-project", desc="A test", author="Me", email="me@cern.ch",
-                                               repo="ssh://git@gitlab.cern.ch:7999/project.git")
         create_project_module.create_project(parameters)
 
 
@@ -243,9 +243,9 @@ def test_repo_krb5(mock_all_subtasks):
                                            repo="https://:@gitlab.cern.ch:8443/group/subgroup/project.git")
     create_project_module.create_project(parameters)
     # Too short
+    parameters = create_project_parameters(name="test-project", desc="A test", author="Me", email="me@cern.ch",
+                                           repo="https://:@gitlab.cern.ch:8443/project.git")
     with pytest.raises(ValueError):
-        parameters = create_project_parameters(name="test-project", desc="A test", author="Me", email="me@cern.ch",
-                                               repo="https://:@gitlab.cern.ch:8443/project.git")
         create_project_module.create_project(parameters)
 
 
@@ -257,27 +257,27 @@ def test_repo_no_gitlab_interactive(mock_all_subtasks, monkeypatch):
 
 
 def test_repo_no_garbage_address(mock_all_subtasks):
+    parameters = create_project_parameters(name="test-project", desc="A test", author="Me", email="me@cern.ch",
+                                           repo="https://gitlab.cern.ch.git")
     with pytest.raises(ValueError):
-        parameters = create_project_parameters(name="test-project", desc="A test", author="Me", email="me@cern.ch",
-                                               repo="https://gitlab.cern.ch.git")
         create_project_module.create_project(parameters)
 
 
 def test_repo_no_empty_string(monkeypatch, mock_all_subtasks):
     # Empty string not allowed - will treat as None and ask
     monkeypatch.setattr('builtins.input', lambda _: 1/0)
+    parameters = create_project_parameters(name="test-project", desc="A test project", author="Me",
+                                           email="me@cern.ch", repo="")
     with pytest.raises(ZeroDivisionError):
-        parameters = create_project_parameters(name="test-project", desc="A test project", author="Me",
-                                               email="me@cern.ch", repo="")
         create_project_module.create_project(parameters)
 
 
 def test_repo_not_given(monkeypatch, mock_all_subtasks):
     # If not given as parameter will ask
     monkeypatch.setattr('builtins.input', lambda _: 1/0)
+    parameters = create_project_parameters(name="test-project", desc="A test project", author="Me",
+                                           email="me@cern.ch")
     with pytest.raises(ZeroDivisionError):
-        parameters = create_project_parameters(name="test-project", desc="A test project", author="Me",
-                                               email="me@cern.ch")
         create_project_module.create_project(parameters)
 
 
@@ -290,6 +290,31 @@ def test_repo_not_checked_if_gitlab_false(mock_all_subtasks):
     parameters = create_project_parameters(name="test-project", desc="A test project", author="Me",
                                            email="me@cern.ch", repo="T0t@l_g@rbage!!&$", gitlab=False)
     create_project_module.create_project(parameters)
+
+
+def test_no_demo_flag_passed(monkeypatch, mock_all_subtasks):
+    # If --no-demo is passed, the user is not asked anything
+    monkeypatch.setattr('builtins.input', lambda _: 1/0)
+    parameters = create_project_parameters(name="test-project", desc="A test project", author="Me",
+                                           email="me@cern.ch", gitlab=False, force_demo=False, demo=False)
+    create_project_module.create_project(parameters)
+
+
+def test_with_demo_flag_passed(monkeypatch, mock_all_subtasks):
+    # If --with-demo is passed, the user is not asked anything
+    monkeypatch.setattr('builtins.input', lambda _: 1/0)
+    parameters = create_project_parameters(name="test-project", desc="A test project", author="Me",
+                                           email="me@cern.ch", gitlab=False, force_demo=True, demo=True)
+    create_project_module.create_project(parameters)
+
+
+def test_demo_neither_flag_passed(monkeypatch, mock_all_subtasks):
+    # If no flag is passed, the user is asked what to do
+    monkeypatch.setattr('builtins.input', lambda _: 1 / 0)
+    parameters = create_project_parameters(name="test-project", desc="A test project", author="Me",
+                                           email="me@cern.ch", gitlab=False, force_demo=False, demo=True)
+    with pytest.raises(ZeroDivisionError):
+        create_project_module.create_project(parameters)
 
 
 def test_check_path_is_available_no_dir(tmpdir):

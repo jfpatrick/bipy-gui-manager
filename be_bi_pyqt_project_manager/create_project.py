@@ -135,12 +135,12 @@ def create_project(parameters):
             parameters.gitlab = False
 
     # Ask for the demo code
-    if parameters.force_demo:
+    if parameters.force_demo and parameters.demo:
         # --with-demo was passed
         parameters.demo = True
         cli.positive_feedback("Your project will contain a demo application.")
-    elif not parameters.demo:
-        # --no-demo was passed
+    elif not parameters.force_demo and not parameters.demo:
+        # only --no-demo was passed
         parameters.demo = True
         cli.positive_feedback("Your project will not contain the demo application.")
     elif not parameters.force_demo and parameters.demo:
