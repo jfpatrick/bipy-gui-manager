@@ -4,10 +4,11 @@ from argparse import Namespace
 import be_bi_pyqt_project_manager.create_project as create_project_module
 
 
-def create_project_parameters(demo=True, name=None, desc=None, author=None, email=None, repo=None,
+def create_project_parameters(demo=True, force_demo=True, name=None, desc=None, author=None, email=None, repo=None,
                               clone_protocol="https", gitlab=True, template_path=None):
     args = Namespace(
         demo=demo,
+        force_demo=force_demo,
         project_name=name,
         project_desc=desc,
         project_author=author,
@@ -246,6 +247,13 @@ def test_repo_krb5(mock_all_subtasks):
         parameters = create_project_parameters(name="test-project", desc="A test", author="Me", email="me@cern.ch",
                                                repo="https://:@gitlab.cern.ch:8443/project.git")
         create_project_module.create_project(parameters)
+
+
+def test_repo_no_gitlab_interactive(mock_all_subtasks, monkeypatch):
+    # Replying 'no-gitlab' in the CLI is allowed
+    monkeypatch.setattr('builtins.input', lambda _: 'no-gitlab')
+    parameters = create_project_parameters(name="test-project", desc="A test", author="Me", email="me@cern.ch")
+    create_project_module.create_project(parameters)
 
 
 def test_repo_no_garbage_address(mock_all_subtasks):

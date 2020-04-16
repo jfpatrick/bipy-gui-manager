@@ -134,6 +134,32 @@ def create_project(parameters):
             gitlab_repo = None
             parameters.gitlab = False
 
+    # Ask for the demo code
+    if parameters.force_demo:
+        # --with-demo was passed
+        parameters.demo = True
+        cli.positive_feedback("Your project will contain a demo application.")
+    elif not parameters.demo:
+        # --no-demo was passed
+        parameters.demo = True
+        cli.positive_feedback("Your project will not contain the demo application.")
+    elif not parameters.force_demo and parameters.demo:
+        # Neither --with-demo nor --no-demo were passed
+        value = cli.ask_input("Do you want to install a demo application within your project? (yes/no)")
+        while True:
+            if value == "n" or value == "no":
+                parameters.demo = False
+                cli.positive_feedback("Your project will not contain the demo application.")
+                break
+            elif value == "y" or value == "yes":
+                parameters.demo = True
+                cli.positive_feedback("Your project will contain a demo application.")
+                break
+            else:
+                value = cli.handle_failure("Please type yes or no:")
+
+
+
     cli.draw_line()
     print("\n  Installation:\n")
     project_path = os.path.join(os.getcwd(), project_name)

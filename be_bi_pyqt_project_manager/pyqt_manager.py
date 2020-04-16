@@ -15,8 +15,13 @@ def main():
                                                help='Start a wizard that guides you through the setup of a new PyQt '
                                                     'project.')
     new_project_parser.set_defaults(func=create_project)
-    new_project_parser.add_argument('--no-demo', dest='demo', action='store_false',
-                                    help="Install the template without demo application")
+    demo_commands = new_project_parser.add_mutually_exclusive_group()
+    demo_commands.add_argument('--no-demo', dest='demo', action='store_false',
+                               help="Install the template without demo application without asking the user "
+                                    "(the default behavior is to ask the user interactively)")
+    demo_commands.add_argument('--with-demo', dest='force_demo', action='store_true',
+                               help="Install the template with the demo application without asking the user "
+                                    "(the default behavior is to ask the user interactively)")
     new_project_parser.add_argument('--name', dest='project_name', default="",
                                     help="Sets the project name.")
     new_project_parser.add_argument('--desc', dest='project_desc', default="",
