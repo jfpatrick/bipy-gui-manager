@@ -42,8 +42,37 @@ def validate_as_arg_or_ask(cli_value, validator, question, neg_feedback, pos_fee
         return validate_or_ask(validator, question, neg_feedback, pos_feedback=pos_feedback, hints=hints)
 
 
-def invoke_git(parameters=(), cwd=os.getcwd(), allow_retry=False, neg_feedback="An error occurred in Git!",
-               hints_on_failure=()):
+def validate_demo_flags(force_demo: bool, demo: bool) -> bool:
+    """
+    Checks which combination of values are contained in the parameters and returns the correct value
+    for parameters.demo, eventually asking the user if necessary
+    :param force_demo: whether the --with-demo flag was passed
+    :param demo: opposite of whether the --no-demo flag was passed
+    :return: True if demo should be included, False otherwise
+    """
+    if force_demo and demo:
+        # --with-demo was passed
+        cli.positive_feedback("Your project will contain a demo application.")
+        return True
+    elif not force_demo and not demo:
+        # only --no-demo was passed
+        cli.positive_feedback("Your project will not contain the demo application.")
+        return False
+    elif not force_demo and demo:
+        # Neither --with-demo nor --no-demo were passed
+        value = cli.ask_input("Do you want to install a demo application within your project? (yes/no)")
+        while True:
+            if value == "n" or value == "no":
+                cli.positive_feedback("Your project will not contain the demo application.")
+                return False
+            elif value == "y" or value == "yes":
+                cli.positive_feedback("Your project will contain a demo application.")
+                return True
+            else:
+                value = cli.handle_failure("Please type yes or no:")
+
+
+def invoke_git(parameters=(), cwd=os.getcwd(), allow_retry=False, neg_feedback="An error occurred in Git!"):
     """
     Perform a syscall to the local Git executable
     :param parameters: parameters to pass to Git, as an array
@@ -63,8 +92,6 @@ def invoke_git(parameters=(), cwd=os.getcwd(), allow_retry=False, neg_feedback="
             return
         else:
             cli.negative_feedback(stderr.decode('utf-8'))
-            for hint in hints_on_failure:
-                cli.give_hint(hint)
 
             if not allow_retry:
                 raise OSError(neg_feedback)
@@ -134,31 +161,7 @@ def create_project(parameters):
             gitlab_repo = None
             parameters.gitlab = False
 
-    # Ask for the demo code
-    if parameters.force_demo and parameters.demo:
-        # --with-demo was passed
-        parameters.demo = True
-        cli.positive_feedback("Your project will contain a demo application.")
-    elif not parameters.force_demo and not parameters.demo:
-        # only --no-demo was passed
-        parameters.demo = True
-        cli.positive_feedback("Your project will not contain the demo application.")
-    elif not parameters.force_demo and parameters.demo:
-        # Neither --with-demo nor --no-demo were passed
-        value = cli.ask_input("Do you want to install a demo application within your project? (yes/no)")
-        while True:
-            if value == "n" or value == "no":
-                parameters.demo = False
-                cli.positive_feedback("Your project will not contain the demo application.")
-                break
-            elif value == "y" or value == "yes":
-                parameters.demo = True
-                cli.positive_feedback("Your project will contain a demo application.")
-                break
-            else:
-                value = cli.handle_failure("Please type yes or no:")
-
-
+    parameters.demo = validate_demo_flags(parameters.force_demo, parameters.demo)
 
     cli.draw_line()
     print("\n  Installation:\n")
