@@ -300,12 +300,12 @@ def test_check_path_is_available_ask(tmpdir, monkeypatch):
 
 
 def test_check_path_is_available_say_no(tmpdir, monkeypatch):
-    # if is being said no, leave folder intact
     project_path = os.path.join(tmpdir, "test_project")
     os.mkdir(project_path)
     with open(os.path.join(project_path, "test_file"), "w") as testfile:
         testfile.write("Something")
     monkeypatch.setattr('builtins.input', lambda _: "no")
+    # if is being said no, leave folder intact and exit with OSError
     with pytest.raises(OSError):
         create_project_module.check_path_is_available(project_path)
     assert os.path.isdir(project_path)
@@ -316,10 +316,10 @@ def test_check_path_is_available_say_no(tmpdir, monkeypatch):
 
 
 def test_check_path_is_available_say_yes(tmpdir, monkeypatch):
-    # if is being said yes, remove folder
     project_path = os.path.join(tmpdir, "test_project")
     os.mkdir(project_path)
     monkeypatch.setattr('builtins.input', lambda _: "yes")
+    # if is being said yes, remove folder
     create_project_module.check_path_is_available(project_path)
     assert not os.path.isdir(project_path)
 
@@ -344,3 +344,10 @@ def test_copy_folder_from_path_valid(tmpdir, monkeypatch):
         assert testfile.read() == "Something hidden"
     assert not os.path.exists(os.path.join(project_path, "be_bi_pyqt_template"))
 
+
+def test_copy_folder_from_path_wrong_template_path(tmpdir, monkeypatch):
+    # Ensure an error is raised
+    project_path = os.path.join(tmpdir, "test_project")
+    with pytest.raises(OSError):
+        create_project_module.copy_folder_from_path(os.path.join(tmpdir, "wrong_folder"), project_path)
+    assert not os.path.isdir(project_path)
