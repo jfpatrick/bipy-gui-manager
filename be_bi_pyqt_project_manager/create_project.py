@@ -182,7 +182,7 @@ def create_project(parameters):
         apply_customizations(project_path, project_name, project_desc, project_author, author_email)
 
         cli.positive_feedback("Preparing README")
-        generate_readme(project_path, project_name, project_desc, project_author, author_email)
+        generate_readme(project_path, project_name, project_desc, project_author, author_email, gitlab_repo)
         cli.give_hint("check the README for typos and complete it with a more in-depth description of your project.")
 
         cli.positive_feedback("Setting up local Git repository")
@@ -311,7 +311,7 @@ def apply_customizations(project_path: str, project_name: str, project_desc: str
 
 
 def generate_readme(project_path: str, project_name: str, project_desc: str, project_author: str,
-                    project_email: str) -> None:
+                    project_email: str, gitlab_repo: str) -> None:
     """
     Generate a README with the invariant informations, like how to install, run tests, debug, etc...
     :param project_path: path to the project folder
@@ -319,6 +319,7 @@ def generate_readme(project_path: str, project_name: str, project_desc: str, pro
     :param project_desc: description of the project
     :param project_author: name of the project's author
     :param project_email: email of the project's author, or support email
+    :param gitlab_repo: the project's GitLab repo, if given
     """
     project_name_capitals = project_name.replace("-", " ").title()
     try:
@@ -332,6 +333,9 @@ def generate_readme(project_path: str, project_name: str, project_desc: str, pro
         s = s.replace("_Here goes the project description_", project_desc)
         s = s.replace("the project author", project_author)
         s = s.replace("author@cern.ch", project_email)
+        if not gitlab_repo:
+            gitlab_repo = "<the project's GitLab repo URL>.git"
+        s = s.replace("https://:@gitlab.cern.ch:8443/cern-username/project-name.git", gitlab_repo)
         with open(readme, "w") as f:
             f.write(s)
 
