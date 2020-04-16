@@ -30,7 +30,7 @@ REQUIREMENTS: dict = {
 
 setup(
     name='be-bi-pyqt-project-manager',
-    version="0.0.1.dev3",
+    version="0.0.1.dev4",
 
     author="Sara Zanzottera",
     author_email="sara.zanzottera@cern.ch",
@@ -57,6 +57,7 @@ setup(
         # The 'all' extra is the union of all requirements.
         'all': [req for reqs in REQUIREMENTS.values() for req in reqs],
     },
+    include_package_data=True,  # For 'install-project.sh'
     entry_points={
         'console_scripts': [
             'pyqt-manager=be_bi_pyqt_project_manager.pyqt_manager:main',
