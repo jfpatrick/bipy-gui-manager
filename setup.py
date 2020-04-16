@@ -30,7 +30,7 @@ REQUIREMENTS: dict = {
 
 setup(
     name='be-bi-pyqt-project-manager',
-    version="0.0.1.dev4",
+    version="0.0.1.dev5",
 
     author="Sara Zanzottera",
     author_email="sara.zanzottera@cern.ch",
