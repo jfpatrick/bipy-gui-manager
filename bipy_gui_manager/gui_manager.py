@@ -1,10 +1,10 @@
 import sys
 import argparse
 
-from be_bi_pyqt_project_manager.create_project import create_project
-from be_bi_pyqt_project_manager.self_update import self_update
-from be_bi_pyqt_project_manager.configure import configure
-from be_bi_pyqt_project_manager.entry_points import entry_points
+from bipy_gui_manager.create_project import create_project
+from bipy_gui_manager.self_update import self_update
+from bipy_gui_manager.configure import configure
+from bipy_gui_manager.entry_points import entry_points
 
 
 def main():

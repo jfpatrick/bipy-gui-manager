@@ -1,5 +1,5 @@
 """
-setup.py for be-bi-pyqt-project-manager.
+setup.py for bipy_gui_manager.
 
 For reference see
 https://packaging.python.org/guides/distributing-packages-using-setuptools/
@@ -29,12 +29,12 @@ REQUIREMENTS: dict = {
 }
 
 setup(
-    name='be-bi-pyqt-project-manager',
+    name='bipy_gui_manager',
     version="0.0.1.dev5",
 
     author="Sara Zanzottera",
     author_email="sara.zanzottera@cern.ch",
-    description="Project Manager for BE-BI PyQt5 applications",
+    description="Project Manager for BE-BI Python GUIs",
     long_description=LONG_DESCRIPTION,
     long_description_content_type='text/markdown',
     url='',
@@ -60,7 +60,7 @@ setup(
     include_package_data=True,  # For 'install-project.sh'
     entry_points={
         'console_scripts': [
-            'pyqt-manager=be_bi_pyqt_project_manager.pyqt_manager:main',
+            'bipy-gui-manager=bipy_gui_manager.gui_manager:main',
         ],
     },
 )

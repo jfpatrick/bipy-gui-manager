@@ -3,7 +3,7 @@ import os
 import shutil
 from subprocess import Popen, PIPE
 
-from be_bi_pyqt_project_manager import cli_utils as cli
+from bipy_gui_manager import cli_utils as cli
 
 
 def validate_or_fail(value, validator, feedback):
@@ -243,11 +243,11 @@ def download_template(project_path: str, clone_protocol: str, get_demo: bool) ->
     :param get_demo: Clone the template with the demo application or without.
     """
     if clone_protocol == 'https':
-        template_url = 'https://gitlab.cern.ch/szanzott/be-bi-pyqt-template.git'
+        template_url = 'https://gitlab.cern.ch/bisw-python/be-bi-pyqt-template.git'
     elif clone_protocol == 'kerberos':
-        template_url = 'https://:@gitlab.cern.ch:8443/szanzott/be-bi-pyqt-template.git'
+        template_url = 'https://:@gitlab.cern.ch:8443/bisw-python/be-bi-pyqt-template.git'
     elif clone_protocol == 'ssh':
-        template_url = 'ssh://git@gitlab.cern.ch:7999/szanzott/be-bi-pyqt-template.git'
+        template_url = 'ssh://git@gitlab.cern.ch:7999/bisw-python/be-bi-pyqt-template.git'
     else:
         raise ValueError("Clone protocol not recognized: {}".format(clone_protocol))
 
@@ -366,7 +366,7 @@ def init_local_repo(project_path: str) -> None:
     )
     invoke_git(
         parameters=['commit', '-m', 'Initial commit ' +
-                    '(from pyqt-manager https://gitlab.cern.ch/szanzott/be-bi-pyqt-project-manager )'],
+                    '(from pyqt-manager https://gitlab.cern.ch/bisw-python/bipy_gui_manager )'],
         cwd=project_path,
         allow_retry=False,
         neg_feedback="Failed to commit the template."

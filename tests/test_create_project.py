@@ -1,7 +1,7 @@
 import os
 import pytest
 from argparse import Namespace
-import be_bi_pyqt_project_manager.create_project as create_project_module
+import bipy_gui_manager.create_project as create_project_module
 
 from .conftest import create_template_files
 
