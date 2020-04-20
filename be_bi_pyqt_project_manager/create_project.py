@@ -349,7 +349,9 @@ def init_local_repo(project_path: str) -> None:
     Initialize the project's git repo.
     :param project_path: Path to the project root
     """
-    shutil.rmtree("{}/.git".format(project_path))
+    # In most cases, the failure is due to .git not existing.
+    # In any case, if the failure is due to something else, most likely git will fail right after.
+    shutil.rmtree("{}/.git".format(project_path), ignore_errors=True)
     invoke_git(
         parameters=['init'],
         cwd=project_path,
