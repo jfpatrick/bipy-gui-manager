@@ -286,7 +286,7 @@ def apply_customizations(project_path: str, project_name: str, project_desc: str
             for filename in files:
                 filepath = os.path.join(rootdir, filename)
                 # Filtering to avoid binary files
-                if filename.split(".")[-1] in ["py", "md", "ui", "qrc", "yml", "gitignore", "sh"]:
+                if filename.split(".")[-1] in ["py", "md", "ui", "qrc", "yml", "gitignore", "sh", "in"]:
                     with open(filepath, 'r') as f:
                         s = f.read()
                     s = s.replace("be-bi-pyqt-template", project_name)
@@ -328,14 +328,14 @@ def generate_readme(project_path: str, project_name: str, project_desc: str, pro
         readme = os.path.join(project_path, "README.md")
         with open(readme) as f:
             s = f.read()
+        if not gitlab_repo:
+            gitlab_repo = "<the project's GitLab repo URL>.git"
+        s = s.replace("https://:@gitlab.cern.ch:8443/cern-username/project-name.git", gitlab_repo)
         s = s.replace("project-name", project_name)
         s = s.replace("Project Name", project_name_capitals)
         s = s.replace("_Here goes the project description_", project_desc)
         s = s.replace("the project author", project_author)
         s = s.replace("author@cern.ch", project_email)
-        if not gitlab_repo:
-            gitlab_repo = "<the project's GitLab repo URL>.git"
-        s = s.replace("https://:@gitlab.cern.ch:8443/cern-username/project-name.git", gitlab_repo)
         with open(readme, "w") as f:
             f.write(s)
 
