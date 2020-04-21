@@ -1,15 +1,27 @@
 import re
 import os
+import sys
 import shutil
+import signal
 from subprocess import Popen, PIPE
 
 from bipy_gui_manager import cli_utils as cli
 
 
+# Gracefully handle Ctrl+C and other kill signals
+def kill_handler(signum, frame):
+    cli.negative_feedback("Exiting on user's request.")
+    sys.exit(0)
+signal.signal(signal.SIGINT, kill_handler)
+
+
 def validate_or_fail(value, validator, feedback):
     """ Either return the value if valid, or throw ValueError """
-    if validator(value):
-        return value
+    try:
+        if validator(value):
+            return value
+    except Exception as e:
+        raise ValueError("Unexpected validation exception: {}".format(e))
     raise ValueError(feedback)
 
 
@@ -27,13 +39,16 @@ def validate_or_ask(validator, question, neg_feedback, start_value="", pos_feedb
     return value
 
 
-def validate_as_arg_or_ask(cli_value, validator, question, neg_feedback, pos_feedback=None, hints=()):
+def validate_as_arg_or_ask(cli_value, validator, question, neg_feedback, pos_feedback=None, hints=(), interactive=True):
     """
         If an initial value is given and valid, return it.
         If an initial value is given and invalid, fail.
         If it's not given, ask the user until a valid value is received.
+        if interactive is False, fail rather than asking.
     """
-    if cli_value and cli_value != "":
+    if not interactive and cli_value is None:
+        ValueError(neg_feedback)
+    if (cli_value and cli_value != "") or not interactive:
         result = validate_or_fail(cli_value, validator, neg_feedback)
         if pos_feedback:
             cli.positive_feedback(pos_feedback.format(result))
@@ -42,7 +57,7 @@ def validate_as_arg_or_ask(cli_value, validator, question, neg_feedback, pos_fee
         return validate_or_ask(validator, question, neg_feedback, pos_feedback=pos_feedback, hints=hints)
 
 
-def validate_demo_flags(force_demo: bool, demo: bool) -> bool:
+def validate_demo_flags(force_demo: bool, demo: bool, interactive: bool) -> bool:
     """
     Checks which combination of values are contained in the parameters and returns the correct value
     for parameters.demo, eventually asking the user if necessary
@@ -58,8 +73,12 @@ def validate_demo_flags(force_demo: bool, demo: bool) -> bool:
         # only --no-demo was passed
         cli.positive_feedback("Your project will not contain the demo application.")
         return False
-    elif not force_demo and demo:
-        # Neither --with-demo nor --no-demo were passed
+    elif not force_demo and demo and not interactive:
+        # Neither --with-demo nor --no-demo were passed, but --not-interactive was specified: default to yes
+        cli.positive_feedback("Your project will contain a demo application.")
+        return True
+    elif not force_demo and demo :
+        # Neither --with-demo nor --no-demo were passed, but --not-interactive was specified
         value = cli.ask_input("Do you want to install a demo application within your project? (yes/no)")
         while True:
             if value == "n" or value == "no":
@@ -102,81 +121,28 @@ def invoke_git(parameters=(), cwd=os.getcwd(), allow_retry=False, neg_feedback="
 
 
 def create_project(parameters):
-
-    cli.draw_line()
-    print("\n  Welcome to BI's PyQt5 Project Setup Wizard!")
-    cli.draw_line()
-    print("\n  Setup:\n")
-
-    project_name_validator = re.compile("^[a-z0-9-]+$")
-    author_email_validator = re.compile("[a-zA-Z0-9._%+-]+@cern.ch")  # TODO support email lists!
-    repo_validator_ssh = re.compile("^ssh://git@gitlab.cern.ch:7999/[a-zA-Z0-9_%-]+/[a-zA-Z0-9_%/-]+.git$")
-    repo_validator_https = re.compile("^https://gitlab.cern.ch/[a-zA-Z0-9_%-]+/[a-zA-Z0-9_%/-]+.git$")
-    repo_validator_kerb = re.compile("^https://:@gitlab.cern.ch:8443/[a-zA-Z0-9_%-]+/[a-zA-Z0-9_%/-]+.git$")
-
-    project_name = validate_as_arg_or_ask(
-        cli_value=parameters.project_name,
-        validator=lambda v: project_name_validator.match(v),
-        question="Please enter your \033[0;32mproject's name\033[0;m:",
-        neg_feedback="The project name can contain only lowercase letters, numbers and dashes.",
-        pos_feedback="The project name is set to: {}"
-    )
-    project_desc = validate_as_arg_or_ask(
-        cli_value=parameters.project_desc,
-        validator=lambda v: v != "" and "\"" not in v,
-        question="Please enter a \033[0;32mone-line description\033[0;m of your project:",
-        neg_feedback="The project description cannot contain the character \".",
-        pos_feedback="The project description is set to: {}"
-    )
-    project_author = validate_as_arg_or_ask(
-        cli_value=parameters.project_author,
-        validator=lambda v: v != "" and "\"" not in v,
-        question="Please enter the project's \033[0;32mauthor name\033[0;m:",
-        neg_feedback="The author name cannot contain the character \".",
-        pos_feedback="The project author name is set to: {}"
-    )
-    author_email = validate_as_arg_or_ask(
-        cli_value=parameters.author_email,
-        validator=lambda v: author_email_validator.match(v),
-        question="Please enter the author's \033[0;32mCERN email address\033[0;m:",
-        neg_feedback="Invalid CERN email.",
-        pos_feedback="The project author's email name is set to: {}"
-    )
-
-    gitlab_repo = None
-    if parameters.gitlab:
-        gitlab_repo = validate_as_arg_or_ask(
-            cli_value=parameters.gitlab_repo,
-            validator=lambda v: (v == "no-gitlab" or
-                                 repo_validator_https.match(v) or
-                                 repo_validator_ssh.match(v) or
-                                 repo_validator_kerb.match(v)),
-            question="Please create a new project on GitLab and paste here the \033[0;32m repository URL\033[0;m "
-                     "(or type 'no-gitlab' to skip this step):",
-            neg_feedback="Invalid GitLab repository URL.",
-            pos_feedback="The project GitLab repository address is set to: {}",
-            hints=("copy the address from the Clone button, choosing the protocol you prefer (HTTPS, SSH, KRB5)", )
-        )
-        if gitlab_repo == 'no-gitlab':
-            gitlab_repo = None
-            parameters.gitlab = False
-
-    parameters.demo = validate_demo_flags(parameters.force_demo, parameters.demo)
-
-    cli.draw_line()
-    print("\n  Installation:\n")
-    project_path = os.path.join(os.getcwd(), project_name)
-
     try:
+        cli.draw_line()
+        print("\n  Welcome to BI's PyQt5 Project Setup Wizard!")
+        cli.draw_line()
+        print("\n  Setup:\n")
+
+        project_name, project_desc, project_author, author_email, base_path, gitlab_repo, parameters = \
+            gather_setup_information(parameters)
+
+        cli.draw_line()
+        print("\n  Installation:\n")
+        project_path = os.path.join(base_path, project_name)
+
         cli.positive_feedback("Checking target path")
-        check_path_is_available(project_path)
+        check_path_is_available(project_path, parameters.interactive, parameters.overwrite)
 
         if parameters.template_path:
             cli.positive_feedback("Copying the template from {}".format(parameters.template_path))
             copy_folder_from_path(parameters.template_path, project_path)
         else:
             cli.positive_feedback("Downloading the template from GitLab")
-            download_template(project_path, parameters.clone_protocol, parameters.demo)
+            download_template(project_path, parameters.clone_protocol, parameters.demo, parameters.interactive)
 
         cli.positive_feedback("Applying customizations")
         apply_customizations(project_path, project_name, project_desc, project_author, author_email)
@@ -211,18 +177,101 @@ def create_project(parameters):
         cli.draw_line()
 
 
-def check_path_is_available(project_path: str) -> None:
+def gather_setup_information(parameters):
+    project_name_validator = re.compile("^[a-z0-9-]+$")
+    author_email_validator = re.compile("[a-zA-Z0-9._%+-]+@cern.ch")  # TODO support email lists!
+    repo_validator_ssh = re.compile("^ssh://git@gitlab.cern.ch:7999/[a-zA-Z0-9_%-]+/[a-zA-Z0-9_%/-]+.git$")
+    repo_validator_https = re.compile("^https://gitlab.cern.ch/[a-zA-Z0-9_%-]+/[a-zA-Z0-9_%/-]+.git$")
+    repo_validator_kerb = re.compile("^https://:@gitlab.cern.ch:8443/[a-zA-Z0-9_%-]+/[a-zA-Z0-9_%/-]+.git$")
+
+    project_name = validate_as_arg_or_ask(
+        cli_value=parameters.project_name,
+        validator=lambda v: project_name_validator.match(v),
+        question="Please enter your \033[0;32mproject's name\033[0;m:",
+        neg_feedback="The project name can contain only lowercase letters, numbers and dashes.",
+        pos_feedback="The project name is set to: {}",
+        interactive=parameters.interactive
+    )
+    project_desc = validate_as_arg_or_ask(
+        cli_value=parameters.project_desc,
+        validator=lambda v: v != "" and "\"" not in v,
+        question="Please enter a \033[0;32mone-line description\033[0;m of your project:",
+        neg_feedback="The project description cannot contain the character \".",
+        pos_feedback="The project description is set to: {}",
+        interactive=parameters.interactive
+    )
+    project_author = validate_as_arg_or_ask(
+        cli_value=parameters.project_author,
+        validator=lambda v: v != "" and "\"" not in v,
+        question="Please enter the project's \033[0;32mauthor name\033[0;m:",
+        neg_feedback="The author name cannot contain the character \".",
+        pos_feedback="The project author name is set to: {}",
+        interactive=parameters.interactive
+    )
+    author_email = validate_as_arg_or_ask(
+        cli_value=parameters.author_email,
+        validator=lambda v: author_email_validator.match(v),
+        question="Please enter the author's \033[0;32mCERN email address\033[0;m:",
+        neg_feedback="Invalid CERN email.",
+        pos_feedback="The project author's email name is set to: {}",
+        interactive=parameters.interactive
+    )
+
+    base_path = validate_as_arg_or_ask(
+        cli_value=parameters.project_path,
+        validator=lambda v: (v == "." or os.path.isdir(v)),
+        question="Please type the path where to create the new project, or type '.' to create it in the "
+                 "current directory ({}):".format(os.getcwd()),
+        neg_feedback="Please provide an existing folder.",
+        pos_feedback="The project will be created under {}".format(os.path.join("{}", project_name)),
+        interactive=parameters.interactive
+    )
+    if base_path == '.':
+        base_path = os.getcwd()
+
+    gitlab_repo = None
+    if parameters.gitlab:
+        gitlab_repo = validate_as_arg_or_ask(
+            cli_value=parameters.gitlab_repo,
+            validator=lambda v: (v == "no-gitlab" or
+                                 repo_validator_https.match(v) or
+                                 repo_validator_ssh.match(v) or
+                                 repo_validator_kerb.match(v)),
+            question="Please create a new project on GitLab and paste here the \033[0;32m repository URL\033[0;m "
+                     "(or type 'no-gitlab' to skip this step):",
+            neg_feedback="Invalid GitLab repository URL.",
+            pos_feedback="The project GitLab repository address is set to: {}",
+            hints=("copy the address from the Clone button, choosing the protocol you prefer (HTTPS, SSH, KRB5)", ),
+            interactive=parameters.interactive
+        )
+        if gitlab_repo == 'no-gitlab':
+            gitlab_repo = None
+            parameters.gitlab = False
+
+    parameters.demo = validate_demo_flags(parameters.force_demo, parameters.demo, parameters.interactive)
+
+    return project_name, project_desc, project_author, author_email, base_path, gitlab_repo, parameters
+
+
+def check_path_is_available(project_path: str, interactive: bool = True, overwrite: bool = False) -> None:
     """
     Makes sure there is no folder with the name of the new project and if so ask the user and act accordingly.
     :param project_path: path to the new project
+    :param interactive: whether the use should be asked what to do if the path exist
+    :param overwrite: whether to automatically overwrite the existing folder
     """
     if os.path.exists(project_path):
-        answer = cli.handle_failure("A folder called '{}' already exists. ".format(project_path) +
-                                    "Do you want to overwrite it? (yes/no)")
-        if answer == "yes" or answer == "y":
+        if overwrite:
             shutil.rmtree(project_path)
-        elif answer == "no" or answer == "n":
+        elif not interactive:
             raise OSError("Directory '{}' already exists.".format(project_path))
+        else:
+            answer = cli.handle_failure("A folder called '{}' already exists. ".format(project_path) +
+                                        "Do you want to overwrite it? (yes/no)")
+            if answer == "yes" or answer == "y":
+                shutil.rmtree(project_path)
+            elif answer == "no" or answer == "n":
+                raise OSError("Directory '{}' already exists.".format(project_path))
 
 
 def copy_folder_from_path(source_path: str, dest_path: str) -> None:
@@ -235,7 +284,7 @@ def copy_folder_from_path(source_path: str, dest_path: str) -> None:
     shutil.move(source_path, os.path.join(os.path.dirname(source_path), os.path.basename(dest_path)))
 
 
-def download_template(project_path: str, clone_protocol: str, get_demo: bool) -> None:
+def download_template(project_path: str, clone_protocol: str, get_demo: bool, interactive: bool = True) -> None:
     """
     Downloads the template code from its GitLab repository
     :param project_path: Where to clone the template (folder must not exists)
@@ -259,7 +308,7 @@ def download_template(project_path: str, clone_protocol: str, get_demo: bool) ->
     invoke_git(
         parameters=git_command,
         cwd=os.getcwd(),
-        allow_retry=True,
+        allow_retry=interactive,
         neg_feedback="Failed to clone the template!"
     )
 

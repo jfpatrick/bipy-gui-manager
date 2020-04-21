@@ -15,13 +15,9 @@ def main():
                                                help='Start a wizard that guides you through the setup of a new PyQt '
                                                     'project.')
     new_project_parser.set_defaults(func=create_project)
-    demo_commands = new_project_parser.add_mutually_exclusive_group()
-    demo_commands.add_argument('--no-demo', dest='demo', action='store_false',
-                               help="Install the template without demo application without asking the user "
-                                    "(the default behavior is to ask the user interactively)")
-    demo_commands.add_argument('--with-demo', dest='force_demo', action='store_true',
-                               help="Install the template with the demo application without asking the user "
-                                    "(the default behavior is to ask the user interactively)")
+    new_project_parser.add_argument('--path', dest='project_path', default=".",
+                                    help="Specify the path to the new project. "
+                                         "If not set, uses the current working directory.")
     new_project_parser.add_argument('--name', dest='project_name', default="",
                                     help="Sets the project name.")
     new_project_parser.add_argument('--desc', dest='project_desc', default="",
@@ -37,6 +33,23 @@ def main():
     new_project_parser.add_argument('--clone-protocol', dest='clone_protocol', default="kerberos",
                                     choices=('kerberos', 'ssh', 'https'),
                                     help="Protocol to use to clone the template from GitLab")
+    demo_commands = new_project_parser.add_mutually_exclusive_group()
+    demo_commands.add_argument('--no-demo', dest='demo', action='store_false',
+                               help="Install the template without demo application without asking the user "
+                                    "(the default behavior is to ask the user interactively, "
+                                    "or to install the demo in case --not-interactive is passed)")
+    demo_commands.add_argument('--with-demo', dest='force_demo', action='store_true',
+                               help="Install the template with the demo application without asking the user "
+                                    "(the default behavior is to ask the user interactively, "
+                                    "or to install the demo in case --not-interactive is passed)")
+    new_project_parser.add_argument('--not-interactive', dest='interactive', action='store_false',
+                                    help="Prevents the script from asking the user, interactively, for missing "
+                                         "information. If any of the flags --name, --desc, --author, --email is "
+                                         "not specified, the script will fail.")
+    new_project_parser.add_argument('--overwrite-project', dest='overwrite', action='store_true',
+                                    help="[DEBUG] Overwrites a potentially existing project with the same name without "
+                                         "asking the user. This prevents --not-interactive from failing if the "
+                                         "project exists, but MIGHT CAUSE DATA LOSS!")
     new_project_parser.add_argument('--template-path', dest='template_path',
                                     help="[DEBUG] Copy the template from a custom location on the filesystem. "
                                          "NOTE: further customizations might break if the template does not correspond "
@@ -56,7 +69,3 @@ def main():
 
     args = parser.parse_args(args=None if sys.argv[1:] else ['--help'])
     args.func(args)  # Necessary for the subparsers
-
-
-if __name__ == '__main__':
-    main()
