@@ -433,6 +433,25 @@ def test_check_path_is_available_say_yes(tmpdir, monkeypatch):
     assert not os.path.isdir(project_path)
 
 
+def test_check_path_is_available_not_interactive_passed(tmpdir, monkeypatch):
+    project_path = os.path.join(tmpdir, "test_project")
+    os.mkdir(project_path)
+    monkeypatch.setattr('builtins.input', lambda _: 1/0)
+    # Should not ask, directly fail
+    with pytest.raises(OSError):
+        create_project_module.check_path_is_available(project_path, interactive=False)
+    assert os.path.isdir(project_path)
+
+
+def test_check_path_is_available_overwrite_passed(tmpdir, monkeypatch):
+    project_path = os.path.join(tmpdir, "test_project")
+    os.mkdir(project_path)
+    monkeypatch.setattr('builtins.input', lambda _: 1/0)
+    # Should not ask, directly overwrite
+    create_project_module.check_path_is_available(project_path, overwrite=True)
+    assert not os.path.isdir(project_path)
+
+
 def test_copy_folder_from_path_valid(tmpdir, monkeypatch):
     # Make template folder
     template_folder = os.path.join(tmpdir, "template-folder")
