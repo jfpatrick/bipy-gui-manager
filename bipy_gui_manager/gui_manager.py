@@ -15,7 +15,7 @@ def main():
                                                help='Start a wizard that guides you through the setup of a new PyQt '
                                                     'project.')
     new_project_parser.set_defaults(func=create_project)
-    new_project_parser.add_argument('--path', dest='project_path', default=".",
+    new_project_parser.add_argument('--path', dest='project_path', default="",
                                     help="Specify the path to the new project. "
                                          "If not set, uses the current working directory.")
     new_project_parser.add_argument('--name', dest='project_name', default="",
