@@ -1,1 +1,1 @@
-include bipy-gui-manager/install-project.sh
+include bipy-gui-manager/create_project/install-project.sh
