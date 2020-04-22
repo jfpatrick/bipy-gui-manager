@@ -43,6 +43,10 @@ def create_project(parameters: argparse.Namespace):
         cli.positive_feedback("Setting up local Git repository")
         init_local_repo(project_path)
 
+        if parameters.gitlab and gitlab_repo == "default":
+            cli.positive_feedback("Creating repository on GitLab under 'bisw-python'")
+            gitlab_repo = create_gitlab_repository(project_name, parameters.interactive)
+
         if parameters.gitlab:
             cli.positive_feedback("Uploading project on GitLab")
             push_first_commit(project_path, gitlab_repo)
@@ -66,12 +70,8 @@ def create_project(parameters: argparse.Namespace):
 
 
 def gather_setup_information(parameters):
-    project_name_validator = re.compile("^[a-z0-9-]+$")
-    author_email_validator = re.compile("[a-zA-Z0-9._%+-]+@cern.ch")  # TODO support email lists!
-    repo_validator_ssh = re.compile("^ssh://git@gitlab.cern.ch:7999/[a-zA-Z0-9_%-]+/[a-zA-Z0-9_%/-]+.git$")
-    repo_validator_https = re.compile("^https://gitlab.cern.ch/[a-zA-Z0-9_%-]+/[a-zA-Z0-9_%/-]+.git$")
-    repo_validator_kerb = re.compile("^https://:@gitlab.cern.ch:8443/[a-zA-Z0-9_%-]+/[a-zA-Z0-9_%/-]+.git$")
 
+    project_name_validator = re.compile("^[a-z0-9-]+$")
     project_name = utils.validate_as_arg_or_ask(
         cli_value=parameters.project_name,
         validator=lambda v: project_name_validator.match(v),
@@ -96,6 +96,7 @@ def gather_setup_information(parameters):
         pos_feedback="The project author name is set to: \033[0;32m{}\033[0;m",
         interactive=parameters.interactive
     )
+    author_email_validator = re.compile("[a-zA-Z0-9._%+-]+@cern.ch")  # TODO support email lists!
     author_email = utils.validate_as_arg_or_ask(
         cli_value=parameters.author_email,
         validator=lambda v: author_email_validator.match(v),
@@ -104,7 +105,6 @@ def gather_setup_information(parameters):
         pos_feedback="The project author's email name is set to: \033[0;32m{}\033[0;m",
         interactive=parameters.interactive
     )
-
     base_path = utils.validate_as_arg_or_ask(
         cli_value=parameters.project_path,
         validator=lambda v: (v == "." or os.path.isdir(v)),
@@ -117,16 +117,22 @@ def gather_setup_information(parameters):
     if base_path == '.':
         base_path = os.getcwd()
 
+    repo_validator_ssh = re.compile("^ssh://git@gitlab.cern.ch:7999/[a-zA-Z0-9_%-]+/[a-zA-Z0-9_%/-]+.git$")
+    repo_validator_https = re.compile("^https://gitlab.cern.ch/[a-zA-Z0-9_%-]+/[a-zA-Z0-9_%/-]+.git$")
+    repo_validator_kerb = re.compile("^https://:@gitlab.cern.ch:8443/[a-zA-Z0-9_%-]+/[a-zA-Z0-9_%/-]+.git$")
     gitlab_repo = None
     if parameters.gitlab:
         gitlab_repo = utils.validate_as_arg_or_ask(
             cli_value=parameters.gitlab_repo,
-            validator=lambda v: (v == "no-gitlab" or
+            validator=lambda v: (v is not None and (
+                                 v == "" or
+                                 v == "default" or
+                                 v == "no-gitlab" or
                                  repo_validator_https.match(v) or
                                  repo_validator_ssh.match(v) or
-                                 repo_validator_kerb.match(v)),
-            question="Please create a new project on GitLab and paste here the \033[0;33mrepository URL\033[0;m "
-                     "(or type 'no-gitlab' to skip this step):",
+                                 repo_validator_kerb.match(v))),
+            question="Press ENTER to create a GitLab repository for your project under 'bisw-python', or enter your "
+                     "existing GitLab repository address here (or type 'no-gitlab' to keep your repository local):",
             neg_feedback="Invalid GitLab repository URL.",
             pos_feedback="The project GitLab repository address is set to: \033[0;32m{}\033[0;m",
             hints=("copy the address from the Clone button, choosing the protocol you prefer (HTTPS, SSH, KRB5)", ),
@@ -135,6 +141,8 @@ def gather_setup_information(parameters):
         if gitlab_repo == 'no-gitlab':
             gitlab_repo = None
             parameters.gitlab = False
+        if gitlab_repo == '' or gitlab_repo == 'default':
+            gitlab_repo = "default"
 
     parameters.demo = utils.validate_demo_flags(parameters.force_demo, parameters.demo, parameters.interactive)
 
@@ -178,6 +186,7 @@ def download_template(project_path: str, clone_protocol: str, get_demo: bool, in
     :param project_path: Where to clone the template (folder must not exists)
     :param clone_protocol: use HTTPS, SSH or Kerberos
     :param get_demo: Clone the template with the demo application or without.
+    :param interactive: Whether the code is allowed to ask the user interactively on how to proceed
     """
     if clone_protocol == 'https':
         template_url = 'https://gitlab.cern.ch/bisw-python/be-bi-pyqt-template.git'
@@ -308,6 +317,15 @@ def init_local_repo(project_path: str) -> None:
         allow_retry=False,
         neg_feedback="Failed to commit the template."
     )
+
+
+def create_gitlab_repository(project_name: str, interactive: bool) -> str:
+    """
+    Create a GitLab repo under bisw-python
+    :param project_name: Name of the project
+    """
+    gitlab_repo = "todo"
+    return gitlab_repo
 
 
 def push_first_commit(project_path: str, gitlab_repo: str) -> None:

@@ -34,19 +34,16 @@ def invoke_git(parameters=(), cwd=os.getcwd(), allow_retry=False, neg_feedback="
 
 def validate_or_fail(value, validator, neg_feedback):
     """ Either return the value if valid, or throw ValueError """
-    try:
-        if validator(value):
-            return value
-    except Exception as e:
-        raise ValueError("Unexpected validation exception: {}".format(e))
-    raise ValueError(neg_feedback)
+    if value is None or not validator(value):
+        raise ValueError(neg_feedback)
+    return value
 
 
-def validate_or_ask(validator, question, neg_feedback, start_value="", pos_feedback=None, hints=()):
+def validate_or_ask(validator, question, neg_feedback, start_value=None, pos_feedback=None, hints=()):
     """ Either return start_value if valid, or ask the user until they give a valid value """
     value = start_value
-    while not validator(value):
-        if value != "":
+    while value is None or not validator(value):
+        if value:
             cli.negative_feedback(neg_feedback)
             for hint in hints:
                 cli.give_hint(hint)
@@ -65,7 +62,7 @@ def validate_as_arg_or_ask(cli_value, validator, question, neg_feedback, pos_fee
     """
     if not interactive and cli_value is None:
         raise ValueError(neg_feedback)
-    if (cli_value and cli_value != "") or not interactive:
+    if cli_value is not None or not interactive:
         result = validate_or_fail(cli_value, validator, neg_feedback)
         if pos_feedback:
             cli.positive_feedback(pos_feedback.format(result))
