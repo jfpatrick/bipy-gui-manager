@@ -2,6 +2,7 @@ import re
 import os
 import argparse
 import shutil
+from subprocess import Popen, PIPE
 from bipy_gui_manager import cli_utils as cli
 from bipy_gui_manager.create_project import utils
 
@@ -21,6 +22,19 @@ def create_project(parameters: argparse.Namespace):
         project_name, project_desc, project_author, author_email, base_path, gitlab_repo, parameters = \
             gather_setup_information(parameters)
         project_path = os.path.join(base_path, project_name)
+
+        group_name = "szanzott"  # "bisw-python"
+        if parameters.gitlab and gitlab_repo == 'default':
+            if parameters.upload_protocol is None:
+                parameters.upload_protocol = parameters.clone_protocol
+            if parameters.upload_protocol == 'ssh':
+                gitlab_repo = "ssh://git@gitlab.cern.ch:7999/{}/{}.git".format(group_name, project_name)
+            elif parameters.upload_protocol == 'https':
+                gitlab_repo = "https://gitlab.cern.ch/{}/{}.git".format(group_name, project_name)
+            elif parameters.upload_protocol == 'kerberos':
+                gitlab_repo = "https://:@gitlab.cern.ch:8443/{}/{}.git".format(group_name, project_name)
+            else:
+                raise ValueError("Upload protocol not recognized: '{}'".format(parameters.upload_protocol))
 
         cli.draw_line()
         print("  Installation:\n")
@@ -46,8 +60,8 @@ def create_project(parameters: argparse.Namespace):
         init_local_repo(project_path)
 
         if parameters.gitlab and gitlab_repo == "default":
-            cli.positive_feedback("Creating repository on GitLab under 'bisw-python'")
-            gitlab_repo = create_gitlab_repository(project_name, parameters.interactive)
+            cli.positive_feedback("Creating repository on GitLab")
+            gitlab_repo = create_gitlab_repository(project_name, parameters.upload_protocol)
 
         if parameters.gitlab:
             cli.positive_feedback("Uploading project on GitLab")
@@ -317,20 +331,37 @@ def init_local_repo(project_path: str) -> None:
     )
     utils.invoke_git(
         parameters=['commit', '-m', 'Initial commit ' +
-                    '(from pyqt-manager https://gitlab.cern.ch/bisw-python/bipy_gui_manager )'],
+                    '(from bipy-gui-manager https://gitlab.cern.ch/bisw-python/bipy_gui_manager )'],
         cwd=project_path,
         allow_retry=False,
         neg_feedback="Failed to commit the template."
     )
 
 
-def create_gitlab_repository(project_name: str, interactive: bool) -> str:
+def create_gitlab_repository(project_name: str):
     """
     Create a GitLab repo under bisw-python
     :param project_name: Name of the project
+
+    Token for szanzott = zznsVsiahNkpY1PBEZJ8
+
+    curl -d "name=test-gitlab-api"  https://gitlab.cern.ch/api/v4/projects?private_token=zznsVsiahNkpY1PBEZJ8
+
     """
-    gitlab_repo = "todo"
-    return gitlab_repo
+    command = ['/usr/bin/curl', '-d', "name={}".format(project_name),
+               "https://gitlab.cern.ch/api/v4/projects?private_token=zznsVsiahNkpY1PBEZJ8"]
+
+    while True:
+        git_query = Popen(command, stdout=PIPE, stderr=PIPE)
+        (stdout, stderr) = git_query.communicate()
+
+        if git_query.poll() == 0:
+            return
+        else:
+            cli.negative_feedback(stderr.decode('utf-8'))
+            raise OSError("Failed to create the repository on GitLab. Please double check tnat a repository "
+                          "named '{}' does not exist under bisw-python and, if so, ".format(project_name) +
+                          "make sure you can connect to GitLab from the browser and that 'curl' is installed.")
 
 
 def push_first_commit(project_path: str, gitlab_repo: str) -> None:

@@ -52,6 +52,11 @@ def main():
     new_project_parser.add_argument('--clone-protocol', dest='clone_protocol', default="kerberos",
                                     choices=('kerberos', 'ssh', 'https'),
                                     help="Protocol to use to clone the template from GitLab")
+    new_project_parser.add_argument('--upload-protocol', dest='upload_protocol', default=None,
+                                    choices=('kerberos', 'ssh', 'https'),
+                                    help="Protocol to use to push the template to GitLab. "
+                                         "Effective only if the --repo flag is set to 'default'. "
+                                         "If not given, this value defaults to --clone-protocol")
     demo_commands = new_project_parser.add_mutually_exclusive_group()
     demo_commands.add_argument('--no-demo', dest='demo', action='store_false',
                                help="Install the template without demo application without asking the user "
