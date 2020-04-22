@@ -12,7 +12,7 @@ from bipy_gui_manager.entry_points import entry_points
 # Gracefully handle Ctrl+C and other kill signals
 def kill_handler(_, __):
     cli.draw_line()
-    cli.negative_feedback("Exiting on user's request.")
+    cli.negative_feedback("Exiting on user's request.\n")
     sys.exit(0)
 
 

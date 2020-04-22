@@ -12,16 +12,18 @@ def create_project(parameters: argparse.Namespace):
     :param parameters: the parameters passed through the CLI
     :return: None, but creates a project according to the information gathered.
     """
+    # Initially defined here to be available for an eventual cleanup procedure, if something goes wrong
+    project_path = None
     try:
         cli.print_welcome()
         print("  Setup: \n")
 
         project_name, project_desc, project_author, author_email, base_path, gitlab_repo, parameters = \
             gather_setup_information(parameters)
+        project_path = os.path.join(base_path, project_name)
 
         cli.draw_line()
         print("  Installation:\n")
-        project_path = os.path.join(base_path, project_name)
 
         cli.positive_feedback("Checking target path")
         check_path_is_available(project_path, parameters.interactive, parameters.overwrite)
@@ -65,8 +67,11 @@ def create_project(parameters: argparse.Namespace):
 
     except Exception as e:
         cli.negative_feedback("A fatal error occurred: {}".format(e))
-        cli.negative_feedback("Exiting")
-        cli.draw_line()
+        cli.negative_feedback("Cleaning up...")
+        # Try a quick cleanup
+        if project_path:
+            shutil.rmtree(project_path, ignore_errors=True)
+        cli.negative_feedback("Exiting\n")
 
 
 def gather_setup_information(parameters):
