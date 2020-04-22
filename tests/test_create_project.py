@@ -7,9 +7,9 @@ import bipy_gui_manager.create_project.utils as create_project_utils
 from .conftest import create_template_files
 
 
-def create_project_parameters(demo=True, force_demo=True, path=".", name=None, desc=None, author=None, email=None,
-                              repo=None, clone_protocol="https", gitlab=True, interactive=True, overwrite=False,
-                              template_path=None):
+def create_project_parameters(demo=True, force_demo=True, path=".", name="", desc="", author="", email="",
+                              repo="", clone_protocol="https", gitlab=True, interactive=True, overwrite=False,
+                              template_path=""):
     args = Namespace(
         demo=demo,
         force_demo=force_demo,
@@ -116,12 +116,12 @@ def test_gather_setup_info_name_no_uppercase():
 
 
 def test_gather_setup_info_name_no_empty_string(monkeypatch):
-    # Empty string not allowed - will fail
-    monkeypatch.setattr('builtins.input', lambda _: 1/0)  # Just to avoid test hanging if it fails
+    # Empty string not allowed - will treat as None and ask
+    monkeypatch.setattr('builtins.input', lambda _: 1/0)
     parameters = create_project_parameters(name="", desc="A test project", author="Me",
                                            email="m@cern.ch",
                                            repo="ssh://git@gitlab.cern.ch:7999/user/project.git")
-    with pytest.raises(ValueError):
+    with pytest.raises(ZeroDivisionError):
         create_project_module.gather_setup_information(parameters)
 
 
@@ -151,11 +151,11 @@ def test_gather_setup_info_desc_no_double_quotes():
 
 
 def test_gather_setup_info_desc_no_empty_string(monkeypatch):
-    # Empty string not allowed - will fail
-    monkeypatch.setattr('builtins.input', lambda _: 1/0)  # Just to avoid hanging if the test fails
+    # Empty string not allowed - will treat as None and ask
+    monkeypatch.setattr('builtins.input', lambda _: 1/0)
     parameters = create_project_parameters(name="test-project", desc="", author="Me",
                                            email="m@cern.ch", repo="ssh://git@gitlab.cern.ch:7999/user/project.git")
-    with pytest.raises(ValueError):
+    with pytest.raises(ZeroDivisionError):
         create_project_module.gather_setup_information(parameters)
 
 
@@ -184,11 +184,11 @@ def test_gather_setup_info_author_no_double_quotes():
 
 
 def test_gather_setup_info_author_no_empty_string(monkeypatch):
-    # Empty string not allowed - will fail
-    monkeypatch.setattr('builtins.input', lambda _: 1/0)  # Just to avoid hanging if the test breaks
+    # Empty string not allowed - will treat as None and ask
+    monkeypatch.setattr('builtins.input', lambda _: 1/0)
     parameters = create_project_parameters(name="test-project", desc="A test project", author="",
                                            email="m@cern.ch", repo="ssh://git@gitlab.cern.ch:7999/user/project.git")
-    with pytest.raises(ValueError):
+    with pytest.raises(ZeroDivisionError):
         create_project_module.gather_setup_information(parameters)
 
 
@@ -233,11 +233,11 @@ def test_gather_setup_info_email_local_part_is_valid(monkeypatch):
 
 
 def test_gather_setup_info_email_no_empty_string(monkeypatch):
-    # Empty string not allowed - will fail
-    monkeypatch.setattr('builtins.input', lambda _: 1/0)  #Just to avoid test hanging if it fails
+    # Empty string not allowed - will treat as None and ask
+    monkeypatch.setattr('builtins.input', lambda _: 1/0)
     parameters = create_project_parameters(name="test-project", desc="A test project", author="Me",
                                            email="", repo="ssh://git@gitlab.cern.ch:7999/user/project.git")
-    with pytest.raises(ValueError):
+    with pytest.raises(ZeroDivisionError):
         create_project_module.gather_setup_information(parameters)
 
 
@@ -312,29 +312,13 @@ def test_gather_setup_info_repo_no_garbage_address():
         create_project_module.gather_setup_information(parameters)
 
 
-def test_gather_setup_info_repo_default_string(monkeypatch):
-    # Accept "default" as a gitlab repo value from cli
+def test_gather_setup_info_repo_no_empty_string(monkeypatch):
+    # Empty string not allowed - will treat as None and ask
     monkeypatch.setattr('builtins.input', lambda _: 1/0)
     parameters = create_project_parameters(name="test-project", desc="A test project", author="Me",
-                                           email="me@cern.ch", repo="default")
-    a, b, c, d, e, gitlab_repo, f = create_project_module.gather_setup_information(parameters)
-    assert gitlab_repo == "default"
-
-
-def test_gather_setup_info_repo_empty_string(monkeypatch):
-    # Translate empty string as "default" if given interactively
-    monkeypatch.setattr('builtins.input', lambda _: "")
-    parameters = create_project_parameters(name="test-project", desc="A test project", author="Me",
-                                           email="me@cern.ch")
-    a, b, c, d, e, gitlab_repo, f = create_project_module.gather_setup_information(parameters)
-    assert gitlab_repo == "default"
-    #
-    # # Do not accept the empty string from the cli
-    # monkeypatch.setattr('builtins.input', lambda _: 1/0)
-    # parameters = create_project_parameters(name="test-project", desc="A test project", author="Me",
-    #                                        email="me@cern.ch", repo="")
-    # with pytest.raises(ZeroDivisionError):
-    #     create_project_module.gather_setup_information(parameters)
+                                           email="me@cern.ch", repo="")
+    with pytest.raises(ZeroDivisionError):
+        create_project_module.gather_setup_information(parameters)
 
 
 def test_gather_setup_info_repo_not_given(monkeypatch):

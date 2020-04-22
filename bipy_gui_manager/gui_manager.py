@@ -32,21 +32,19 @@ def main():
                                                help='Start a wizard that guides you through the setup of a new PyQt '
                                                     'project.')
     new_project_parser.set_defaults(func=create_project)
-    new_project_parser.add_argument('--path', dest='project_path', default=None,
+    new_project_parser.add_argument('--path', dest='project_path', default="",
                                     help="Specify the path to the new project. "
                                          "If not set, uses the current working directory.")
-    new_project_parser.add_argument('--name', dest='project_name', default=None,
+    new_project_parser.add_argument('--name', dest='project_name', default="",
                                     help="Sets the project name.")
-    new_project_parser.add_argument('--desc', dest='project_desc', default=None,
+    new_project_parser.add_argument('--desc', dest='project_desc', default="",
                                     help="Sets the project's short description.")
-    new_project_parser.add_argument('--author', dest='project_author', default=None,
+    new_project_parser.add_argument('--author', dest='project_author', default="",
                                     help="Sets the project author's name.")
-    new_project_parser.add_argument('--email', dest='author_email', default=None,
+    new_project_parser.add_argument('--email', dest='author_email', default="",
                                     help="Sets the project author's email.")
-    new_project_parser.add_argument('--repo', dest='gitlab_repo', default=None,
-                                    help="Sets the project's GitLab repository address."
-                                         "Set it to 'default' to create a repository under "
-                                         "gitlab.cern.ch/bisw-python/<project_name>, if the name is available.")
+    new_project_parser.add_argument('--repo', dest='gitlab_repo', default="",
+                                    help="Sets the project's GitLab repository address'.")
     new_project_parser.add_argument('--no-gitlab', dest='gitlab', action='store_false',
                                     help="Skips the GitLab upload, but still inits the repository locally.")
     new_project_parser.add_argument('--clone-protocol', dest='clone_protocol', default="kerberos",

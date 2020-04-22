@@ -30,9 +30,11 @@ class MockFailingPopen:
 def test_invoke_git(tmpdir, monkeypatch):
     utils.Popen = MockSuccessfulPopen
     utils.invoke_git(['not_a_git_command'], cwd=tmpdir, allow_retry=False, neg_feedback="Test Feedback")
+
     utils.Popen = MockFailingPopen
     with pytest.raises(OSError):
         utils.invoke_git(['not_a_git_command'], cwd=tmpdir, allow_retry=False, neg_feedback="Test Feedback")
+
     utils.Popen = subprocess.Popen
 
 
@@ -69,7 +71,7 @@ def test_validate_as_arg_or_ask(monkeypatch):
 
     # If it's not given, ask the user until a valid value is received.
     monkeypatch.setattr('builtins.input', lambda _: "test value")
-    assert "test value" == utils.validate_as_arg_or_ask(None, lambda v: "test" in v, "Question", "test Neg Feedback")
+    assert "test value" == utils.validate_as_arg_or_ask("", lambda v: "test" in v, "Question", "test Neg Feedback")
 
     # if interactive is False, fail rather than asking.
     with pytest.raises(ValueError):
