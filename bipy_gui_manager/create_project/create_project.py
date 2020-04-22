@@ -61,7 +61,7 @@ def create_project(parameters: argparse.Namespace):
 
         if parameters.gitlab and gitlab_repo == "default":
             cli.positive_feedback("Creating repository on GitLab")
-            gitlab_repo = create_gitlab_repository(project_name, parameters.upload_protocol)
+            gitlab_repo = create_gitlab_repository(project_name)
 
         if parameters.gitlab:
             cli.positive_feedback("Uploading project on GitLab")
@@ -393,7 +393,7 @@ def install_project(project_path: str) -> None:
     """
     # Copy shell script in project
     script_temp_location = os.path.join(project_path, ".tmp.sh")
-    shutil.copy(os.path.join(os.path.dirname(__file__), "install-project.sh"), script_temp_location)
+    shutil.copy(os.path.join(os.path.dirname(__file__), "resources", "install-project.sh"), script_temp_location)
     # Execute it (create venvs and install folder in venv)
     os.chmod(script_temp_location, 0o777)
     error = os.WEXITSTATUS(os.system("cd {} && source {}".format(project_path, script_temp_location)))
