@@ -17,9 +17,6 @@ def handle_failure(string):
 def positive_feedback(string):
     print("\033[0;32m=>\033[0;m {}  ".format(string))
 
-def success_feedback():
-    print("   \033[0;32mDone\033[0;m ")
-
 def list_subtask(string):
     print("    -  {}".format(string))
 

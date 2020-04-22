@@ -1,10 +1,11 @@
 import os
 import pytest
 
+
 @pytest.fixture
 def mock_git(tmpdir, monkeypatch):
     monkeypatch.setattr('os.getcwd', lambda: str(tmpdir))
-    monkeypatch.setattr('bipy_gui_manager.create_project.invoke_git', mock_git_invocation)
+    monkeypatch.setattr('bipy_gui_manager.create_project.utils.invoke_git', mock_git_invocation)
 
 
 def create_template_files(project_path, project_name, demo=True):

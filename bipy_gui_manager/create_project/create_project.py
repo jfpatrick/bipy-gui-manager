@@ -1,128 +1,17 @@
 import re
 import os
-import sys
+import argparse
 import shutil
-import signal
-from subprocess import Popen, PIPE
-
 from bipy_gui_manager import cli_utils as cli
+from bipy_gui_manager.create_project import utils
 
 
-# Gracefully handle Ctrl+C and other kill signals
-def kill_handler(signum, frame):
-    cli.draw_line()
-    cli.negative_feedback("Exiting on user's request.")
-    sys.exit(0)
-signal.signal(signal.SIGINT, kill_handler)
-
-
-def validate_or_fail(value, validator, feedback):
-    """ Either return the value if valid, or throw ValueError """
-    try:
-        if validator(value):
-            return value
-    except Exception as e:
-        raise ValueError("Unexpected validation exception: {}".format(e))
-    raise ValueError(feedback)
-
-
-def validate_or_ask(validator, question, neg_feedback, start_value="", pos_feedback=None, hints=()):
-    """ Either return start_value if valid, or ask the user until they give a valid value """
-    value = start_value
-    while not validator(value):
-        if value != "":
-            cli.negative_feedback(neg_feedback)
-            for hint in hints:
-                cli.give_hint(hint)
-        value = cli.ask_input(question)
-    if pos_feedback:
-        cli.positive_feedback(pos_feedback.format(value))
-    return value
-
-
-def validate_as_arg_or_ask(cli_value, validator, question, neg_feedback, pos_feedback=None, hints=(), interactive=True):
+def create_project(parameters: argparse.Namespace):
     """
-        If an initial value is given and valid, return it.
-        If an initial value is given and invalid, fail.
-        If it's not given, ask the user until a valid value is received.
-        if interactive is False, fail rather than asking.
+    Main 'script' for the creation process. Calls, in order, all the functions required to setup a project properly.
+    :param parameters: the parameters passed through the CLI
+    :return: None, but creates a project according to the information gathered.
     """
-    if not interactive and cli_value is None:
-        ValueError(neg_feedback)
-    if (cli_value and cli_value != "") or not interactive:
-        result = validate_or_fail(cli_value, validator, neg_feedback)
-        if pos_feedback:
-            cli.positive_feedback(pos_feedback.format(result))
-        return result
-    else:
-        return validate_or_ask(validator, question, neg_feedback, pos_feedback=pos_feedback, hints=hints)
-
-
-def validate_demo_flags(force_demo: bool, demo: bool, interactive: bool) -> bool:
-    """
-    Checks which combination of values are contained in the parameters and returns the correct value
-    for parameters.demo, eventually asking the user if necessary
-    :param force_demo: whether the --with-demo flag was passed
-    :param demo: opposite of whether the --no-demo flag was passed
-    :return: True if demo should be included, False otherwise
-    """
-    if force_demo and demo:
-        # --with-demo was passed
-        cli.positive_feedback("Your project will contain a demo application.")
-        return True
-    elif not force_demo and not demo:
-        # only --no-demo was passed
-        cli.positive_feedback("Your project will not contain the demo application.")
-        return False
-    elif not force_demo and demo and not interactive:
-        # Neither --with-demo nor --no-demo were passed, but --not-interactive was specified: default to yes
-        cli.positive_feedback("Your project will contain a demo application.")
-        return True
-    elif not force_demo and demo :
-        # Neither --with-demo nor --no-demo were passed, but --not-interactive was specified
-        value = cli.ask_input("Do you want to install a \033[0;33mdemo application\033[0;m within your project? "
-                              "It's especially recommended to beginners (yes/no)")
-        while True:
-            if value == "n" or value == "no":
-                cli.positive_feedback("Your project will \033[0;33mnot contain the demo application\033[0;m.")
-                return False
-            elif value == "y" or value == "yes":
-                cli.positive_feedback("Your project will \033[0;32mcontain a demo application\033[0;m.")
-                return True
-            else:
-                value = cli.handle_failure("Please type yes or no:")
-
-
-def invoke_git(parameters=(), cwd=os.getcwd(), allow_retry=False, neg_feedback="An error occurred in Git!"):
-    """
-    Perform a syscall to the local Git executable
-    :param parameters: parameters to pass to Git, as an array
-    :param cwd: working directory for Git
-    :param allow_retry: on fail, let the user decide if they want to retry or not
-    :param neg_feedback: message to explain a potential failure
-    :return: Nothing if the command succeeds, OSError if it fails
-    """
-    command = ['/usr/bin/git']
-    command.extend(parameters)
-
-    while True:
-        git_query = Popen(command, cwd=cwd, stdout=PIPE, stderr=PIPE)
-        (stdout, stderr) = git_query.communicate()
-
-        if git_query.poll() == 0:
-            return
-        else:
-            cli.negative_feedback(stderr.decode('utf-8'))
-
-            if not allow_retry:
-                raise OSError(neg_feedback)
-
-            answer = cli.handle_failure("Do you want to retry? (yes/no)")
-            if answer == "no" or answer == "n":
-                raise OSError(neg_feedback)
-
-
-def create_project(parameters):
     try:
         cli.print_welcome()
         print("  Setup: \n")
@@ -183,7 +72,7 @@ def gather_setup_information(parameters):
     repo_validator_https = re.compile("^https://gitlab.cern.ch/[a-zA-Z0-9_%-]+/[a-zA-Z0-9_%/-]+.git$")
     repo_validator_kerb = re.compile("^https://:@gitlab.cern.ch:8443/[a-zA-Z0-9_%-]+/[a-zA-Z0-9_%/-]+.git$")
 
-    project_name = validate_as_arg_or_ask(
+    project_name = utils.validate_as_arg_or_ask(
         cli_value=parameters.project_name,
         validator=lambda v: project_name_validator.match(v),
         question="Please enter your \033[0;33mproject's name\033[0;m:",
@@ -191,7 +80,7 @@ def gather_setup_information(parameters):
         pos_feedback="The project name is set to: \033[0;32m{}\033[0;m",
         interactive=parameters.interactive
     )
-    project_desc = validate_as_arg_or_ask(
+    project_desc = utils.validate_as_arg_or_ask(
         cli_value=parameters.project_desc,
         validator=lambda v: v != "" and "\"" not in v,
         question="Please enter a \033[0;33mone-line description\033[0;m of your project:",
@@ -199,7 +88,7 @@ def gather_setup_information(parameters):
         pos_feedback="The project description is set to: \033[0;32m{}\033[0;m",
         interactive=parameters.interactive
     )
-    project_author = validate_as_arg_or_ask(
+    project_author = utils.validate_as_arg_or_ask(
         cli_value=parameters.project_author,
         validator=lambda v: v != "" and "\"" not in v,
         question="Please enter the project's \033[0;33mauthor name\033[0;m:",
@@ -207,7 +96,7 @@ def gather_setup_information(parameters):
         pos_feedback="The project author name is set to: \033[0;32m{}\033[0;m",
         interactive=parameters.interactive
     )
-    author_email = validate_as_arg_or_ask(
+    author_email = utils.validate_as_arg_or_ask(
         cli_value=parameters.author_email,
         validator=lambda v: author_email_validator.match(v),
         question="Please enter the author's \033[0;33mCERN email address\033[0;m:",
@@ -216,7 +105,7 @@ def gather_setup_information(parameters):
         interactive=parameters.interactive
     )
 
-    base_path = validate_as_arg_or_ask(
+    base_path = utils.validate_as_arg_or_ask(
         cli_value=parameters.project_path,
         validator=lambda v: (v == "." or os.path.isdir(v)),
         question="Please type the \033[0;33mpath\033[0;m where to create the new project, or type '.' to create it "
@@ -230,7 +119,7 @@ def gather_setup_information(parameters):
 
     gitlab_repo = None
     if parameters.gitlab:
-        gitlab_repo = validate_as_arg_or_ask(
+        gitlab_repo = utils.validate_as_arg_or_ask(
             cli_value=parameters.gitlab_repo,
             validator=lambda v: (v == "no-gitlab" or
                                  repo_validator_https.match(v) or
@@ -247,7 +136,7 @@ def gather_setup_information(parameters):
             gitlab_repo = None
             parameters.gitlab = False
 
-    parameters.demo = validate_demo_flags(parameters.force_demo, parameters.demo, parameters.interactive)
+    parameters.demo = utils.validate_demo_flags(parameters.force_demo, parameters.demo, parameters.interactive)
 
     return project_name, project_desc, project_author, author_email, base_path, gitlab_repo, parameters
 
@@ -304,7 +193,7 @@ def download_template(project_path: str, clone_protocol: str, get_demo: bool, in
     else:
         git_command = ['clone', '--single-branch', '--branch', 'no-demo', template_url,
                        project_path]
-    invoke_git(
+    utils.invoke_git(
         parameters=git_command,
         cwd=os.getcwd(),
         allow_retry=interactive,
@@ -400,19 +289,19 @@ def init_local_repo(project_path: str) -> None:
     # In most cases, the failure is due to .git not existing.
     # In any case, if the failure is due to something else, most likely git will fail right after.
     shutil.rmtree("{}/.git".format(project_path), ignore_errors=True)
-    invoke_git(
+    utils.invoke_git(
         parameters=['init'],
         cwd=project_path,
         allow_retry=False,
         neg_feedback="Failed to init the repo in the project folder."
     )
-    invoke_git(
+    utils.invoke_git(
         parameters=['add', '--all'],
         cwd=project_path,
         allow_retry=False,
         neg_feedback="Failed to stage the template."
     )
-    invoke_git(
+    utils.invoke_git(
         parameters=['commit', '-m', 'Initial commit ' +
                     '(from pyqt-manager https://gitlab.cern.ch/bisw-python/bipy_gui_manager )'],
         cwd=project_path,
@@ -427,13 +316,13 @@ def push_first_commit(project_path: str, gitlab_repo: str) -> None:
     :param project_path: Path to the project root
     :param gitlab_repo: GitLab repo to push to
     """
-    invoke_git(
+    utils.invoke_git(
         parameters=['remote', 'add', 'origin', gitlab_repo],
         cwd=project_path,
         allow_retry=False,
         neg_feedback="Failed to add the remote on the project's local repo."
     )
-    invoke_git(
+    utils.invoke_git(
         parameters=['push', '-u', 'origin', 'master'],
         cwd=project_path,
         allow_retry=False,
@@ -451,17 +340,14 @@ def install_project(project_path: str) -> None:
     # Copy shell script in project
     script_temp_location = os.path.join(project_path, ".tmp.sh")
     shutil.copy(os.path.join(os.path.dirname(__file__), "install-project.sh"), script_temp_location)
-    # Execute it (create venvs and install folder in venv)\
+    # Execute it (create venvs and install folder in venv)
     os.chmod(script_temp_location, 0o777)
-    # os.system("chmod +x {}".format(script_temp_location))
     error = os.WEXITSTATUS(os.system("cd {} && source {}".format(project_path, script_temp_location)))
     # Remove temporary script
     os.remove(script_temp_location)
+    # Render error if present
     if error:
         cli.negative_feedback("New project failed to install: {}.".format(error))
         cli.negative_feedback("Please execute 'source activate.sh' and 'pip install -e .'"
                               "in the project's root and, if it fails, send the log to the maintainers.")
         raise OSError("New project failed to install: {}.".format(error))
-
-
-

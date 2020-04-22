@@ -1,7 +1,8 @@
 import os
 import pytest
 from argparse import Namespace
-import bipy_gui_manager.create_project as create_project_module
+import bipy_gui_manager.create_project.create_project as create_project_module
+import bipy_gui_manager.create_project.utils as create_project_utils
 
 from .conftest import create_template_files
 
@@ -25,6 +26,48 @@ def create_project_parameters(demo=True, force_demo=True, path=".", name="", des
         template_path=template_path
     )
     return args
+
+
+def test_create_project_defaults(monkeypatch):
+    # Testing only that it won't fail with the defaults
+    parameters = create_project_parameters(name="test-project", desc="A test project", author="Me", email="me@cern.ch",
+                                           repo="ssh://git@gitlab.cern.ch:7999/user/project.git")
+    monkeypatch.setattr('bipy_gui_manager.create_project.create_project.gather_setup_information', lambda *a, **k:
+        [""]*6 + [parameters])
+    monkeypatch.setattr('bipy_gui_manager.create_project.create_project.check_path_is_available', lambda *a, **k: True)
+    monkeypatch.setattr('bipy_gui_manager.create_project.create_project.copy_folder_from_path', lambda *a, **k: True)
+    monkeypatch.setattr('bipy_gui_manager.create_project.create_project.download_template', lambda *a, **k: True)
+    monkeypatch.setattr('bipy_gui_manager.create_project.create_project.apply_customizations', lambda *a, **k: True)
+    monkeypatch.setattr('bipy_gui_manager.create_project.create_project.generate_readme', lambda *a, **k: True)
+    monkeypatch.setattr('bipy_gui_manager.create_project.create_project.init_local_repo', lambda *a, **k: True)
+    monkeypatch.setattr('bipy_gui_manager.create_project.create_project.push_first_commit', lambda *a, **k: True)
+    monkeypatch.setattr('bipy_gui_manager.create_project.create_project.install_project', lambda *a, **k: True)
+    create_project_module.create_project(parameters)
+
+
+def test_create_project_copy_template(monkeypatch):
+    # Testing only that it won't fail by taking this option
+    parameters = create_project_parameters(name="test-project", desc="A test project", author="Me", email="me@cern.ch",
+                                           repo="ssh://git@gitlab.cern.ch:7999/user/project.git", template_path="here")
+    monkeypatch.setattr('bipy_gui_manager.create_project.create_project.gather_setup_information', lambda *a, **k:
+    [""] * 6 + [parameters])
+    monkeypatch.setattr('bipy_gui_manager.create_project.create_project.check_path_is_available', lambda *a, **k: True)
+    monkeypatch.setattr('bipy_gui_manager.create_project.create_project.copy_folder_from_path', lambda *a, **k: True)
+    monkeypatch.setattr('bipy_gui_manager.create_project.create_project.download_template', lambda *a, **k: True)
+    monkeypatch.setattr('bipy_gui_manager.create_project.create_project.apply_customizations', lambda *a, **k: True)
+    monkeypatch.setattr('bipy_gui_manager.create_project.create_project.generate_readme', lambda *a, **k: True)
+    monkeypatch.setattr('bipy_gui_manager.create_project.create_project.init_local_repo', lambda *a, **k: True)
+    monkeypatch.setattr('bipy_gui_manager.create_project.create_project.push_first_commit', lambda *a, **k: True)
+    monkeypatch.setattr('bipy_gui_manager.create_project.create_project.install_project', lambda *a, **k: True)
+    create_project_module.create_project(parameters)
+
+
+def test_create_project_handle_errors(monkeypatch):
+    # Won't raise this error, will handle it internally
+    monkeypatch.setattr('bipy_gui_manager.create_project.create_project.gather_setup_information', lambda *a, **k: 1/0)
+    parameters = create_project_parameters(name="test-project", desc="A test project", author="Me", email="me@cern.ch",
+                                           repo="ssh://git@gitlab.cern.ch:7999/user/project.git")
+    create_project_module.create_project(parameters)
 
 
 def test_gather_setup_info_most_common_right_values():
@@ -305,7 +348,7 @@ def test_gather_setup_info_no_demo_flag_passed(monkeypatch):
                                            email="me@cern.ch", gitlab=False, force_demo=False, demo=False)
     a, b, c, d, e, f, new_params = create_project_module.gather_setup_information(parameters)
     assert not new_params.demo
-    assert not create_project_module.validate_demo_flags(force_demo=False, demo=False, interactive=True)
+    assert not create_project_utils.validate_demo_flags(force_demo=False, demo=False, interactive=True)
 
 
 def test_gather_setup_info_with_demo_flag_passed(monkeypatch):
@@ -315,7 +358,7 @@ def test_gather_setup_info_with_demo_flag_passed(monkeypatch):
                                            email="me@cern.ch", gitlab=False, force_demo=True, demo=True)
     a, b, c, d, e, f, new_params = create_project_module.gather_setup_information(parameters)
     assert new_params.demo
-    assert create_project_module.validate_demo_flags(force_demo=True, demo=True, interactive=True)
+    assert create_project_utils.validate_demo_flags(force_demo=True, demo=True, interactive=True)
 
 
 def test_gather_setup_info_demo_neither_flag_passed(monkeypatch):
@@ -326,7 +369,7 @@ def test_gather_setup_info_demo_neither_flag_passed(monkeypatch):
     with pytest.raises(ZeroDivisionError):
         create_project_module.gather_setup_information(parameters)
     with pytest.raises(ZeroDivisionError):
-        create_project_module.validate_demo_flags(force_demo=False, demo=True, interactive=True)
+        create_project_utils.validate_demo_flags(force_demo=False, demo=True, interactive=True)
 
 
 def test_gather_setup_info_demo_neither_flag_passed_but_not_interactive_given(monkeypatch):
@@ -336,7 +379,7 @@ def test_gather_setup_info_demo_neither_flag_passed_but_not_interactive_given(mo
                                            gitlab=False, force_demo=False, demo=True, interactive=False)
     a, b, c, d, e, f, new_params = create_project_module.gather_setup_information(parameters)
     assert new_params.demo
-    assert create_project_module.validate_demo_flags(force_demo=False, demo=True, interactive=False)
+    assert create_project_utils.validate_demo_flags(force_demo=False, demo=True, interactive=False)
 
 
 def test_gather_setup_info_not_interactive_all_values_given(monkeypatch):

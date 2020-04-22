@@ -1,16 +1,33 @@
 import sys
+import signal
 import argparse
 
-from bipy_gui_manager.create_project import create_project
+from bipy_gui_manager import cli_utils as cli
+from bipy_gui_manager.create_project.create_project import create_project
 from bipy_gui_manager.self_update import self_update
 from bipy_gui_manager.configure import configure
 from bipy_gui_manager.entry_points import entry_points
 
 
+# Gracefully handle Ctrl+C and other kill signals
+def kill_handler(_, __):
+    cli.draw_line()
+    cli.negative_feedback("Exiting on user's request.")
+    sys.exit(0)
+
+
+# Hook the custom handler to the kill signal
+signal.signal(signal.SIGINT, kill_handler)
+
+
 def main():
+    """
+    This function acts mainly as a frontend for the different subcommands.
+    """
     parser = argparse.ArgumentParser(epilog="type 'pyqt-manager <command> --help' to learn more about their options.")
     subparsers = parser.add_subparsers()
 
+    # 'create-project' subcommand
     new_project_parser = subparsers.add_parser('create-project',
                                                help='Start a wizard that guides you through the setup of a new PyQt '
                                                     'project.')
@@ -55,17 +72,26 @@ def main():
                                          "NOTE: further customizations might break if the template does not correspond "
                                          "to the default one.")
 
+    # 'release' subcommand
+    self_update_parser = subparsers.add_parser('release',
+           help="Releases the application in the shared folders, to it becomes visible from BI's AppLauncher")
+    self_update_parser.set_defaults(func=self_update)
+
+    # 'self-update' subcommand
     self_update_parser = subparsers.add_parser('self-update',
            help='Checks for updates for pyqt-manager (does not affects applications).')
     self_update_parser.set_defaults(func=self_update)
 
+    # 'configure' subcommand
     project_configuration_parser = subparsers.add_parser('configure',
             help='Configure the current project (set author, email, etc...).')
     project_configuration_parser.set_defaults(func=configure)
 
+    # 'entry-points' subcommand
     entry_points_parser = subparsers.add_parser('entry-points',
             help='Manages the application\'s entry points.')
     entry_points_parser.set_defaults(func=entry_points)
 
+    # Parse and call relevant subcommand
     args = parser.parse_args(args=None if sys.argv[1:] else ['--help'])
     args.func(args)  # Necessary for the subparsers
