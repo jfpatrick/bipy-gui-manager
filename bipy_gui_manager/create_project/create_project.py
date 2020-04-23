@@ -348,33 +348,33 @@ def init_local_repo(project_path: str) -> None:
     )
 
 
-def create_gitlab_repository(project_name: str, project_desc: str):
-    """
-    Create a GitLab repo under bisw-python
-    :param project_name: Name of the project
-
-    Token for szanzott = zznsVsiahNkpY1PBEZJ8
-
-    curl -d "name=test-gitlab-api"  https://gitlab.cern.ch/api/v4/projects?private_token=zznsVsiahNkpY1PBEZJ8
-
-    """
-    command = ['/usr/bin/curl', "https://gitlab.cern.ch/api/v4/projects?private_token=zznsVsiahNkpY1PBEZJ8"
-
-               #"-d", "description={}".format(project_desc), # '-d', "name={}".format(project_name),
-               # "-F", "avatar=@{}".format(os.path.join(os.path.dirname(__file__), "resources", "PyQt-logo.gray.png")),
-               ]
-
-    while True:
-        gitlab = Popen(command, stdout=PIPE, stderr=PIPE)
-        (stdout, stderr) = gitlab.communicate()
-
-        if gitlab.poll() == 0:
-            return
-        else:
-            cli.negative_feedback(stderr.decode('utf-8'))
-            raise OSError("Failed to create the repository on GitLab. Please double check tnat a repository "
-                          "named '{}' does not exist under bisw-python and, if so, ".format(project_name) +
-                          "make sure you can connect to GitLab from the browser and that 'curl' is installed.")
+# def create_gitlab_repository(project_name: str, project_desc: str):
+#     """
+#     Create a GitLab repo under bisw-python
+#     :param project_name: Name of the project
+#
+#     Token for szanzott = zznsVsiahNkpY1PBEZJ8
+#
+#     curl -d "name=test-gitlab-api"  https://gitlab.cern.ch/api/v4/projects?private_token=zznsVsiahNkpY1PBEZJ8
+#
+#     """
+#     command = ['/usr/bin/curl', "https://gitlab.cern.ch/api/v4/projects?private_token=zznsVsiahNkpY1PBEZJ8"
+#
+#                #"-d", "description={}".format(project_desc), # '-d', "name={}".format(project_name),
+#                # "-F", "avatar=@{}".format(os.path.join(os.path.dirname(__file__), "resources", "PyQt-logo.gray.png")),
+#                ]
+#
+#     while True:
+#         gitlab = Popen(command, stdout=PIPE, stderr=PIPE)
+#         (stdout, stderr) = gitlab.communicate()
+#
+#         if gitlab.poll() == 0:
+#             return
+#         else:
+#             cli.negative_feedback(stderr.decode('utf-8'))
+#             raise OSError("Failed to create the repository on GitLab. Please double check tnat a repository "
+#                           "named '{}' does not exist under bisw-python and, if so, ".format(project_name) +
+#                           "make sure you can connect to GitLab from the browser and that 'curl' is installed.")
 
 
 def push_first_commit(project_path: str, gitlab_repo: str) -> None:
