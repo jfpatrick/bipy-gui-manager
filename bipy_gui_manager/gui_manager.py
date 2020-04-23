@@ -70,6 +70,8 @@ def main():
                                     help="Prevents the script from asking the user, interactively, for missing "
                                          "information. If any of the flags --name, --desc, --author, --email is "
                                          "not specified, the script will fail.")
+    new_project_parser.add_argument('--cleanup-on-failure', dest='cleanup_on_failure', action='store_true',
+                                    help="In case of failure, delete any file created until then.")
     new_project_parser.add_argument('--overwrite-project', dest='overwrite', action='store_true',
                                     help="[DEBUG] Overwrites a potentially existing project with the same name without "
                                          "asking the user. This prevents --not-interactive from failing if the "

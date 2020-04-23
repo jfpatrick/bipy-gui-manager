@@ -7,16 +7,17 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 
 # Setup venvs
-echo -e "    - Activating Acc-Py"
-source /acc/local/share/python/acc-py-pyqt/setup.sh  >/dev/null 2>&1
-echo -e "    - Creating local virtualenv"
+# echo -e "    - Activating Acc-Py"
+source /acc/local/share/python/acc-py-pyqt/setup.sh  #>/dev/null 2>&1
+# echo -e "    - Creating local virtualenv"
 acc-py venv venv  >/dev/null 2>&1
 
+
+echo -e "\033[0;32m=>\033[0;m Activating local virtualenv"
 source venv/bin/activate
-echo -e "    - Activating local virtualenv"
 
 # Install with pip
-echo -e "    - Installing (can take a minute - PLEASE IGNORE ACC-PY REQUIREMENTS ERRORS)"
+echo -e "\033[0;32m=>\033[0;m Installing (can take a minute - PLEASE IGNORE ACC-PY REQUIREMENTS ERRORS)"
 if pip install -e . -qqq; then
   # Success!
   exit 0

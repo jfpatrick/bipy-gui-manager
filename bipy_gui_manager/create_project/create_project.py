@@ -61,13 +61,13 @@ def create_project(parameters: argparse.Namespace):
 
         if parameters.gitlab and gitlab_repo == "default":
             cli.positive_feedback("Creating repository on GitLab")
-            gitlab_repo = create_gitlab_repository(project_name)
+            #create_gitlab_repository(project_name, project_desc)
 
         if parameters.gitlab:
             cli.positive_feedback("Uploading project on GitLab")
             push_first_commit(project_path, gitlab_repo)
 
-        cli.positive_feedback("Installing the project in a new virtualenv")
+        # cli.positive_feedback("Installing the project in a new virtualenv")
         install_project(project_path)
 
         cli.draw_line()
@@ -81,10 +81,18 @@ def create_project(parameters: argparse.Namespace):
 
     except Exception as e:
         cli.negative_feedback("A fatal error occurred: {}".format(e))
-        cli.negative_feedback("Cleaning up...")
         # Try a quick cleanup
         if project_path:
-            shutil.rmtree(project_path, ignore_errors=True)
+            if parameters.interactive:
+                while True:
+                    answer = cli.handle_failure("Do you want to clean up what was created so far? (yes/no)")
+                    if answer == "y" or answer == "yes":
+                        cli.negative_feedback("Cleaning up...")
+                        shutil.rmtree(project_path, ignore_errors=True)
+                        break
+            elif parameters.cleanup_on_failure:
+                cli.negative_feedback("Cleaning up...")
+                shutil.rmtree(project_path, ignore_errors=True)
         cli.negative_feedback("Exiting\n")
 
 
@@ -177,6 +185,7 @@ def check_path_is_available(project_path: str, interactive: bool = True, overwri
     """
     if os.path.exists(project_path):
         if overwrite:
+            cli.list_subtask("Overwriting existing folder")
             shutil.rmtree(project_path)
         elif not interactive:
             raise OSError("Directory '{}' already exists.".format(project_path))
@@ -184,6 +193,7 @@ def check_path_is_available(project_path: str, interactive: bool = True, overwri
             answer = cli.handle_failure("A folder called '{}' already exists. ".format(project_path) +
                                         "Do you want to overwrite it? (yes/no)")
             if answer == "yes" or answer == "y":
+                cli.list_subtask("Overwriting existing folder")
                 shutil.rmtree(project_path)
             elif answer == "no" or answer == "n":
                 raise OSError("Directory '{}' already exists.".format(project_path))
@@ -338,7 +348,7 @@ def init_local_repo(project_path: str) -> None:
     )
 
 
-def create_gitlab_repository(project_name: str):
+def create_gitlab_repository(project_name: str, project_desc: str):
     """
     Create a GitLab repo under bisw-python
     :param project_name: Name of the project
@@ -348,14 +358,17 @@ def create_gitlab_repository(project_name: str):
     curl -d "name=test-gitlab-api"  https://gitlab.cern.ch/api/v4/projects?private_token=zznsVsiahNkpY1PBEZJ8
 
     """
-    command = ['/usr/bin/curl', '-d', "name={}".format(project_name),
-               "https://gitlab.cern.ch/api/v4/projects?private_token=zznsVsiahNkpY1PBEZJ8"]
+    command = ['/usr/bin/curl', "https://gitlab.cern.ch/api/v4/projects?private_token=zznsVsiahNkpY1PBEZJ8"
+
+               #"-d", "description={}".format(project_desc), # '-d', "name={}".format(project_name),
+               # "-F", "avatar=@{}".format(os.path.join(os.path.dirname(__file__), "resources", "PyQt-logo.gray.png")),
+               ]
 
     while True:
-        git_query = Popen(command, stdout=PIPE, stderr=PIPE)
-        (stdout, stderr) = git_query.communicate()
+        gitlab = Popen(command, stdout=PIPE, stderr=PIPE)
+        (stdout, stderr) = gitlab.communicate()
 
-        if git_query.poll() == 0:
+        if gitlab.poll() == 0:
             return
         else:
             cli.negative_feedback(stderr.decode('utf-8'))
@@ -396,7 +409,7 @@ def install_project(project_path: str) -> None:
     shutil.copy(os.path.join(os.path.dirname(__file__), "resources", "install-project.sh"), script_temp_location)
     # Execute it (create venvs and install folder in venv)
     os.chmod(script_temp_location, 0o777)
-    error = os.WEXITSTATUS(os.system("cd {} && source {}".format(project_path, script_temp_location)))
+    error = os.WEXITSTATUS(os.system("source {}".format(script_temp_location)))
     # Remove temporary script
     os.remove(script_temp_location)
     # Render error if present
