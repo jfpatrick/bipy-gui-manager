@@ -1,8 +1,14 @@
 import re
 import os
+import json
 import argparse
 import shutil
-from subprocess import Popen, PIPE
+try:
+    import requests  # requests might not be installed, but is needed only for the avatar upload
+except ImportError:
+    pass
+from urllib.parse import urlencode
+from urllib.request import Request, urlopen
 from bipy_gui_manager import cli_utils as cli
 from bipy_gui_manager.create_project import utils
 
@@ -24,6 +30,7 @@ def create_project(parameters: argparse.Namespace):
         project_path = os.path.join(base_path, project_name)
 
         group_name = "szanzott"  # "bisw-python"
+        create_repo = gitlab_repo == 'default'
         if parameters.gitlab and gitlab_repo == 'default':
             if parameters.upload_protocol is None:
                 parameters.upload_protocol = parameters.clone_protocol
@@ -59,9 +66,9 @@ def create_project(parameters: argparse.Namespace):
         cli.positive_feedback("Setting up local Git repository")
         init_local_repo(project_path)
 
-        if parameters.gitlab and gitlab_repo == "default":
+        if parameters.gitlab and create_repo:
             cli.positive_feedback("Creating repository on GitLab")
-            #create_gitlab_repository(project_name, project_desc)
+            create_gitlab_repository(project_name, project_desc)
 
         if parameters.gitlab:
             cli.positive_feedback("Uploading project on GitLab")
@@ -84,12 +91,11 @@ def create_project(parameters: argparse.Namespace):
         # Try a quick cleanup
         if project_path:
             if parameters.interactive:
-                while True:
-                    answer = cli.handle_failure("Do you want to clean up what was created so far? (yes/no)")
-                    if answer == "y" or answer == "yes":
-                        cli.negative_feedback("Cleaning up...")
-                        shutil.rmtree(project_path, ignore_errors=True)
-                        break
+                answer = cli.handle_failure("Do you want to clean up what was created so far? "
+                                            "This will delete the folder {}. (yes/no)".format(project_path))
+                if answer == "y" or answer == "yes":
+                    cli.negative_feedback("Cleaning up...")
+                    shutil.rmtree(project_path, ignore_errors=True)
             elif parameters.cleanup_on_failure:
                 cli.negative_feedback("Cleaning up...")
                 shutil.rmtree(project_path, ignore_errors=True)
@@ -348,33 +354,28 @@ def init_local_repo(project_path: str) -> None:
     )
 
 
-# def create_gitlab_repository(project_name: str, project_desc: str):
-#     """
-#     Create a GitLab repo under bisw-python
-#     :param project_name: Name of the project
-#
-#     Token for szanzott = zznsVsiahNkpY1PBEZJ8
-#
-#     curl -d "name=test-gitlab-api"  https://gitlab.cern.ch/api/v4/projects?private_token=zznsVsiahNkpY1PBEZJ8
-#
-#     """
-#     command = ['/usr/bin/curl', "https://gitlab.cern.ch/api/v4/projects?private_token=zznsVsiahNkpY1PBEZJ8"
-#
-#                #"-d", "description={}".format(project_desc), # '-d', "name={}".format(project_name),
-#                # "-F", "avatar=@{}".format(os.path.join(os.path.dirname(__file__), "resources", "PyQt-logo.gray.png")),
-#                ]
-#
-#     while True:
-#         gitlab = Popen(command, stdout=PIPE, stderr=PIPE)
-#         (stdout, stderr) = gitlab.communicate()
-#
-#         if gitlab.poll() == 0:
-#             return
-#         else:
-#             cli.negative_feedback(stderr.decode('utf-8'))
-#             raise OSError("Failed to create the repository on GitLab. Please double check tnat a repository "
-#                           "named '{}' does not exist under bisw-python and, if so, ".format(project_name) +
-#                           "make sure you can connect to GitLab from the browser and that 'curl' is installed.")
+def create_gitlab_repository(project_name: str, project_desc: str):
+    """
+    Create a GitLab repo under bisw-python
+    :param project_name: Name of the project
+
+    Token for szanzott = zznsVsiahNkpY1PBEZJ8
+    curl -d "name=test-gitlab-api"  https://gitlab.cern.ch/api/v4/projects?private_token=zznsVsiahNkpY1PBEZJ8
+    """
+    url = 'https://gitlab.cern.ch/api/v4/projects?private_token=zznsVsiahNkpY1PBEZJ8'
+    post_fields = {'name': project_name, 'description': project_desc}  # Set POST fields here
+    request = Request(url, data=urlencode(post_fields).encode())
+    data = json.loads(urlopen(request).read().decode())
+
+    # The avatar setting honestly is not critical: if it fails, amen
+    try:
+        avatar_path = os.path.join(os.path.dirname(__file__), "resources", "PyQt-logo-gray.png")
+        url = 'https://gitlab.cern.ch/api/v4/projects/{}'.format(data['id'])
+        avatar = {'avatar': (avatar_path, open(avatar_path, 'rb'), 'multipart/form-data')}
+        auth_header = {'PRIVATE-TOKEN': 'zznsVsiahNkpY1PBEZJ8'}
+        requests.put(url, files=avatar, headers=auth_header)
+    except Exception as e:
+        print("  - Avatar upload failed: {}.".format(e))
 
 
 def push_first_commit(project_path: str, gitlab_repo: str) -> None:
@@ -388,6 +389,16 @@ def push_first_commit(project_path: str, gitlab_repo: str) -> None:
         cwd=project_path,
         allow_retry=False,
         neg_feedback="Failed to add the remote on the project's local repo."
+    )
+    # Check for repository existence
+    utils.invoke_git(
+        parameters=['ls-remote'],
+        cwd=project_path,
+        allow_retry=False,
+        neg_feedback="Seems like {} is not an existing and empty GitLab repository. ".format(gitlab_repo) +
+                     "The repository should EXIST and be EMPTY at this stage. \n" +
+                     "You can create the repo yourself and then pass the link with the --repo flag." +
+                     "If you think this is a bug, please report it to the maintainers."
     )
     utils.invoke_git(
         parameters=['push', '-u', 'origin', 'master'],
@@ -409,7 +420,10 @@ def install_project(project_path: str) -> None:
     shutil.copy(os.path.join(os.path.dirname(__file__), "resources", "install-project.sh"), script_temp_location)
     # Execute it (create venvs and install folder in venv)
     os.chmod(script_temp_location, 0o777)
-    error = os.WEXITSTATUS(os.system("source {}".format(script_temp_location)))
+    current_dir = os.getcwd()
+    os.chdir(project_path)
+    error = os.WEXITSTATUS(os.system("source ./.tmp.sh"))
+    os.chdir(current_dir)
     # Remove temporary script
     os.remove(script_temp_location)
     # Render error if present

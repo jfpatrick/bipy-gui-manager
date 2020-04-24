@@ -25,6 +25,3 @@ else
   # Failure
   exit 1
 fi
-
-# Go back to the dir we started from
-cd ../
