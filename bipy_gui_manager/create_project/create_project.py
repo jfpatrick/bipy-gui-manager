@@ -1,3 +1,4 @@
+from typing import Tuple
 import re
 import os
 import json
@@ -25,21 +26,23 @@ def create_project(parameters: argparse.Namespace):
         cli.print_welcome()
         print("  Setup: \n")
 
-        project_name, project_desc, project_author, author_email, base_path, gitlab_repo, parameters = \
-            gather_setup_information(parameters)
-        project_path = os.path.join(base_path, project_name)
+        parameters = gather_setup_information(parameters)
+        project_path = os.path.join(parameters.base_path, parameters.project_name)
 
         group_name = "szanzott"  # "bisw-python"
-        create_repo = gitlab_repo == 'default'
-        if parameters.gitlab and gitlab_repo == 'default':
+        create_repo = parameters.gitlab_repo == 'default'
+        if parameters.gitlab and parameters.gitlab_repo == 'default':
             if parameters.upload_protocol is None:
                 parameters.upload_protocol = parameters.clone_protocol
             if parameters.upload_protocol == 'ssh':
-                gitlab_repo = "ssh://git@gitlab.cern.ch:7999/{}/{}.git".format(group_name, project_name)
+                parameters.gitlab_repo = "ssh://git@gitlab.cern.ch:7999/{}/{}.git".format(group_name,
+                                                                                          parameters.project_name)
             elif parameters.upload_protocol == 'https':
-                gitlab_repo = "https://gitlab.cern.ch/{}/{}.git".format(group_name, project_name)
+                parameters.gitlab_repo = "https://gitlab.cern.ch/{}/{}.git".format(group_name,
+                                                                                   parameters.project_name)
             elif parameters.upload_protocol == 'kerberos':
-                gitlab_repo = "https://:@gitlab.cern.ch:8443/{}/{}.git".format(group_name, project_name)
+                parameters.gitlab_repo = "https://:@gitlab.cern.ch:8443/{}/{}.git".format(group_name,
+                                                                                          parameters.project_name)
             else:
                 raise ValueError("Upload protocol not recognized: '{}'".format(parameters.upload_protocol))
 
@@ -57,10 +60,12 @@ def create_project(parameters: argparse.Namespace):
             download_template(project_path, parameters.clone_protocol, parameters.demo, parameters.interactive)
 
         cli.positive_feedback("Applying customizations")
-        apply_customizations(project_path, project_name, project_desc, project_author, author_email)
+        apply_customizations(project_path, parameters.project_name, parameters.project_desc, parameters.project_author,
+                             parameters.author_email)
 
         cli.positive_feedback("Preparing README")
-        generate_readme(project_path, project_name, project_desc, project_author, author_email, gitlab_repo)
+        generate_readme(project_path, parameters.project_name, parameters.project_desc, parameters.project_author,
+                        parameters.author_email, parameters.gitlab_repo)
         cli.give_hint("check the README for typos and complete it with a more in-depth description of your project.")
 
         cli.positive_feedback("Setting up local Git repository")
@@ -68,19 +73,18 @@ def create_project(parameters: argparse.Namespace):
 
         if parameters.gitlab and create_repo:
             cli.positive_feedback("Creating repository on GitLab")
-            create_gitlab_repository(project_name, project_desc)
+            create_gitlab_repository(parameters.project_name, parameters.project_desc)
 
         if parameters.gitlab:
             cli.positive_feedback("Uploading project on GitLab")
-            push_first_commit(project_path, gitlab_repo)
+            push_first_commit(project_path, parameters.gitlab_repo)
 
-        # cli.positive_feedback("Installing the project in a new virtualenv")
         install_project(project_path)
 
         cli.draw_line()
-        cli.positive_feedback("New project '{}' installed successfully".format(project_name))
+        cli.positive_feedback("New project '{}' installed successfully".format(parameters.project_name))
         cli.positive_feedback(
-            "Please make sure by typing 'source activate.sh' and '{}' in the console".format(project_name))
+            "Please make sure by typing 'source activate.sh' and '{}' in the console".format(parameters.project_name))
         cli.give_hint("type 'pyqt-manager --help' to see more workflows.")
         cli.give_hint("launch PyCharm from the project folder to start working - "
                       "remember to type 'source activate.sh' in PyCharm terminal too")
@@ -102,10 +106,15 @@ def create_project(parameters: argparse.Namespace):
         cli.negative_feedback("Exiting\n")
 
 
-def gather_setup_information(parameters):
-
+def gather_setup_information(parameters: argparse.Namespace) -> argparse.Namespace:
+    """
+    Collects the information from the user. Might be interactive or not,
+    depending on the user settings and the validation outcome.
+    :param parameters: CLI parameters
+    :return: the validated and updated CLI arguments
+    """
     project_name_validator = re.compile("^[a-z0-9-]+$")
-    project_name = utils.validate_as_arg_or_ask(
+    parameters.project_name = utils.validate_as_arg_or_ask(
         cli_value=parameters.project_name,
         validator=lambda v: project_name_validator.match(v),
         question="Please enter your \033[0;33mproject's name\033[0;m:",
@@ -113,7 +122,7 @@ def gather_setup_information(parameters):
         pos_feedback="The project name is set to: \033[0;32m{}\033[0;m",
         interactive=parameters.interactive
     )
-    project_desc = utils.validate_as_arg_or_ask(
+    parameters.project_desc = utils.validate_as_arg_or_ask(
         cli_value=parameters.project_desc,
         validator=lambda v: v != "" and "\"" not in v,
         question="Please enter a \033[0;33mone-line description\033[0;m of your project:",
@@ -121,7 +130,7 @@ def gather_setup_information(parameters):
         pos_feedback="The project description is set to: \033[0;32m{}\033[0;m",
         interactive=parameters.interactive
     )
-    project_author = utils.validate_as_arg_or_ask(
+    parameters.project_author = utils.validate_as_arg_or_ask(
         cli_value=parameters.project_author,
         validator=lambda v: v != "" and "\"" not in v,
         question="Please enter the project's \033[0;33mauthor name\033[0;m:",
@@ -130,7 +139,7 @@ def gather_setup_information(parameters):
         interactive=parameters.interactive
     )
     author_email_validator = re.compile("[a-zA-Z0-9._%+-]+@cern.ch")  # TODO support email lists!
-    author_email = utils.validate_as_arg_or_ask(
+    parameters.author_email = utils.validate_as_arg_or_ask(
         cli_value=parameters.author_email,
         validator=lambda v: author_email_validator.match(v),
         question="Please enter the author's \033[0;33mCERN email address\033[0;m:",
@@ -138,24 +147,25 @@ def gather_setup_information(parameters):
         pos_feedback="The project author's email name is set to: \033[0;32m{}\033[0;m",
         interactive=parameters.interactive
     )
-    base_path = utils.validate_as_arg_or_ask(
+    parameters.base_path = utils.validate_as_arg_or_ask(
         cli_value=parameters.project_path,
         validator=lambda v: (v == "." or os.path.isdir(v)),
         question="Please type the \033[0;33mpath\033[0;m where to create the new project, or type '.' to create it "
                  "in the current directory ({}):".format(os.getcwd()),
         neg_feedback="Please provide an existing folder.",
-        pos_feedback="The project will be created under \033[0;32m{}\033[0;m".format(os.path.join("{}", project_name)),
+        pos_feedback="The project will be created under \033[0;32m{}\033[0;m".format(
+            os.path.join("{}", parameters.project_name)),
         interactive=parameters.interactive
     )
-    if base_path == '.':
-        base_path = os.getcwd()
+    if parameters.base_path == '.':
+        parameters.base_path = os.getcwd()
 
     repo_validator_ssh = re.compile("^ssh://git@gitlab.cern.ch:7999/[a-zA-Z0-9_%-]+/[a-zA-Z0-9_%/-]+.git$")
     repo_validator_https = re.compile("^https://gitlab.cern.ch/[a-zA-Z0-9_%-]+/[a-zA-Z0-9_%/-]+.git$")
     repo_validator_kerb = re.compile("^https://:@gitlab.cern.ch:8443/[a-zA-Z0-9_%-]+/[a-zA-Z0-9_%/-]+.git$")
-    gitlab_repo = None
+    # parameters.gitlab_repo = None
     if parameters.gitlab:
-        gitlab_repo = utils.validate_as_arg_or_ask(
+        parameters.gitlab_repo = utils.validate_as_arg_or_ask(
             cli_value=parameters.gitlab_repo,
             validator=lambda v: (v is not None and (
                                  v == "" or
@@ -171,15 +181,15 @@ def gather_setup_information(parameters):
             hints=("copy the address from the Clone button, choosing the protocol you prefer (HTTPS, SSH, KRB5)", ),
             interactive=parameters.interactive
         )
-        if gitlab_repo == 'no-gitlab':
-            gitlab_repo = None
+        if parameters.gitlab_repo == 'no-gitlab':
+            parameters.gitlab_repo = None
             parameters.gitlab = False
-        if gitlab_repo == '' or gitlab_repo == 'default':
-            gitlab_repo = "default"
+        if parameters.gitlab_repo == '' or parameters.gitlab_repo == 'default':
+            parameters.gitlab_repo = "default"
 
     parameters.demo = utils.validate_demo_flags(parameters.force_demo, parameters.demo, parameters.interactive)
 
-    return project_name, project_desc, project_author, author_email, base_path, gitlab_repo, parameters
+    return parameters
 
 
 def check_path_is_available(project_path: str, interactive: bool = True, overwrite: bool = False) -> None:
@@ -191,7 +201,7 @@ def check_path_is_available(project_path: str, interactive: bool = True, overwri
     """
     if os.path.exists(project_path):
         if overwrite:
-            cli.list_subtask("Overwriting existing folder")
+            cli.list_subtask("Overwriting folder {}".format(project_path))
             shutil.rmtree(project_path)
         elif not interactive:
             raise OSError("Directory '{}' already exists.".format(project_path))
