@@ -12,7 +12,11 @@ from .conftest import create_project_parameters
 def test_gather_setup_info_most_common_right_values():
     parameters = create_project_parameters(name="test-project", desc="A test project", author="Me", email="me@cern.ch",
                                            repo="ssh://git@gitlab.cern.ch:7999/user/project.git")
-    create_project_module.gather_setup_information(parameters)
+    new_params = create_project_module.gather_setup_information(parameters)
+    assert new_params.project_name == "test-project"
+    assert new_params.project_desc == "A test project"
+    assert new_params.project_author == "Me"
+    assert new_params.author_email == "me@cern.ch"
 
 
 # #########################
@@ -22,7 +26,29 @@ def test_gather_setup_info_name_valid():
     # Right values
     parameters = create_project_parameters(name="test-project", desc="A test project", author="Me", email="me@cern.ch",
                                            repo="ssh://git@gitlab.cern.ch:7999/user/project.git")
-    create_project_module.gather_setup_information(parameters)
+    new_params = create_project_module.gather_setup_information(parameters)
+    assert new_params.project_name == "test-project"
+
+
+def test_gather_setup_info_name_not_given_ask(monkeypatch):
+    # If not given as parameter will ask
+    monkeypatch.setattr('builtins.input', lambda _: 1/0)
+    parameters = create_project_parameters(desc="A test project", author="Me",
+                                           email="m@cern.ch",
+                                           repo="ssh://git@gitlab.cern.ch:7999/user/project.git")
+    with pytest.raises(ZeroDivisionError):
+        create_project_module.gather_setup_information(parameters)
+
+
+def test_gather_setup_info_name_not_given_ask_get_valid(monkeypatch):
+    # If given through CLI, should save it
+    monkeypatch.setattr('builtins.input', lambda _: "test-project")
+    parameters = create_project_parameters(desc="A test project", author="Me",
+                                           email="m@cern.ch",
+                                           repo="ssh://git@gitlab.cern.ch:7999/user/project.git")
+    new_params = create_project_module.gather_setup_information(parameters)
+    assert new_params.project_name == "test-project"
+    # FIXME Cannot really test that the validation occurs, because it would just keep asking...
 
 
 def test_gather_setup_info_name_no_underscores():
@@ -67,16 +93,6 @@ def test_gather_setup_info_name_no_empty_string(monkeypatch):
         create_project_module.gather_setup_information(parameters)
 
 
-def test_gather_setup_info_name_not_given(monkeypatch):
-    # If not given as parameter will ask
-    monkeypatch.setattr('builtins.input', lambda _: 1/0)
-    parameters = create_project_parameters(desc="A test project", author="Me",
-                                           email="m@cern.ch",
-                                           repo="ssh://git@gitlab.cern.ch:7999/user/project.git")
-    with pytest.raises(ZeroDivisionError):
-        create_project_module.gather_setup_information(parameters)
-
-
 # #########################
 # #      Description      #
 # #########################
@@ -84,7 +100,19 @@ def test_gather_setup_info_desc_valid():
     # Right values
     parameters = create_project_parameters(name="test-project", desc="A test project", author="Me", email="me@cern.ch",
                                            repo="ssh://git@gitlab.cern.ch:7999/user/project.git")
-    create_project_module.gather_setup_information(parameters)
+    new_params = create_project_module.gather_setup_information(parameters)
+    assert new_params.project_desc == "A test project"
+
+
+def test_gather_setup_info_desc_not_given_ask_get_valid(monkeypatch):
+    # If given through CLI, should save it
+    monkeypatch.setattr('builtins.input', lambda _: "A test project")
+    parameters = create_project_parameters(name="test-project", author="Me",
+                                           email="m@cern.ch",
+                                           repo="ssh://git@gitlab.cern.ch:7999/user/project.git")
+    new_params = create_project_module.gather_setup_information(parameters)
+    assert new_params.project_desc == "A test project"
+    # FIXME Cannot really test that the validation occurs, because it would just keep asking...
 
 
 def test_gather_setup_info_desc_no_double_quotes():
@@ -120,7 +148,19 @@ def test_gather_setup_info_author_valid():
     # Right values
     parameters = create_project_parameters(name="test-project", desc="A test project", author="Me", email="me@cern.ch",
                                            repo="ssh://git@gitlab.cern.ch:7999/user/project.git")
-    create_project_module.gather_setup_information(parameters)
+    new_params = create_project_module.gather_setup_information(parameters)
+    assert new_params.project_author == "Me"
+
+
+def test_gather_setup_info_author_not_given_ask_get_valid(monkeypatch):
+    # If given through CLI, should save it
+    monkeypatch.setattr('builtins.input', lambda _: "Me")
+    parameters = create_project_parameters(name="test-project", desc="A test project",
+                                           email="m@cern.ch",
+                                           repo="ssh://git@gitlab.cern.ch:7999/user/project.git")
+    new_params = create_project_module.gather_setup_information(parameters)
+    assert new_params.project_author == "Me"
+    # FIXME Cannot really test that the validation occurs, because it would just keep asking...
 
 
 def test_gather_setup_info_author_no_double_quotes():
@@ -156,7 +196,18 @@ def test_gather_setup_info_email_valid():
     # Right value
     parameters = create_project_parameters(name="test-project", desc="A test project", author="Me", email="me@cern.ch",
                                            repo="ssh://git@gitlab.cern.ch:7999/user/project.git")
-    create_project_module.gather_setup_information(parameters)
+    new_params = create_project_module.gather_setup_information(parameters)
+    assert new_params.author_email == "me@cern.ch"
+
+
+def test_gather_setup_info_email_not_given_ask_get_valid(monkeypatch):
+    # If given through CLI, should save it
+    monkeypatch.setattr('builtins.input', lambda _: "me@cern.ch")
+    parameters = create_project_parameters(name="test-project", desc="A test project", author="Me",
+                                           repo="ssh://git@gitlab.cern.ch:7999/user/project.git")
+    new_params = create_project_module.gather_setup_information(parameters)
+    assert new_params.author_email == "me@cern.ch"
+    # FIXME Cannot really test that the validation occurs, because it would just keep asking...
 
 
 def test_gather_setup_info_email_cern_domain_required():
@@ -209,7 +260,8 @@ def test_gather_setup_info_project_path_not_specified(monkeypatch):
     parameters = create_project_parameters(name="test-project", desc="A test project", author="Me",
                                            email="me@cern.ch", repo="https://:@gitlab.cern.ch:8443/user/project.git")
     # Will not ask and default to the local directory
-    create_project_module.gather_setup_information(parameters)
+    new_params = create_project_module.gather_setup_information(parameters)
+    assert new_params.base_path == os.getcwd()
 
 
 def test_gather_setup_info_project_path_specified_and_existing(monkeypatch, tmpdir):
@@ -218,7 +270,8 @@ def test_gather_setup_info_project_path_specified_and_existing(monkeypatch, tmpd
     monkeypatch.setattr('builtins.input', lambda _: 1 / 0)
     parameters = create_project_parameters(name="test-project", desc="A test project", author="Me", email="me@cern.ch",
                                            repo="https://:@gitlab.cern.ch:8443/user/project.git", path=project_path)
-    create_project_module.gather_setup_information(parameters)
+    new_params = create_project_module.gather_setup_information(parameters)
+    assert new_params.base_path == project_path
 
 
 def test_gather_setup_info_project_path_not_existing(monkeypatch, tmpdir):
@@ -238,11 +291,13 @@ def test_gather_setup_info_repo_https():
     # Right value
     parameters = create_project_parameters(name="test-project", desc="A test project", author="Me", email="me@cern.ch",
                                            repo="https://gitlab.cern.ch/user/project.git")
-    create_project_module.gather_setup_information(parameters)
+    new_params = create_project_module.gather_setup_information(parameters)
+    assert new_params.gitlab_repo == "https://gitlab.cern.ch/user/project.git"
     # Nested
     parameters = create_project_parameters(name="test-project", desc="A test project", author="Me", email="me@cern.ch",
                                            repo="https://gitlab.cern.ch/group/subgroup/project.git")
-    create_project_module.gather_setup_information(parameters)
+    new_params = create_project_module.gather_setup_information(parameters)
+    assert new_params.gitlab_repo == "https://gitlab.cern.ch/group/subgroup/project.git"
     # Too short
     parameters = create_project_parameters(name="test-project", desc="A test", author="Me", email="me@cern.ch",
                                            repo="https://gitlab.cern.ch/project.git")
@@ -254,11 +309,13 @@ def test_gather_setup_info_repo_ssh():
     # Right value
     parameters = create_project_parameters(name="test-project", desc="A test project", author="Me", email="me@cern.ch",
                                            repo="ssh://git@gitlab.cern.ch:7999/user/project.git")
-    create_project_module.gather_setup_information(parameters)
+    new_params = create_project_module.gather_setup_information(parameters)
+    assert new_params.gitlab_repo == "ssh://git@gitlab.cern.ch:7999/user/project.git"
     # Nested more than 2
     parameters = create_project_parameters(name="test-project", desc="A test project", author="Me", email="me@cern.ch",
                                            repo="ssh://git@gitlab.cern.ch:7999/group/subgroup/project.git")
-    create_project_module.gather_setup_information(parameters)
+    new_params = create_project_module.gather_setup_information(parameters)
+    assert new_params.gitlab_repo == "ssh://git@gitlab.cern.ch:7999/group/subgroup/project.git"
     # Too short
     parameters = create_project_parameters(name="test-project", desc="A test", author="Me", email="me@cern.ch",
                                            repo="ssh://git@gitlab.cern.ch:7999/project.git")
@@ -270,11 +327,13 @@ def test_gather_setup_info_repo_krb5():
     # Right value
     parameters = create_project_parameters(name="test-project", desc="A test project", author="Me", email="me@cern.ch",
                                            repo="https://:@gitlab.cern.ch:8443/user/project.git")
-    create_project_module.gather_setup_information(parameters)
+    new_params = create_project_module.gather_setup_information(parameters)
+    assert new_params.gitlab_repo == "https://:@gitlab.cern.ch:8443/user/project.git"
     # Nested more than 2
     parameters = create_project_parameters(name="test-project", desc="A test project", author="Me", email="me@cern.ch",
                                            repo="https://:@gitlab.cern.ch:8443/group/subgroup/project.git")
-    create_project_module.gather_setup_information(parameters)
+    new_params = create_project_module.gather_setup_information(parameters)
+    assert new_params.gitlab_repo == "https://:@gitlab.cern.ch:8443/group/subgroup/project.git"
     # Too short
     parameters = create_project_parameters(name="test-project", desc="A test", author="Me", email="me@cern.ch",
                                            repo="https://:@gitlab.cern.ch:8443/project.git")
@@ -282,11 +341,21 @@ def test_gather_setup_info_repo_krb5():
         create_project_module.gather_setup_information(parameters)
 
 
+def test_gather_setup_info_repo_no_gitlab(monkeypatch):
+    # Replying 'no-gitlab' in the CLI is allowed
+    monkeypatch.setattr('builtins.input', lambda _: 'no-gitlab')
+    parameters = create_project_parameters(name="test-project", desc="A test", author="Me", email="me@cern.ch",
+                                           gitlab=False)
+    new_params = create_project_module.gather_setup_information(parameters)
+    assert new_params.gitlab_repo is None
+
+
 def test_gather_setup_info_repo_no_gitlab_interactive(monkeypatch):
     # Replying 'no-gitlab' in the CLI is allowed
     monkeypatch.setattr('builtins.input', lambda _: 'no-gitlab')
     parameters = create_project_parameters(name="test-project", desc="A test", author="Me", email="me@cern.ch")
-    create_project_module.gather_setup_information(parameters)
+    new_params = create_project_module.gather_setup_information(parameters)
+    assert new_params.gitlab_repo is None
 
 
 def test_gather_setup_info_repo_no_garbage_address():
@@ -302,7 +371,7 @@ def test_gather_setup_info_repo_default_string(monkeypatch):
     parameters = create_project_parameters(name="test-project", desc="A test project", author="Me",
                                            email="me@cern.ch", repo="default")
     new_params = create_project_module.gather_setup_information(parameters)
-    assert new_params. gitlab_repo == "default"
+    assert new_params.gitlab_repo == "default"
 
 
 def test_gather_setup_info_repo_empty_string(monkeypatch):
@@ -312,13 +381,13 @@ def test_gather_setup_info_repo_empty_string(monkeypatch):
                                            email="me@cern.ch")
     new_params = create_project_module.gather_setup_information(parameters)
     assert new_params.gitlab_repo == "default"
-    #
-    # # Do not accept the empty string from the cli
-    # monkeypatch.setattr('builtins.input', lambda _: 1/0)
-    # parameters = create_project_parameters(name="test-project", desc="A test project", author="Me",
-    #                                        email="me@cern.ch", repo="")
-    # with pytest.raises(ZeroDivisionError):
-    #     create_project_module.gather_setup_information(parameters)
+
+    # Translate empty string as "default" in the CLI
+    monkeypatch.setattr('builtins.input', lambda _: 1/0)
+    parameters = create_project_parameters(name="test-project", desc="A test project", author="Me",
+                                           email="me@cern.ch", repo="")
+    new_params = create_project_module.gather_setup_information(parameters)
+    assert new_params.gitlab_repo == "default"
 
 
 def test_gather_setup_info_repo_not_given(monkeypatch):
@@ -328,6 +397,15 @@ def test_gather_setup_info_repo_not_given(monkeypatch):
                                            email="me@cern.ch")
     with pytest.raises(ZeroDivisionError):
         create_project_module.gather_setup_information(parameters)
+
+
+def test_gather_setup_info_repo_not_given_ask(monkeypatch):
+    # If not given as parameter will ask
+    monkeypatch.setattr('builtins.input', lambda _: "default")
+    parameters = create_project_parameters(name="test-project", desc="A test project", author="Me",
+                                           email="me@cern.ch")
+    new_params = create_project_module.gather_setup_information(parameters)
+    assert new_params.gitlab_repo == "default"
 
 
 def test_gather_setup_info_repo_not_checked_if_gitlab_false():
@@ -392,9 +470,14 @@ def test_gather_setup_info_not_interactive_all_values_given(monkeypatch):
     # All should go without user input anyways
     monkeypatch.setattr('builtins.input', lambda _: 1 / 0)
     parameters = create_project_parameters(name="test-project", desc="A test project", author="Me", email="me@cern.ch",
+                                           repo="https://:@gitlab.cern.ch:8443/user/project.git")
+    new_params = create_project_module.gather_setup_information(parameters)
+    assert new_params.interactive
+    parameters = create_project_parameters(name="test-project", desc="A test project", author="Me", email="me@cern.ch",
                                            repo="https://:@gitlab.cern.ch:8443/user/project.git",
                                            interactive=False)
-    create_project_module.gather_setup_information(parameters)
+    new_params = create_project_module.gather_setup_information(parameters)
+    assert not new_params.interactive
 
 
 def test_gather_setup_info_not_interactive_not_all_values_given(monkeypatch):
