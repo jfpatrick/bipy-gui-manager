@@ -43,12 +43,13 @@ def main():
                                     help="Sets the project author's name.")
     new_project_parser.add_argument('--email', dest='author_email', default=None,
                                     help="Sets the project author's email.")
-    new_project_parser.add_argument('--repo', dest='gitlab_repo', default=None,
-                                    help="Sets the project's GitLab repository address."
-                                         "Set it to 'default' to create a repository under "
-                                         "gitlab.cern.ch/bisw-python/<project_name>, if the name is available.")
-    new_project_parser.add_argument('--no-gitlab', dest='gitlab', action='store_false',
-                                    help="Skips the GitLab upload, but still inits the repository locally.")
+    repo_commands = new_project_parser.add_mutually_exclusive_group()
+    repo_commands.add_argument('--repo', dest='gitlab_repo', default=None,
+                               help="Sets the project's GitLab repository address."
+                                    "Set it to 'default' to create a repository under "
+                                    "gitlab.cern.ch/bisw-python/<project_name>, if the name is available.")
+    repo_commands.add_argument('--no-gitlab', dest='gitlab', action='store_false',
+                               help="Skips the GitLab upload, but still inits the repository locally.")
     new_project_parser.add_argument('--clone-protocol', dest='clone_protocol', default="kerberos",
                                     choices=('kerberos', 'ssh', 'https'),
                                     help="Protocol to use to clone the template from GitLab")

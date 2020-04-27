@@ -1,4 +1,8 @@
+from typing import Mapping
 import os
+import re
+import json
+import urllib
 from subprocess import Popen, PIPE
 from bipy_gui_manager import cli_utils as cli
 
@@ -32,11 +36,72 @@ def invoke_git(parameters=(), cwd=os.getcwd(), allow_retry=False, neg_feedback="
                 raise OSError(neg_feedback)
 
 
+def post_to_gitlab(endpoint: str, post_fields: Mapping[str, str]) -> Mapping[str, str]:
+    """
+    Performs a call to a GitLab API's endpoint.
+    NOTE: only JSON will be send - no binaries
+    :param endpoint: the endpoint's path
+    :param post_fields: what the POST request body will contain
+    :return:
+    """
+    url = 'https://gitlab.cern.ch/{}'.format(endpoint)
+    request_data = urllib.parse.urlencode(post_fields).encode()
+    request = urllib.request.Request(url, data=request_data)
+    response = urllib.request.urlopen(request).read().decode()
+    return json.loads(response)
+
+
 def validate_or_fail(value, validator, neg_feedback):
     """ Either return the value if valid, or throw ValueError """
     if value is None or not validator(value):
         raise ValueError(neg_feedback)
     return value
+
+
+def validate_gitlab(parameters):
+    if parameters.gitlab:
+        repo_validator_ssh = re.compile("^ssh://git@gitlab.cern.ch:7999/[a-zA-Z0-9_%-]+/[a-zA-Z0-9_%/-]+.git$")
+        repo_validator_https = re.compile("^https://gitlab.cern.ch/[a-zA-Z0-9_%-]+/[a-zA-Z0-9_%/-]+.git$")
+        repo_validator_kerb = re.compile("^https://:@gitlab.cern.ch:8443/[a-zA-Z0-9_%-]+/[a-zA-Z0-9_%/-]+.git$")
+        parameters.gitlab_repo = validate_as_arg_or_ask(
+            cli_value=parameters.gitlab_repo,
+            validator=lambda v: (v is not None and (
+                                 v == "" or
+                                 v == "default" or
+                                 v == "no-gitlab" or
+                                 repo_validator_https.match(v) or
+                                 repo_validator_ssh.match(v) or
+                                 repo_validator_kerb.match(v))),
+            question="Press ENTER to create a GitLab repository for your project under 'bisw-python', or enter your "
+                     "existing GitLab repository address here (or type 'no-gitlab' to keep your repository local):",
+            neg_feedback="Invalid GitLab repository URL.",
+            pos_feedback="The project GitLab repository address is set to: \033[0;32m{}\033[0;m",
+            hints=("copy the address from the Clone button, choosing the protocol you prefer (HTTPS, SSH, KRB5)", ),
+            interactive=parameters.interactive
+        )
+        if parameters.gitlab_repo == 'no-gitlab':
+            parameters.gitlab_repo = None
+            parameters.gitlab = False
+        if parameters.gitlab_repo == '' or parameters.gitlab_repo == 'default':
+            parameters.gitlab_repo = "default"
+
+    group_name = "szanzott"  # "bisw-python"
+    parameters.create_repo = parameters.gitlab_repo == 'default'
+    if parameters.gitlab and parameters.gitlab_repo == 'default':
+        if parameters.upload_protocol is None:
+            parameters.upload_protocol = parameters.clone_protocol
+        elif parameters.upload_protocol == 'ssh':
+            parameters.gitlab_repo = "ssh://git@gitlab.cern.ch:7999/{}/{}.git".format(group_name,
+                                                                                      parameters.project_name)
+        elif parameters.upload_protocol == 'https':
+            parameters.gitlab_repo = "https://gitlab.cern.ch/{}/{}.git".format(group_name,
+                                                                               parameters.project_name)
+        elif parameters.upload_protocol == 'kerberos':
+            parameters.gitlab_repo = "https://:@gitlab.cern.ch:8443/{}/{}.git".format(group_name,
+                                                                                      parameters.project_name)
+        else:
+            raise ValueError("Upload protocol not recognized: '{}'".format(parameters.upload_protocol))
+    return parameters
 
 
 def validate_or_ask(validator, question, neg_feedback, start_value=None, pos_feedback=None, hints=()):

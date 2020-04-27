@@ -4,14 +4,18 @@ from argparse import Namespace
 
 
 @pytest.fixture
-def mock_git(tmpdir, monkeypatch):
+def mock_cwd(tmpdir, monkeypatch):
     monkeypatch.setattr('os.getcwd', lambda: str(tmpdir))
+
+
+@pytest.fixture
+def mock_git(tmpdir, monkeypatch, mock_cwd):
     monkeypatch.setattr('bipy_gui_manager.create_project.utils.invoke_git', mock_git_invocation)
 
 
 def create_project_parameters(demo=True, force_demo=True, path=".", name=None, desc=None, author=None, email=None,
-                              repo=None, clone_protocol="https", gitlab=True, interactive=True, overwrite=False,
-                              template_path=None):
+                              repo=None, clone_protocol="https", upload_protocol="https", gitlab=True,
+                              interactive=True, overwrite=False, template_path=None):
     args = Namespace(
         demo=demo,
         force_demo=force_demo,
@@ -22,6 +26,7 @@ def create_project_parameters(demo=True, force_demo=True, path=".", name=None, d
         author_email=email,
         gitlab_repo=repo,
         clone_protocol=clone_protocol,
+        upload_protocol=upload_protocol,
         gitlab=gitlab,
         interactive=interactive,
         overwrite=overwrite,
@@ -67,6 +72,7 @@ def create_template_files(project_path, project_name, demo=True):
             "Project Name\n",
             "_Here goes the project description_\n",
             "project-name\n",
+            "project_name\n",
             "author@cern.ch\n",
             "the project author\n",
             "https://:@gitlab.cern.ch:8443/cern-username/project-name.git\n",

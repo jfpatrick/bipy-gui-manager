@@ -2,8 +2,6 @@ import os
 import pytest
 import bipy_gui_manager.create_project.create_project as create_project_module
 
-from .conftest import create_template_files
-
 
 def test_download_template_kerberos_no_demo(tmpdir, mock_git):
     project_path = os.path.join(tmpdir, "test-project")

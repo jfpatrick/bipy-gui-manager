@@ -1,4 +1,3 @@
-import os
 import pytest
 import bipy_gui_manager.create_project.create_project as create_project_module
 

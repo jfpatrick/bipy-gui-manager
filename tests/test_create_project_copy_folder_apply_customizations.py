@@ -90,6 +90,7 @@ def test_readme(tmpdir):
             "Test Project\n",
             "This is a test\n",
             "test-project\n",
+            "test_project\n",
             "test-email@cern.ch\n",
             "Test author\n",
             "https://gitlab.cern.ch/test-project.git\n",

@@ -1,15 +1,12 @@
-from typing import Tuple
 import re
 import os
-import json
 import argparse
 import shutil
 try:
     import requests  # requests might not be installed, but is needed only for the avatar upload
 except ImportError:
     pass
-from urllib.parse import urlencode
-from urllib.request import Request, urlopen
+import getpass
 from bipy_gui_manager import cli_utils as cli
 from bipy_gui_manager.create_project import utils
 
@@ -29,22 +26,16 @@ def create_project(parameters: argparse.Namespace):
         parameters = gather_setup_information(parameters)
         project_path = os.path.join(parameters.base_path, parameters.project_name)
 
-        group_name = "szanzott"  # "bisw-python"
-        create_repo = parameters.gitlab_repo == 'default'
-        if parameters.gitlab and parameters.gitlab_repo == 'default':
-            if parameters.upload_protocol is None:
-                parameters.upload_protocol = parameters.clone_protocol
-            if parameters.upload_protocol == 'ssh':
-                parameters.gitlab_repo = "ssh://git@gitlab.cern.ch:7999/{}/{}.git".format(group_name,
-                                                                                          parameters.project_name)
-            elif parameters.upload_protocol == 'https':
-                parameters.gitlab_repo = "https://gitlab.cern.ch/{}/{}.git".format(group_name,
-                                                                                   parameters.project_name)
-            elif parameters.upload_protocol == 'kerberos':
-                parameters.gitlab_repo = "https://:@gitlab.cern.ch:8443/{}/{}.git".format(group_name,
-                                                                                          parameters.project_name)
-            else:
-                raise ValueError("Upload protocol not recognized: '{}'".format(parameters.upload_protocol))
+        if parameters.gitlab and parameters.create_repo:
+            cli.draw_line()
+            print("  Authentication: \n")
+
+            try:
+                username = getpass.getuser()
+                cli.positive_feedback("Your username is set to {}".format(username))
+            except Exception:
+                username = cli.handle_failure("Your username could not be identified. Please enter your CERN username:")
+            password = getpass.getpass("\033[0;33m=>\033[0;m Please enter your CERN password:  ")
 
         cli.draw_line()
         print("  Installation:\n")
@@ -71,9 +62,9 @@ def create_project(parameters: argparse.Namespace):
         cli.positive_feedback("Setting up local Git repository")
         init_local_repo(project_path)
 
-        if parameters.gitlab and create_repo:
+        if parameters.gitlab and parameters.create_repo:
             cli.positive_feedback("Creating repository on GitLab")
-            create_gitlab_repository(parameters.project_name, parameters.project_desc)
+            create_gitlab_repository(username, password, parameters.project_name, parameters.project_desc)
 
         if parameters.gitlab:
             cli.positive_feedback("Uploading project on GitLab")
@@ -160,32 +151,7 @@ def gather_setup_information(parameters: argparse.Namespace) -> argparse.Namespa
     if parameters.base_path == '.':
         parameters.base_path = os.getcwd()
 
-    repo_validator_ssh = re.compile("^ssh://git@gitlab.cern.ch:7999/[a-zA-Z0-9_%-]+/[a-zA-Z0-9_%/-]+.git$")
-    repo_validator_https = re.compile("^https://gitlab.cern.ch/[a-zA-Z0-9_%-]+/[a-zA-Z0-9_%/-]+.git$")
-    repo_validator_kerb = re.compile("^https://:@gitlab.cern.ch:8443/[a-zA-Z0-9_%-]+/[a-zA-Z0-9_%/-]+.git$")
-    # parameters.gitlab_repo = None
-    if parameters.gitlab:
-        parameters.gitlab_repo = utils.validate_as_arg_or_ask(
-            cli_value=parameters.gitlab_repo,
-            validator=lambda v: (v is not None and (
-                                 v == "" or
-                                 v == "default" or
-                                 v == "no-gitlab" or
-                                 repo_validator_https.match(v) or
-                                 repo_validator_ssh.match(v) or
-                                 repo_validator_kerb.match(v))),
-            question="Press ENTER to create a GitLab repository for your project under 'bisw-python', or enter your "
-                     "existing GitLab repository address here (or type 'no-gitlab' to keep your repository local):",
-            neg_feedback="Invalid GitLab repository URL.",
-            pos_feedback="The project GitLab repository address is set to: \033[0;32m{}\033[0;m",
-            hints=("copy the address from the Clone button, choosing the protocol you prefer (HTTPS, SSH, KRB5)", ),
-            interactive=parameters.interactive
-        )
-        if parameters.gitlab_repo == 'no-gitlab':
-            parameters.gitlab_repo = None
-            parameters.gitlab = False
-        if parameters.gitlab_repo == '' or parameters.gitlab_repo == 'default':
-            parameters.gitlab_repo = "default"
+    parameters = utils.validate_gitlab(parameters)
 
     parameters.demo = utils.validate_demo_flags(parameters.force_demo, parameters.demo, parameters.interactive)
 
@@ -313,6 +279,7 @@ def generate_readme(project_path: str, project_name: str, project_desc: str, pro
     :param gitlab_repo: the project's GitLab repo, if given
     """
     project_name_capitals = project_name.replace("-", " ").title()
+    project_name_underscores = project_name.replace("-", "_")
     try:
         os.remove(os.path.join(project_path, "README.md"))
         os.rename(os.path.join(project_path, "README-template.md"), os.path.join(project_path, "README.md"))
@@ -323,6 +290,7 @@ def generate_readme(project_path: str, project_name: str, project_desc: str, pro
             gitlab_repo = "<the project's GitLab repo URL>.git"
         s = s.replace("https://:@gitlab.cern.ch:8443/cern-username/project-name.git", gitlab_repo)
         s = s.replace("project-name", project_name)
+        s = s.replace("project_name", project_name_underscores)
         s = s.replace("Project Name", project_name_capitals)
         s = s.replace("_Here goes the project description_", project_desc)
         s = s.replace("the project author", project_author)
@@ -357,33 +325,38 @@ def init_local_repo(project_path: str) -> None:
     )
     utils.invoke_git(
         parameters=['commit', '-m', 'Initial commit ' +
-                    '(from bipy-gui-manager https://gitlab.cern.ch/bisw-python/bipy_gui_manager )'],
+                    '(from bipy-gui-manager https://gitlab.cern.ch/bisw-python/bipy_gui_manager)'],
         cwd=project_path,
         allow_retry=False,
         neg_feedback="Failed to commit the template."
     )
 
 
-def create_gitlab_repository(project_name: str, project_desc: str):
+def create_gitlab_repository(username: str, password: str, project_name: str, project_desc: str):
     """
     Create a GitLab repo under bisw-python
     :param project_name: Name of the project
+    :param project_desc: One-line description of the project
 
     Token for szanzott = zznsVsiahNkpY1PBEZJ8
     curl -d "name=test-gitlab-api"  https://gitlab.cern.ch/api/v4/projects?private_token=zznsVsiahNkpY1PBEZJ8
     """
-    url = 'https://gitlab.cern.ch/api/v4/projects?private_token=zznsVsiahNkpY1PBEZJ8'
-    post_fields = {'name': project_name, 'description': project_desc}  # Set POST fields here
-    request = Request(url, data=urlencode(post_fields).encode())
-    data = json.loads(urlopen(request).read().decode())
+    # Get token
+    auth_token = utils.post_to_gitlab(endpoint='/oauth/token',
+                                      post_fields={'grant_type': 'password', 'username': username, 'password': password})
+    repo_data = utils.post_to_gitlab(endpoint='api/v4/projects?access_token={}'.format(auth_token['access_token']),
+                                     post_fields={'path': project_name,
+                                                  'name': project_name.replace("-", " ").title(),
+                                                  'description': project_desc})
 
     # The avatar setting honestly is not critical: if it fails, amen
+    # Note: This might fail due to the lack of the requests package. It's ok.
     try:
+        project_id = repo_data['id']
         avatar_path = os.path.join(os.path.dirname(__file__), "resources", "PyQt-logo-gray.png")
-        url = 'https://gitlab.cern.ch/api/v4/projects/{}'.format(data['id'])
+        url = 'https://gitlab.cern.ch/api/v4/projects/{}?access_token={}'.format(project_id, auth_token['access_token'])
         avatar = {'avatar': (avatar_path, open(avatar_path, 'rb'), 'multipart/form-data')}
-        auth_header = {'PRIVATE-TOKEN': 'zznsVsiahNkpY1PBEZJ8'}
-        requests.put(url, files=avatar, headers=auth_header)
+        requests.put(url, files=avatar)
     except Exception as e:
         print("  - Avatar upload failed: {}.".format(e))
 
