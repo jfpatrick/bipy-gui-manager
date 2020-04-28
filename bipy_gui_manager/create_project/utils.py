@@ -1,10 +1,11 @@
-from typing import Mapping
+from typing import Mapping, Optional
 import os
 import re
 import json
 import urllib
 from subprocess import Popen, PIPE
 from bipy_gui_manager import cli_utils as cli
+from bipy_gui_manager.create_project import GROUP_NAME
 
 
 def invoke_git(parameters=(), cwd=os.getcwd(), allow_retry=False, neg_feedback="An error occurred in Git!"):
@@ -34,6 +35,23 @@ def invoke_git(parameters=(), cwd=os.getcwd(), allow_retry=False, neg_feedback="
             answer = cli.handle_failure("Do you want to retry? (yes/no)")
             if answer == "no" or answer == "n":
                 raise OSError(neg_feedback)
+
+
+def authenticate_on_gitlab(username: str, password: str) -> Optional[str]:
+    """
+    Try to authenticate the user on GitLab
+    :param username: the user's CERN username
+    :param password: the user's CERN password
+    :return: the token if authentication is successful, None otherwise
+    """
+    try:
+        auth_token = post_to_gitlab(endpoint='/oauth/token',
+                                    post_fields={'grant_type': 'password', 'username': username, 'password': password})
+    except urllib.error.HTTPError as he:
+        cli.negative_feedback(he)
+        # Probably 401 Unauthorized
+        return None
+    return auth_token["access_token"]
 
 
 def post_to_gitlab(endpoint: str, post_fields: Mapping[str, str]) -> Mapping[str, str]:
@@ -85,22 +103,27 @@ def validate_gitlab(parameters):
         if parameters.gitlab_repo == '' or parameters.gitlab_repo == 'default':
             parameters.gitlab_repo = "default"
 
-    group_name = "szanzott"  # "bisw-python"
     parameters.create_repo = parameters.gitlab_repo == 'default'
+
     if parameters.gitlab and parameters.gitlab_repo == 'default':
+
+        # Make sure the protocol is specified
         if parameters.upload_protocol is None:
             parameters.upload_protocol = parameters.clone_protocol
-        elif parameters.upload_protocol == 'ssh':
-            parameters.gitlab_repo = "ssh://git@gitlab.cern.ch:7999/{}/{}.git".format(group_name,
+
+        # Resolve by protocol
+        if parameters.upload_protocol == 'ssh':
+            parameters.gitlab_repo = "ssh://git@gitlab.cern.ch:7999/{}/{}.git".format(GROUP_NAME,
                                                                                       parameters.project_name)
         elif parameters.upload_protocol == 'https':
-            parameters.gitlab_repo = "https://gitlab.cern.ch/{}/{}.git".format(group_name,
+            parameters.gitlab_repo = "https://gitlab.cern.ch/{}/{}.git".format(GROUP_NAME,
                                                                                parameters.project_name)
         elif parameters.upload_protocol == 'kerberos':
-            parameters.gitlab_repo = "https://:@gitlab.cern.ch:8443/{}/{}.git".format(group_name,
+            parameters.gitlab_repo = "https://:@gitlab.cern.ch:8443/{}/{}.git".format(GROUP_NAME,
                                                                                       parameters.project_name)
         else:
             raise ValueError("Upload protocol not recognized: '{}'".format(parameters.upload_protocol))
+
     return parameters
 
 

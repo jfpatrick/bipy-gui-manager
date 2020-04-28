@@ -29,13 +29,7 @@ def create_project(parameters: argparse.Namespace):
         if parameters.gitlab and parameters.create_repo:
             cli.draw_line()
             print("  Authentication: \n")
-
-            try:
-                username = getpass.getuser()
-                cli.positive_feedback("Your username is set to {}".format(username))
-            except Exception:
-                username = cli.handle_failure("Your username could not be identified. Please enter your CERN username:")
-            password = getpass.getpass("\033[0;33m=>\033[0;m Please enter your CERN password:  ")
+            username, password = authenticate_user()
 
         cli.draw_line()
         print("  Installation:\n")
@@ -82,19 +76,20 @@ def create_project(parameters: argparse.Namespace):
         cli.draw_line()
 
     except Exception as e:
-        cli.negative_feedback("A fatal error occurred: {}".format(e))
-        # Try a quick cleanup
-        if project_path:
-            if parameters.interactive:
-                answer = cli.handle_failure("Do you want to clean up what was created so far? "
-                                            "This will delete the folder {}. (yes/no)".format(project_path))
-                if answer == "y" or answer == "yes":
-                    cli.negative_feedback("Cleaning up...")
-                    shutil.rmtree(project_path, ignore_errors=True)
-            elif parameters.cleanup_on_failure:
-                cli.negative_feedback("Cleaning up...")
-                shutil.rmtree(project_path, ignore_errors=True)
-        cli.negative_feedback("Exiting\n")
+        raise e
+        # cli.negative_feedback("A fatal error occurred: {}".format(e))
+        # # Try a quick cleanup
+        # if project_path:
+        #     if parameters.interactive:
+        #         answer = cli.handle_failure("Do you want to clean up what was created so far? "
+        #                                     "This will delete the folder {}. (yes/no)".format(project_path))
+        #         if answer == "y" or answer == "yes":
+        #             cli.negative_feedback("Cleaning up...")
+        #             shutil.rmtree(project_path, ignore_errors=True)
+        #     elif parameters.cleanup_on_failure:
+        #         cli.negative_feedback("Cleaning up...")
+        #         shutil.rmtree(project_path, ignore_errors=True)
+        # cli.negative_feedback("Exiting\n")
 
 
 def gather_setup_information(parameters: argparse.Namespace) -> argparse.Namespace:
@@ -156,6 +151,28 @@ def gather_setup_information(parameters: argparse.Namespace) -> argparse.Namespa
     parameters.demo = utils.validate_demo_flags(parameters.force_demo, parameters.demo, parameters.interactive)
 
     return parameters
+
+
+def authenticate_user(username_cli: str = None):
+    if username_cli:
+        username = username_cli
+    else:
+        try:
+            username = getpass.getuser()
+        except Exception:
+            username = cli.handle_failure("Your username could not be identified. Please enter your CERN username:")
+    cli.positive_feedback("Your username is set to {}".format(username))
+
+    password = None
+    while password is None:
+        password_candidate = getpass.getpass("\033[0;33m=>\033[0;m Please enter your CERN password:  ")
+        token = utils.authenticate_on_gitlab(username, password_candidate)
+        if token is not None:
+            password = password_candidate
+        else:
+            cli.negative_feedback("Authentication failed.")
+
+    return username, password
 
 
 def check_path_is_available(project_path: str, interactive: bool = True, overwrite: bool = False) -> None:
@@ -335,16 +352,16 @@ def init_local_repo(project_path: str) -> None:
 def create_gitlab_repository(username: str, password: str, project_name: str, project_desc: str):
     """
     Create a GitLab repo under bisw-python
+    :param username: the user's CERN username
+    :param password: the user's CERN password
     :param project_name: Name of the project
     :param project_desc: One-line description of the project
-
-    Token for szanzott = zznsVsiahNkpY1PBEZJ8
-    curl -d "name=test-gitlab-api"  https://gitlab.cern.ch/api/v4/projects?private_token=zznsVsiahNkpY1PBEZJ8
     """
-    # Get token
-    auth_token = utils.post_to_gitlab(endpoint='/oauth/token',
-                                      post_fields={'grant_type': 'password', 'username': username, 'password': password})
-    repo_data = utils.post_to_gitlab(endpoint='api/v4/projects?access_token={}'.format(auth_token['access_token']),
+    auth_token = utils.authenticate_on_gitlab(username, password)
+    if auth_token is None:
+        raise ValueError("Authentication on GitLab failed: invalid credentials.")
+
+    repo_data = utils.post_to_gitlab(endpoint='api/v4/projects?access_token={}'.format(auth_token),
                                      post_fields={'path': project_name,
                                                   'name': project_name.replace("-", " ").title(),
                                                   'description': project_desc})
@@ -354,7 +371,7 @@ def create_gitlab_repository(username: str, password: str, project_name: str, pr
     try:
         project_id = repo_data['id']
         avatar_path = os.path.join(os.path.dirname(__file__), "resources", "PyQt-logo-gray.png")
-        url = 'https://gitlab.cern.ch/api/v4/projects/{}?access_token={}'.format(project_id, auth_token['access_token'])
+        url = 'https://gitlab.cern.ch/api/v4/projects/{}?access_token={}'.format(project_id, auth_token)
         avatar = {'avatar': (avatar_path, open(avatar_path, 'rb'), 'multipart/form-data')}
         requests.put(url, files=avatar)
     except Exception as e:
