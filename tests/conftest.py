@@ -1,6 +1,10 @@
 import os
 import pytest
 from argparse import Namespace
+import bipy_gui_manager
+
+
+GITLAB_TOKEN = "zznsVsiahNkpY1PBEZJ8"
 
 
 @pytest.fixture
@@ -10,16 +14,17 @@ def mock_cwd(tmpdir, monkeypatch):
 
 @pytest.fixture
 def mock_git(tmpdir, monkeypatch, mock_cwd):
-    monkeypatch.setattr('bipy_gui_manager.create_project.utils.invoke_git', mock_git_invocation)
+    monkeypatch.setattr('bipy_gui_manager.create_project.vc_utils.invoke_git', mock_git_invocation)
 
 
 def create_project_parameters(demo=True, force_demo=True, path=".", name=None, desc=None, author=None, email=None,
                               repo=None, clone_protocol="https", upload_protocol="https", gitlab=True,
-                              interactive=True, overwrite=False, template_path=None):
+                              gitlab_token=GITLAB_TOKEN, interactive=True, overwrite=False,
+                              template_path=None, crash=True, create_repo=None):
     args = Namespace(
         demo=demo,
         force_demo=force_demo,
-        project_path=path,
+        base_path=path,
         project_name=name,
         project_desc=desc,
         project_author=author,
@@ -28,9 +33,12 @@ def create_project_parameters(demo=True, force_demo=True, path=".", name=None, d
         clone_protocol=clone_protocol,
         upload_protocol=upload_protocol,
         gitlab=gitlab,
+        gitlab_token=gitlab_token,
         interactive=interactive,
         overwrite=overwrite,
-        template_path=template_path
+        template_path=template_path,
+        crash=crash,
+        create_repo=create_repo
     )
     return args
 

@@ -1,72 +1,7 @@
-from typing import Mapping, Optional
-import os
 import re
-import json
-import urllib
-from subprocess import Popen, PIPE
+import argparse
 from bipy_gui_manager import cli_utils as cli
 from bipy_gui_manager.create_project import GROUP_NAME
-
-
-def invoke_git(parameters=(), cwd=os.getcwd(), allow_retry=False, neg_feedback="An error occurred in Git!"):
-    """
-    Perform a syscall to the local Git executable
-    :param parameters: parameters to pass to Git, as an array
-    :param cwd: working directory for Git
-    :param allow_retry: on fail, let the user decide if they want to retry or not
-    :param neg_feedback: message to explain a potential failure
-    :return: Nothing if the command succeeds, OSError if it fails
-    """
-    command = ['/usr/bin/git']
-    command.extend(parameters)
-
-    while True:
-        git_query = Popen(command, cwd=cwd, stdout=PIPE, stderr=PIPE)
-        (stdout, stderr) = git_query.communicate()
-
-        if git_query.poll() == 0:
-            return
-        else:
-            cli.negative_feedback(stderr.decode('utf-8'))
-
-            if not allow_retry:
-                raise OSError(neg_feedback)
-
-            answer = cli.handle_failure("Do you want to retry? (yes/no)")
-            if answer == "no" or answer == "n":
-                raise OSError(neg_feedback)
-
-
-def authenticate_on_gitlab(username: str, password: str) -> Optional[str]:
-    """
-    Try to authenticate the user on GitLab
-    :param username: the user's CERN username
-    :param password: the user's CERN password
-    :return: the token if authentication is successful, None otherwise
-    """
-    try:
-        auth_token = post_to_gitlab(endpoint='/oauth/token',
-                                    post_fields={'grant_type': 'password', 'username': username, 'password': password})
-    except urllib.error.HTTPError as he:
-        cli.negative_feedback(he)
-        # Probably 401 Unauthorized
-        return None
-    return auth_token["access_token"]
-
-
-def post_to_gitlab(endpoint: str, post_fields: Mapping[str, str]) -> Mapping[str, str]:
-    """
-    Performs a call to a GitLab API's endpoint.
-    NOTE: only JSON will be send - no binaries
-    :param endpoint: the endpoint's path
-    :param post_fields: what the POST request body will contain
-    :return:
-    """
-    url = 'https://gitlab.cern.ch/{}'.format(endpoint)
-    request_data = urllib.parse.urlencode(post_fields).encode()
-    request = urllib.request.Request(url, data=request_data)
-    response = urllib.request.urlopen(request).read().decode()
-    return json.loads(response)
 
 
 def validate_or_fail(value, validator, neg_feedback):
@@ -74,57 +9,6 @@ def validate_or_fail(value, validator, neg_feedback):
     if value is None or not validator(value):
         raise ValueError(neg_feedback)
     return value
-
-
-def validate_gitlab(parameters):
-    if parameters.gitlab:
-        repo_validator_ssh = re.compile("^ssh://git@gitlab.cern.ch:7999/[a-zA-Z0-9_%-]+/[a-zA-Z0-9_%/-]+.git$")
-        repo_validator_https = re.compile("^https://gitlab.cern.ch/[a-zA-Z0-9_%-]+/[a-zA-Z0-9_%/-]+.git$")
-        repo_validator_kerb = re.compile("^https://:@gitlab.cern.ch:8443/[a-zA-Z0-9_%-]+/[a-zA-Z0-9_%/-]+.git$")
-        parameters.gitlab_repo = validate_as_arg_or_ask(
-            cli_value=parameters.gitlab_repo,
-            validator=lambda v: (v is not None and (
-                                 v == "" or
-                                 v == "default" or
-                                 v == "no-gitlab" or
-                                 repo_validator_https.match(v) or
-                                 repo_validator_ssh.match(v) or
-                                 repo_validator_kerb.match(v))),
-            question="Press ENTER to create a GitLab repository for your project under 'bisw-python', or enter your "
-                     "existing GitLab repository address here (or type 'no-gitlab' to keep your repository local):",
-            neg_feedback="Invalid GitLab repository URL.",
-            pos_feedback="The project GitLab repository address is set to: \033[0;32m{}\033[0;m",
-            hints=("copy the address from the Clone button, choosing the protocol you prefer (HTTPS, SSH, KRB5)", ),
-            interactive=parameters.interactive
-        )
-        if parameters.gitlab_repo == 'no-gitlab':
-            parameters.gitlab_repo = None
-            parameters.gitlab = False
-        if parameters.gitlab_repo == '' or parameters.gitlab_repo == 'default':
-            parameters.gitlab_repo = "default"
-
-    parameters.create_repo = parameters.gitlab_repo == 'default'
-
-    if parameters.gitlab and parameters.gitlab_repo == 'default':
-
-        # Make sure the protocol is specified
-        if parameters.upload_protocol is None:
-            parameters.upload_protocol = parameters.clone_protocol
-
-        # Resolve by protocol
-        if parameters.upload_protocol == 'ssh':
-            parameters.gitlab_repo = "ssh://git@gitlab.cern.ch:7999/{}/{}.git".format(GROUP_NAME,
-                                                                                      parameters.project_name)
-        elif parameters.upload_protocol == 'https':
-            parameters.gitlab_repo = "https://gitlab.cern.ch/{}/{}.git".format(GROUP_NAME,
-                                                                               parameters.project_name)
-        elif parameters.upload_protocol == 'kerberos':
-            parameters.gitlab_repo = "https://:@gitlab.cern.ch:8443/{}/{}.git".format(GROUP_NAME,
-                                                                                      parameters.project_name)
-        else:
-            raise ValueError("Upload protocol not recognized: '{}'".format(parameters.upload_protocol))
-
-    return parameters
 
 
 def validate_or_ask(validator, question, neg_feedback, start_value=None, pos_feedback=None, hints=()):
@@ -193,3 +77,65 @@ def validate_demo_flags(force_demo: bool, demo: bool, interactive: bool) -> bool
                 return True
             else:
                 value = cli.handle_failure("Please type yes or no:")
+
+
+def validate_gitlab(parameters: argparse.Namespace) -> argparse.Namespace:
+    """
+    Ensures all the parameters related to GitLab are in order.
+    Adds the create_repo attribute
+    :param parameters: the parameters coming from the CLI or earlier validation steps
+    :return: a modified and validated parameters Namespace
+    """
+    if parameters.gitlab:
+        repo_validator_ssh = re.compile("^ssh://git@gitlab.cern.ch:7999/[a-zA-Z0-9_%-]+/[a-zA-Z0-9_%/-]+.git$")
+        repo_validator_https = re.compile("^https://gitlab.cern.ch/[a-zA-Z0-9_%-]+/[a-zA-Z0-9_%/-]+.git$")
+        repo_validator_kerb = re.compile("^https://:@gitlab.cern.ch:8443/[a-zA-Z0-9_%-]+/[a-zA-Z0-9_%/-]+.git$")
+        parameters.gitlab_repo = validate_as_arg_or_ask(
+            cli_value=parameters.gitlab_repo,
+            validator=lambda v: (v is not None and (
+                                 v == "" or
+                                 v == "default" or
+                                 v == "no-gitlab" or
+                                 repo_validator_https.match(v) or
+                                 repo_validator_ssh.match(v) or
+                                 repo_validator_kerb.match(v))),
+            question="Press ENTER to create a GitLab repository for your project under 'bisw-python', or enter your "
+                     "existing GitLab repository address here (or type 'no-gitlab' to keep your repository local):",
+            neg_feedback="Invalid GitLab repository URL.",
+            pos_feedback="The project GitLab repository address is set to: \033[0;32m{}\033[0;m",
+            hints=("copy the address from the Clone button, choosing the protocol you prefer (HTTPS, SSH, KRB5)", ),
+            interactive=parameters.interactive
+        )
+        if parameters.gitlab_repo == 'no-gitlab':
+            parameters.gitlab_repo = None
+            parameters.gitlab = False
+        if parameters.gitlab_repo == '':
+            parameters.gitlab_repo = "default"
+
+        # Make sure to remember whether the repo should be created or not
+        parameters.create_repo = parameters.gitlab_repo == 'default'
+
+        # Resolve 'default' by protocol
+        if parameters.gitlab_repo == 'default':
+
+            # Make sure the protocol is specified
+            if parameters.upload_protocol is None:
+                parameters.upload_protocol = parameters.clone_protocol
+
+            if parameters.upload_protocol == 'ssh':
+                parameters.gitlab_repo = "ssh://git@gitlab.cern.ch:7999/{}/{}.git".format(GROUP_NAME,
+                                                                                          parameters.project_name)
+            elif parameters.upload_protocol == 'https':
+                parameters.gitlab_repo = "https://gitlab.cern.ch/{}/{}.git".format(GROUP_NAME,
+                                                                                   parameters.project_name)
+            elif parameters.upload_protocol == 'kerberos':
+                parameters.gitlab_repo = "https://:@gitlab.cern.ch:8443/{}/{}.git".format(GROUP_NAME,
+                                                                                          parameters.project_name)
+            else:
+                raise ValueError("Upload protocol not recognized: '{}'".format(parameters.upload_protocol))
+
+    else:
+        # Make sure you don't create the repo (should be redundant)
+        parameters.create_repo = False
+
+    return parameters

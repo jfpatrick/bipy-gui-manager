@@ -32,7 +32,7 @@ def main():
                                                help='Start a wizard that guides you through the setup of a new PyQt '
                                                     'project.')
     new_project_parser.set_defaults(func=create_project)
-    new_project_parser.add_argument('--path', dest='project_path', default=None,
+    new_project_parser.add_argument('--path', dest='base_path', default=None,
                                     help="Specify the path to the new project. "
                                          "If not set, uses the current working directory.")
     new_project_parser.add_argument('--name', dest='project_name', default=None,
@@ -58,6 +58,8 @@ def main():
                                     help="Protocol to use to push the template to GitLab. "
                                          "Effective only if the --repo flag is set to 'default'. "
                                          "If not given, this value defaults to --clone-protocol")
+    new_project_parser.add_argument('--gitlab-auth-token', dest='gitlab_token', default=None,
+                                    help="GitLab personal access token. Can be used to avoid the password prompt.")
     demo_commands = new_project_parser.add_mutually_exclusive_group()
     demo_commands.add_argument('--no-demo', dest='demo', action='store_false',
                                help="Install the template without demo application without asking the user "
@@ -81,6 +83,8 @@ def main():
                                     help="[DEBUG] Copy the template from a custom location on the filesystem. "
                                          "NOTE: further customizations might break if the template does not correspond "
                                          "to the default one.")
+    new_project_parser.add_argument('--crash', dest='crash', action='store_true',
+                                    help="[DEBUG] Do not try to recover from errors.")
 
     # 'release' subcommand
     self_update_parser = subparsers.add_parser('release',

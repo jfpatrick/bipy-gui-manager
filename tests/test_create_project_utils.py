@@ -1,39 +1,5 @@
 import pytest
-import subprocess
 import bipy_gui_manager.create_project.utils as utils
-
-
-class MockSuccessfulPopen:
-
-    def __init__(self, command, cwd, stdout, stderr):
-        pass
-
-    def communicate(self):
-        return "test stdout".encode('utf-8'), "".encode('utf-8')
-
-    def poll(self):
-        return 0
-
-
-class MockFailingPopen:
-
-    def __init__(self, command, cwd, stdout, stderr):
-        pass
-
-    def communicate(self):
-        return "test stdout".encode('utf-8'), "test stderr".encode('utf-8')
-
-    def poll(self):
-        return 1
-
-
-def test_invoke_git(tmpdir, monkeypatch):
-    utils.Popen = MockSuccessfulPopen
-    utils.invoke_git(['not_a_git_command'], cwd=tmpdir, allow_retry=False, neg_feedback="Test Feedback")
-    utils.Popen = MockFailingPopen
-    with pytest.raises(OSError):
-        utils.invoke_git(['not_a_git_command'], cwd=tmpdir, allow_retry=False, neg_feedback="Test Feedback")
-    utils.Popen = subprocess.Popen
 
 
 def test_validate_or_fail():

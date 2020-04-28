@@ -8,8 +8,8 @@ def test_create_project_defaults(monkeypatch):
     # Testing only that it won't fail with the defaults
     parameters = create_project_parameters(name="test-project", desc="A test project", author="Me", email="me@cern.ch",
                                            repo="ssh://git@gitlab.cern.ch:7999/user/project.git")
-    monkeypatch.setattr('bipy_gui_manager.create_project.create_project.gather_setup_information', lambda *a, **k:
-        [""]*6 + [parameters])
+    monkeypatch.setattr('bipy_gui_manager.create_project.create_project.gather_setup_information',
+                        lambda *a, **k: parameters)
     monkeypatch.setattr('bipy_gui_manager.create_project.create_project.check_path_is_available', lambda *a, **k: True)
     monkeypatch.setattr('bipy_gui_manager.create_project.create_project.copy_folder_from_path', lambda *a, **k: True)
     monkeypatch.setattr('bipy_gui_manager.create_project.create_project.download_template', lambda *a, **k: True)
@@ -25,8 +25,8 @@ def test_create_project_copy_template(monkeypatch):
     # Testing only that it won't fail by taking this option
     parameters = create_project_parameters(name="test-project", desc="A test project", author="Me", email="me@cern.ch",
                                            repo="ssh://git@gitlab.cern.ch:7999/user/project.git", template_path="here")
-    monkeypatch.setattr('bipy_gui_manager.create_project.create_project.gather_setup_information', lambda *a, **k:
-    [""] * 6 + [parameters])
+    monkeypatch.setattr('bipy_gui_manager.create_project.create_project.gather_setup_information',
+                        lambda *a, **k: parameters)
     monkeypatch.setattr('bipy_gui_manager.create_project.create_project.check_path_is_available', lambda *a, **k: True)
     monkeypatch.setattr('bipy_gui_manager.create_project.create_project.copy_folder_from_path', lambda *a, **k: True)
     monkeypatch.setattr('bipy_gui_manager.create_project.create_project.download_template', lambda *a, **k: True)
@@ -42,5 +42,5 @@ def test_create_project_handle_errors(monkeypatch):
     # Won't raise this error, will handle it internally
     monkeypatch.setattr('bipy_gui_manager.create_project.create_project.gather_setup_information', lambda *a, **k: 1/0)
     parameters = create_project_parameters(name="test-project", desc="A test project", author="Me", email="me@cern.ch",
-                                           repo="ssh://git@gitlab.cern.ch:7999/user/project.git")
+                                           repo="ssh://git@gitlab.cern.ch:7999/user/project.git", crash=False)
     create_project_module.create_project(parameters)

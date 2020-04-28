@@ -9,6 +9,7 @@ except ImportError:
 import getpass
 from bipy_gui_manager import cli_utils as cli
 from bipy_gui_manager.create_project import utils
+from bipy_gui_manager.create_project import vc_utils
 
 
 def create_project(parameters: argparse.Namespace):
@@ -26,7 +27,8 @@ def create_project(parameters: argparse.Namespace):
         parameters = gather_setup_information(parameters)
         project_path = os.path.join(parameters.base_path, parameters.project_name)
 
-        if parameters.gitlab and parameters.create_repo:
+        username, password = None, None
+        if parameters.gitlab and parameters.create_repo and parameters.gitlab_token is None:
             cli.draw_line()
             print("  Authentication: \n")
             username, password = authenticate_user()
@@ -56,11 +58,13 @@ def create_project(parameters: argparse.Namespace):
         cli.positive_feedback("Setting up local Git repository")
         init_local_repo(project_path)
 
-        if parameters.gitlab and parameters.create_repo:
-            cli.positive_feedback("Creating repository on GitLab")
-            create_gitlab_repository(username, password, parameters.project_name, parameters.project_desc)
-
         if parameters.gitlab:
+
+            if parameters.create_repo:
+                cli.positive_feedback("Creating repository on GitLab")
+                create_gitlab_repository(parameters.project_name, parameters.project_desc,
+                                        username=username, password=password, auth_token=parameters.gitlab_token)
+
             cli.positive_feedback("Uploading project on GitLab")
             push_first_commit(project_path, parameters.gitlab_repo)
 
@@ -76,20 +80,21 @@ def create_project(parameters: argparse.Namespace):
         cli.draw_line()
 
     except Exception as e:
-        raise e
-        # cli.negative_feedback("A fatal error occurred: {}".format(e))
-        # # Try a quick cleanup
-        # if project_path:
-        #     if parameters.interactive:
-        #         answer = cli.handle_failure("Do you want to clean up what was created so far? "
-        #                                     "This will delete the folder {}. (yes/no)".format(project_path))
-        #         if answer == "y" or answer == "yes":
-        #             cli.negative_feedback("Cleaning up...")
-        #             shutil.rmtree(project_path, ignore_errors=True)
-        #     elif parameters.cleanup_on_failure:
-        #         cli.negative_feedback("Cleaning up...")
-        #         shutil.rmtree(project_path, ignore_errors=True)
-        # cli.negative_feedback("Exiting\n")
+        if parameters.crash:
+            raise e
+        cli.negative_feedback("A fatal error occurred: {}".format(e))
+        # Try a quick cleanup
+        if project_path:
+            if parameters.interactive:
+                answer = cli.handle_failure("Do you want to clean up what was created so far? "
+                                            "This will delete the folder {}. (yes/no)".format(project_path))
+                if answer == "y" or answer == "yes":
+                    cli.negative_feedback("Cleaning up...")
+                    shutil.rmtree(project_path, ignore_errors=True)
+            elif parameters.cleanup_on_failure:
+                cli.negative_feedback("Cleaning up...")
+                shutil.rmtree(project_path, ignore_errors=True)
+        cli.negative_feedback("Exiting\n")
 
 
 def gather_setup_information(parameters: argparse.Namespace) -> argparse.Namespace:
@@ -134,7 +139,7 @@ def gather_setup_information(parameters: argparse.Namespace) -> argparse.Namespa
         interactive=parameters.interactive
     )
     parameters.base_path = utils.validate_as_arg_or_ask(
-        cli_value=parameters.project_path,
+        cli_value=parameters.base_path,
         validator=lambda v: (v == "." or os.path.isdir(v)),
         question="Please type the \033[0;33mpath\033[0;m where to create the new project, or type '.' to create it "
                  "in the current directory ({}):".format(os.getcwd()),
@@ -166,7 +171,7 @@ def authenticate_user(username_cli: str = None):
     password = None
     while password is None:
         password_candidate = getpass.getpass("\033[0;33m=>\033[0;m Please enter your CERN password:  ")
-        token = utils.authenticate_on_gitlab(username, password_candidate)
+        token = vc_utils.authenticate_on_gitlab(username, password_candidate)
         if token is not None:
             password = password_candidate
         else:
@@ -230,7 +235,7 @@ def download_template(project_path: str, clone_protocol: str, get_demo: bool, in
     else:
         git_command = ['clone', '--single-branch', '--branch', 'no-demo', template_url,
                        project_path]
-    utils.invoke_git(
+    vc_utils.invoke_git(
         parameters=git_command,
         cwd=os.getcwd(),
         allow_retry=interactive,
@@ -328,19 +333,19 @@ def init_local_repo(project_path: str) -> None:
     # In most cases, the failure is due to .git not existing.
     # In any case, if the failure is due to something else, most likely git will fail right after.
     shutil.rmtree("{}/.git".format(project_path), ignore_errors=True)
-    utils.invoke_git(
+    vc_utils.invoke_git(
         parameters=['init'],
         cwd=project_path,
         allow_retry=False,
         neg_feedback="Failed to init the repo in the project folder."
     )
-    utils.invoke_git(
+    vc_utils.invoke_git(
         parameters=['add', '--all'],
         cwd=project_path,
         allow_retry=False,
         neg_feedback="Failed to stage the template."
     )
-    utils.invoke_git(
+    vc_utils.invoke_git(
         parameters=['commit', '-m', 'Initial commit ' +
                     '(from bipy-gui-manager https://gitlab.cern.ch/bisw-python/bipy_gui_manager)'],
         cwd=project_path,
@@ -349,19 +354,24 @@ def init_local_repo(project_path: str) -> None:
     )
 
 
-def create_gitlab_repository(username: str, password: str, project_name: str, project_desc: str):
+def create_gitlab_repository(project_name: str, project_desc: str,
+                             username: str = None, password: str = None, auth_token: str = None):
     """
     Create a GitLab repo under bisw-python
     :param username: the user's CERN username
     :param password: the user's CERN password
     :param project_name: Name of the project
     :param project_desc: One-line description of the project
+    :param auth_token: a GitLab private access token. If given, has priority over username-password access
     """
-    auth_token = utils.authenticate_on_gitlab(username, password)
     if auth_token is None:
-        raise ValueError("Authentication on GitLab failed: invalid credentials.")
+        user_token = vc_utils.authenticate_on_gitlab(username, password)
+        if user_token is None:
+            raise ValueError("Authentication on GitLab failed: invalid credentials.")
+    else:
+        user_token = auth_token
 
-    repo_data = utils.post_to_gitlab(endpoint='api/v4/projects?access_token={}'.format(auth_token),
+    repo_data = vc_utils.post_to_gitlab(endpoint='api/v4/projects?access_token={}'.format(user_token),
                                      post_fields={'path': project_name,
                                                   'name': project_name.replace("-", " ").title(),
                                                   'description': project_desc})
@@ -371,7 +381,10 @@ def create_gitlab_repository(username: str, password: str, project_name: str, pr
     try:
         project_id = repo_data['id']
         avatar_path = os.path.join(os.path.dirname(__file__), "resources", "PyQt-logo-gray.png")
-        url = 'https://gitlab.cern.ch/api/v4/projects/{}?access_token={}'.format(project_id, auth_token)
+        if auth_token is None:
+            url = 'https://gitlab.cern.ch/api/v4/projects/{}?access_token={}'.format(project_id, user_token)
+        else:
+            url = 'https://gitlab.cern.ch/api/v4/projects/{}?private_token={}'.format(project_id, auth_token)
         avatar = {'avatar': (avatar_path, open(avatar_path, 'rb'), 'multipart/form-data')}
         requests.put(url, files=avatar)
     except Exception as e:
@@ -384,14 +397,14 @@ def push_first_commit(project_path: str, gitlab_repo: str) -> None:
     :param project_path: Path to the project root
     :param gitlab_repo: GitLab repo to push to
     """
-    utils.invoke_git(
+    vc_utils.invoke_git(
         parameters=['remote', 'add', 'origin', gitlab_repo],
         cwd=project_path,
         allow_retry=False,
         neg_feedback="Failed to add the remote on the project's local repo."
     )
     # Check for repository existence
-    utils.invoke_git(
+    vc_utils.invoke_git(
         parameters=['ls-remote'],
         cwd=project_path,
         allow_retry=False,
@@ -400,7 +413,7 @@ def push_first_commit(project_path: str, gitlab_repo: str) -> None:
                      "You can create the repo yourself and then pass the link with the --repo flag." +
                      "If you think this is a bug, please report it to the maintainers."
     )
-    utils.invoke_git(
+    vc_utils.invoke_git(
         parameters=['push', '-u', 'origin', 'master'],
         cwd=project_path,
         allow_retry=False,
