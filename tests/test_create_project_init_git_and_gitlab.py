@@ -14,7 +14,11 @@ def test_git_init_and_push(tmpdir, mock_git):
 
 
 def test_create_gitlab_repo(monkeypatch):
-    monkeypatch.setattr('requests.put', lambda *args, **kwargs: '')
+    try:
+        monkeypatch.setattr('requests.put', lambda *args, **kwargs: '')
+    except ModuleNotFoundError:
+        # requests is not installed in the test environment
+        pass
     monkeypatch.setattr('urllib.parse.urlencode', lambda *args, **kwargs: "")
     monkeypatch.setattr('urllib.request.Request', lambda *args, **kwargs: None)
     monkeypatch.setattr('urllib.request.urlopen', lambda *args, **kwargs: io.BytesIO(b'{"access_token" : "0" }'))
