@@ -99,6 +99,7 @@ def collect(parameters: argparse.Namespace) -> Mapping[str, Union[str, bool]]:
         else:
             # TODO Validate token early!
             project_parameters["author_token"] = "private_token={}".format(parameters.gitlab_token)
+    cli.positive_feedback("You have been successfully authenticated on GitLab.")
 
     # Template path (light validation)
     if parameters.template_path:
