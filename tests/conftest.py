@@ -1,7 +1,6 @@
 import os
 import pytest
 from argparse import Namespace
-import bipy_gui_manager
 
 
 GITLAB_TOKEN = "zznsVsiahNkpY1PBEZJ8"
@@ -12,9 +11,17 @@ def mock_cwd(tmpdir, monkeypatch):
     monkeypatch.setattr('os.getcwd', lambda: str(tmpdir))
 
 
+@pytest.fixture()
+def mock_phonebook(monkeypatch):
+    monkeypatch.setattr('bipy_gui_manager.create_project.phonebook.validate_cern_id', lambda i: True)
+    monkeypatch.setattr('bipy_gui_manager.create_project.phonebook.discover_full_name', lambda i: i.title())
+    monkeypatch.setattr('bipy_gui_manager.create_project.phonebook.discover_email',
+                        lambda i: "{}@cern.ch".format(i.replace(" ", ".").lower()))
+
+
 @pytest.fixture
 def mock_git(tmpdir, monkeypatch, mock_cwd):
-    monkeypatch.setattr('bipy_gui_manager.create_project.vc_utils.invoke_git', mock_git_invocation)
+    monkeypatch.setattr('bipy_gui_manager.create_project.version_control.invoke_git', mock_git_invocation)
 
 
 def create_project_parameters(demo=True, force_demo=True, path=".", name=None, desc=None, author=None, email=None,

@@ -14,8 +14,11 @@ def ask_input(string):
 def handle_failure(string):
     return input("\033[0;31m=> Error!\033[0;33m {}  \033[0;m".format(string))
 
-def positive_feedback(string):
-    print("\033[0;32m=>\033[0;m {}  ".format(string))
+def positive_feedback(string, newline=True):
+    if newline:
+        print("\033[0;32m=>\033[0;m {}\n".format(string))
+    else:
+        print("\033[0;32m=>\033[0;m {}  ".format(string))
 
 def list_subtask(string):
     print("    -  {}".format(string))

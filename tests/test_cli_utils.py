@@ -49,9 +49,14 @@ def test_handle_failure(catch_stdout):
     assert strings == ["\033[0;31m=> Error!\033[0;33m what shall I do then?  \033[0;m"]
 
 
-def test_positive_feedback(catch_stdout):
-    cli.positive_feedback("That's some good news!")
+def test_positive_feedback_no_newline(catch_stdout):
+    cli.positive_feedback("That's some good news!", newline=False)
     assert strings == ["\033[0;32m=>\033[0;m That's some good news!  "]
+
+
+def test_positive_feedback_with_newline(catch_stdout):
+    cli.positive_feedback("That's some good news!")
+    assert strings == ["\033[0;32m=>\033[0;m That's some good news!\n"]
 
 
 def test_list_subtask(catch_stdout):

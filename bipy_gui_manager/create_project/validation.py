@@ -1,5 +1,7 @@
+from typing import Mapping, Union
+import os
 import re
-import argparse
+import shutil
 from bipy_gui_manager import cli_utils as cli
 from bipy_gui_manager.create_project import GROUP_NAME
 
@@ -43,6 +45,32 @@ def validate_as_arg_or_ask(cli_value, validator, question, neg_feedback, pos_fee
         return validate_or_ask(validator, question, neg_feedback, pos_feedback=pos_feedback, hints=hints)
 
 
+def validate_base_path(base_path: str, project_name: str, interactive: bool = True, overwrite: bool = False) -> bool:
+    """
+    Makes sure there is no folder with the name of the new project and if so ask the user and act accordingly.
+    :param base_path: path to the new project
+    :param project_name: name of the folder for the new project
+    :param interactive: whether the use should be asked what to do if the path exist
+    :param overwrite: whether to automatically overwrite the existing folder
+    :return True if the path is available
+    """
+    project_path = os.path.join(base_path, project_name)
+    if os.path.exists(project_path):
+        if overwrite:
+            cli.list_subtask("Overwriting folder {}".format(project_path))
+            shutil.rmtree(project_path)
+            return True
+        elif not interactive:
+            raise OSError("Directory '{}' already exists.".format(project_path))
+        else:
+            answer = cli.handle_failure("A folder called '{}' already exists. ".format(project_path) +
+                                        "Do you want to overwrite it or to enter another path? (overwrite/another)")
+            if answer == "overwrite":
+                cli.list_subtask("Overwriting existing folder")
+                shutil.rmtree(project_path)
+    return True
+
+
 def validate_demo_flags(force_demo: bool, demo: bool, interactive: bool) -> bool:
     """
     Checks which combination of values are contained in the parameters and returns the correct value
@@ -79,19 +107,19 @@ def validate_demo_flags(force_demo: bool, demo: bool, interactive: bool) -> bool
                 value = cli.handle_failure("Please type yes or no:")
 
 
-def validate_gitlab(parameters: argparse.Namespace) -> argparse.Namespace:
+def validate_gitlab(gitlab, repo, interactive, upload_protocol, clone_protocol, project_name) \
+        -> Mapping[str, Union[str, bool, None]]:
     """
     Ensures all the parameters related to GitLab are in order.
-    Adds the create_repo attribute
-    :param parameters: the parameters coming from the CLI or earlier validation steps
-    :return: a modified and validated parameters Namespace
+    :return: a dictionary containing the 'gitlab', 'create_repo' and 'repo_url' values
     """
-    if parameters.gitlab:
+    if gitlab:
+        # Validate explicit repo values
         repo_validator_ssh = re.compile("^ssh://git@gitlab.cern.ch:7999/[a-zA-Z0-9_%-]+/[a-zA-Z0-9_%/-]+.git$")
         repo_validator_https = re.compile("^https://gitlab.cern.ch/[a-zA-Z0-9_%-]+/[a-zA-Z0-9_%/-]+.git$")
         repo_validator_kerb = re.compile("^https://:@gitlab.cern.ch:8443/[a-zA-Z0-9_%-]+/[a-zA-Z0-9_%/-]+.git$")
-        parameters.gitlab_repo = validate_as_arg_or_ask(
-            cli_value=parameters.gitlab_repo,
+        repo = validate_as_arg_or_ask(
+            cli_value=repo,
             validator=lambda v: (v is not None and (
                                  v == "" or
                                  v == "default" or
@@ -104,38 +132,41 @@ def validate_gitlab(parameters: argparse.Namespace) -> argparse.Namespace:
             neg_feedback="Invalid GitLab repository URL.",
             pos_feedback="The project GitLab repository address is set to: \033[0;32m{}\033[0;m",
             hints=("copy the address from the Clone button, choosing the protocol you prefer (HTTPS, SSH, KRB5)", ),
-            interactive=parameters.interactive
+            interactive=interactive
         )
-        if parameters.gitlab_repo == 'no-gitlab':
-            parameters.gitlab_repo = None
-            parameters.gitlab = False
-        if parameters.gitlab_repo == '':
-            parameters.gitlab_repo = "default"
+        # Resolve 'no-gitlab' and ''
+        if repo == 'no-gitlab':
+            repo = None
+            gitlab = False
+        if repo == '':
+            repo = "default"
 
         # Make sure to remember whether the repo should be created or not
-        parameters.create_repo = parameters.gitlab_repo == 'default'
+        create_repo = repo == 'default'
 
         # Resolve 'default' by protocol
-        if parameters.gitlab_repo == 'default':
+        if repo == 'default':
 
             # Make sure the protocol is specified
-            if parameters.upload_protocol is None:
-                parameters.upload_protocol = parameters.clone_protocol
+            if upload_protocol is None:
+                upload_protocol = clone_protocol
 
-            if parameters.upload_protocol == 'ssh':
-                parameters.gitlab_repo = "ssh://git@gitlab.cern.ch:7999/{}/{}.git".format(GROUP_NAME,
-                                                                                          parameters.project_name)
-            elif parameters.upload_protocol == 'https':
-                parameters.gitlab_repo = "https://gitlab.cern.ch/{}/{}.git".format(GROUP_NAME,
-                                                                                   parameters.project_name)
-            elif parameters.upload_protocol == 'kerberos':
-                parameters.gitlab_repo = "https://:@gitlab.cern.ch:8443/{}/{}.git".format(GROUP_NAME,
-                                                                                          parameters.project_name)
+            if upload_protocol == 'ssh':
+                repo = "ssh://git@gitlab.cern.ch:7999/{}/{}.git".format(GROUP_NAME, project_name)
+            elif upload_protocol == 'https':
+                repo = "https://gitlab.cern.ch/{}/{}.git".format(GROUP_NAME, project_name)
+            elif upload_protocol == 'kerberos':
+                repo = "https://:@gitlab.cern.ch:8443/{}/{}.git".format(GROUP_NAME, project_name)
             else:
-                raise ValueError("Upload protocol not recognized: '{}'".format(parameters.upload_protocol))
+                raise ValueError("Upload protocol not recognized: '{}'".format(upload_protocol))
 
     else:
-        # Make sure you don't create the repo (should be redundant)
-        parameters.create_repo = False
+        create_repo = False
+        repo = None
 
-    return parameters
+    return {
+        "gitlab": gitlab,
+        "repo_url": repo,
+        "create_repo": create_repo,
+    }
+
