@@ -98,12 +98,13 @@ def create_gitlab_repository(project_name: str, project_desc: str, auth_token: s
     :param project_desc: One-line description of the project
     :param auth_token: a GitLab access token. Can be either obtained by authenticating or can be given via CLI.
     """
+    post_fields = {'path': project_name,
+                   'name': project_name.replace("-", " ").title(),
+                   'description': project_desc}
+    if GROUP_ID is not None:
+        post_fields['namespace_id'] = GROUP_ID
     repo_data = post_to_gitlab(endpoint='api/v4/projects?{}'.format(auth_token),
-                               post_fields={'path': project_name,
-                                            'name': project_name.replace("-", " ").title(),
-                                            'namespace_id': GROUP_ID,
-                                            'description': project_desc
-                                            })
+                               post_fields=post_fields)
 
     # The avatar setting honestly is not critical: if it fails, amen
     # Note: This might fail due to the lack of the 'requests' package. It's ok.
