@@ -1,1 +1,2 @@
 include bipy-gui-manager/create_project/install-project.sh
+include bipy-gui-manager/create_project/PyQt-logo-gray.png

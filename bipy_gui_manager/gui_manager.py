@@ -12,7 +12,7 @@ from bipy_gui_manager.entry_points import entry_points
 # Gracefully handle Ctrl+C and other kill signals
 def kill_handler(_, __):
     cli.draw_line()
-    cli.negative_feedback("Exiting on user's request.")
+    cli.negative_feedback("Exiting on user's request.\n")
     sys.exit(0)
 
 
@@ -32,7 +32,7 @@ def main():
                                                help='Start a wizard that guides you through the setup of a new PyQt '
                                                     'project.')
     new_project_parser.set_defaults(func=create_project)
-    new_project_parser.add_argument('--path', dest='project_path', default="",
+    new_project_parser.add_argument('--path', dest='base_path', default=None,
                                     help="Specify the path to the new project. "
                                          "If not set, uses the current working directory.")
     new_project_parser.add_argument('--name', dest='project_name', default="",
@@ -43,13 +43,23 @@ def main():
                                     help="Sets the project author's name.")
     new_project_parser.add_argument('--email', dest='author_email', default="",
                                     help="Sets the project author's email.")
-    new_project_parser.add_argument('--repo', dest='gitlab_repo', default="",
-                                    help="Sets the project's GitLab repository address'.")
-    new_project_parser.add_argument('--no-gitlab', dest='gitlab', action='store_false',
-                                    help="Skips the GitLab upload, but still inits the repository locally.")
+    repo_commands = new_project_parser.add_mutually_exclusive_group()
+    repo_commands.add_argument('--repo', dest='gitlab_repo', default=None,
+                               help="Sets the project's GitLab repository address."
+                                    "Set it to 'default' to create a repository under "
+                                    "gitlab.cern.ch/bisw-python/<project_name>, if the name is available.")
+    repo_commands.add_argument('--no-gitlab', dest='gitlab', action='store_false',
+                               help="Skips the GitLab upload, but still inits the repository locally.")
     new_project_parser.add_argument('--clone-protocol', dest='clone_protocol', default="kerberos",
                                     choices=('kerberos', 'ssh', 'https'),
                                     help="Protocol to use to clone the template from GitLab")
+    new_project_parser.add_argument('--upload-protocol', dest='upload_protocol', default=None,
+                                    choices=('kerberos', 'ssh', 'https'),
+                                    help="Protocol to use to push the template to GitLab. "
+                                         "Effective only if the --repo flag is set to 'default'. "
+                                         "If not given, this value defaults to --clone-protocol")
+    new_project_parser.add_argument('--gitlab-auth-token', dest='gitlab_token', default=None,
+                                    help="GitLab private access token. Can be used to avoid the password prompt.")
     demo_commands = new_project_parser.add_mutually_exclusive_group()
     demo_commands.add_argument('--no-demo', dest='demo', action='store_false',
                                help="Install the template without demo application without asking the user "
@@ -61,8 +71,10 @@ def main():
                                     "or to install the demo in case --not-interactive is passed)")
     new_project_parser.add_argument('--not-interactive', dest='interactive', action='store_false',
                                     help="Prevents the script from asking the user, interactively, for missing "
-                                         "information. If any of the flags --name, --desc, --author, --email is "
-                                         "not specified, the script will fail.")
+                                         "information. If any necessary information is not specified through the CLI, "
+                                         "the script will fail.")
+    new_project_parser.add_argument('--cleanup-on-failure', dest='cleanup_on_failure', action='store_true',
+                                    help="In case of failure, delete any file created until then without asking.")
     new_project_parser.add_argument('--overwrite-project', dest='overwrite', action='store_true',
                                     help="[DEBUG] Overwrites a potentially existing project with the same name without "
                                          "asking the user. This prevents --not-interactive from failing if the "
@@ -71,6 +83,8 @@ def main():
                                     help="[DEBUG] Copy the template from a custom location on the filesystem. "
                                          "NOTE: further customizations might break if the template does not correspond "
                                          "to the default one.")
+    new_project_parser.add_argument('--crash', dest='crash', action='store_true',
+                                    help="[DEBUG] Do not try to recover from errors.")
 
     # 'release' subcommand
     self_update_parser = subparsers.add_parser('release',

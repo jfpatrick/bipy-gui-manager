@@ -1,11 +1,60 @@
 import os
 import pytest
+from argparse import Namespace
+from bipy_gui_manager.phonebook.phonebook import PhonebookEntry, LoginDataEntry
+
+
+# GITLAB_TOKEN = "zznsVsiahNkpY1PBEZJ8"
 
 
 @pytest.fixture
-def mock_git(tmpdir, monkeypatch):
+def mock_cwd(tmpdir, monkeypatch):
     monkeypatch.setattr('os.getcwd', lambda: str(tmpdir))
-    monkeypatch.setattr('bipy_gui_manager.create_project.utils.invoke_git', mock_git_invocation)
+
+
+def mock_phonebook_entry(i):
+    if i == "me":
+        phonebook_entry = PhonebookEntry("")
+        phonebook_entry.login_list = [LoginDataEntry("me group st uid gid 01/01/20 00:00 /bin/bash /my/home/dir")]
+        phonebook_entry.display_name = "Test User"
+        phonebook_entry.emails = ["test.email@cern.ch"]
+        return phonebook_entry
+    return None
+
+
+@pytest.fixture()
+def mock_phonebook(monkeypatch):
+    monkeypatch.setattr('bipy_gui_manager.create_project.validation.validate_cern_id', mock_phonebook_entry)
+
+
+@pytest.fixture
+def mock_git(tmpdir, monkeypatch, mock_cwd):
+    monkeypatch.setattr('bipy_gui_manager.create_project.version_control.invoke_git', mock_git_invocation)
+
+
+def create_project_parameters(demo=True, force_demo=True, path=".", name=None, desc=None, author=None,
+                              repo=None, clone_protocol="https", upload_protocol="https", gitlab=True,
+                              gitlab_token=None, interactive=True, overwrite=False,
+                              template_path=None, crash=True, create_repo=None):
+    args = Namespace(
+        demo=demo,
+        force_demo=force_demo,
+        base_path=path,
+        project_name=name,
+        project_desc=desc,
+        project_author=author,
+        gitlab_repo=repo,
+        clone_protocol=clone_protocol,
+        upload_protocol=upload_protocol,
+        gitlab=gitlab,
+        gitlab_token=gitlab_token,
+        interactive=interactive,
+        overwrite=overwrite,
+        template_path=template_path,
+        crash=crash,
+        create_repo=create_repo
+    )
+    return args
 
 
 def create_template_files(project_path, project_name, demo=True):
@@ -45,6 +94,7 @@ def create_template_files(project_path, project_name, demo=True):
             "Project Name\n",
             "_Here goes the project description_\n",
             "project-name\n",
+            "project_name\n",
             "author@cern.ch\n",
             "the project author\n",
             "https://:@gitlab.cern.ch:8443/cern-username/project-name.git\n",

@@ -30,7 +30,11 @@ REQUIREMENTS: dict = {
 
 setup(
     name='bipy_gui_manager',
+<<<<<<< HEAD
     version="0.0.1",
+=======
+    version="0.1.0",
+>>>>>>> gitlab_repo_creation
 
     author="Sara Zanzottera",
     author_email="sara.zanzottera@cern.ch",
