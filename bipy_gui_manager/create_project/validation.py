@@ -220,7 +220,7 @@ def validate_gitlab(gitlab, repo, interactive, upload_protocol, clone_protocol, 
                 cli.positive_feedback(pos_feedback.format(repo))
             else:
                 while repo is None:
-                    repo = cli.ask_input(question)
+                    repo = cli.ask_input(question).strip()
                     if repo == "no-gitlab":
                         break
                     repo, create_repo = resolver(repo)

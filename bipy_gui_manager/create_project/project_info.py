@@ -22,7 +22,7 @@ def collect(parameters: argparse.Namespace) -> Mapping[str, Union[str, bool]]:
         username = parameters.project_author
     else:
         username = getpass.getuser()
-    cli.positive_feedback("Looking for your user info on Phonebook for \033[0;32m{}\033[0;m".format(username))
+    cli.positive_feedback("Looking for \033[0;32m{}\033[0;m info on Phonebook".format(username))
 
     phonebook_entry = validation.resolve_as_arg_or_ask(
         cli_value=username,

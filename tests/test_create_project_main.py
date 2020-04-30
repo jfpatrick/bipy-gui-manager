@@ -4,47 +4,47 @@ from bipy_gui_manager.create_project import create_project
 
 from .conftest import create_project_parameters, create_template_files
 
-#
-# def test_create_project_defaults(monkeypatch):
-#     # Testing only that it won't fail with the defaults
-#     parameters = create_project_parameters(name="test-project", desc="A test project", author="Me", email="me@cern.ch",
-#                                            repo="ssh://git@gitlab.cern.ch:7999/user/project.git")
-#     monkeypatch.setattr('bipy_gui_manager.create_project.create_project.gather_setup_information',
-#                         lambda *a, **k: parameters)
-#     monkeypatch.setattr('bipy_gui_manager.create_project.create_project.check_path_is_available', lambda *a, **k: True)
-#     monkeypatch.setattr('bipy_gui_manager.create_project.create_project.copy_folder_from_path', lambda *a, **k: True)
-#     monkeypatch.setattr('bipy_gui_manager.create_project.create_project.download_template', lambda *a, **k: True)
-#     monkeypatch.setattr('bipy_gui_manager.create_project.create_project.apply_customizations', lambda *a, **k: True)
-#     monkeypatch.setattr('bipy_gui_manager.create_project.create_project.generate_readme', lambda *a, **k: True)
-#     monkeypatch.setattr('bipy_gui_manager.create_project.create_project.init_local_repo', lambda *a, **k: True)
-#     monkeypatch.setattr('bipy_gui_manager.create_project.create_project.push_first_commit', lambda *a, **k: True)
-#     monkeypatch.setattr('bipy_gui_manager.create_project.create_project.install_project', lambda *a, **k: True)
-#     create_project.create_project(parameters)
-#
-#
-# def test_create_project_copy_template(monkeypatch):
-#     # Testing only that it won't fail by taking this option
-#     parameters = create_project_parameters(name="test-project", desc="A test project", author="Me", email="me@cern.ch",
-#                                            repo="ssh://git@gitlab.cern.ch:7999/user/project.git", template_path="here")
-#     monkeypatch.setattr('bipy_gui_manager.create_project.create_project.gather_setup_information',
-#                         lambda *a, **k: parameters)
-#     monkeypatch.setattr('bipy_gui_manager.create_project.create_project.check_path_is_available', lambda *a, **k: True)
-#     monkeypatch.setattr('bipy_gui_manager.create_project.create_project.copy_folder_from_path', lambda *a, **k: True)
-#     monkeypatch.setattr('bipy_gui_manager.create_project.create_project.download_template', lambda *a, **k: True)
-#     monkeypatch.setattr('bipy_gui_manager.create_project.create_project.apply_customizations', lambda *a, **k: True)
-#     monkeypatch.setattr('bipy_gui_manager.create_project.create_project.generate_readme', lambda *a, **k: True)
-#     monkeypatch.setattr('bipy_gui_manager.create_project.create_project.init_local_repo', lambda *a, **k: True)
-#     monkeypatch.setattr('bipy_gui_manager.create_project.create_project.push_first_commit', lambda *a, **k: True)
-#     monkeypatch.setattr('bipy_gui_manager.create_project.create_project.install_project', lambda *a, **k: True)
-#     create_project.create_project(parameters)
-#
-#
-# def test_create_project_handle_errors(monkeypatch):
-#     # Won't raise this error, will handle it internally
-#     monkeypatch.setattr('bipy_gui_manager.create_project.create_project.gather_setup_information', lambda *a, **k: 1/0)
-#     parameters = create_project_parameters(name="test-project", desc="A test project", author="Me", email="me@cern.ch",
-#                                            repo="ssh://git@gitlab.cern.ch:7999/user/project.git", crash=False)
-#     create_project.create_project(parameters)
+
+# ###############################
+# #      Create Project         #
+# ###############################
+def test_create_project_defaults(monkeypatch):
+    # Won't raise exceptions if all the calls are successful
+    parameters = create_project_parameters()
+    values = vars(parameters)
+    values["project_path"] = "project/path"
+    values["author_full_name"] = "Full Name"
+    values["author_email"] = "email@email.com"
+    values["repo_url"] = "https://repo.url"
+    monkeypatch.setattr('bipy_gui_manager.create_project.project_info.collect', lambda *a, **k: values)
+    monkeypatch.setattr('bipy_gui_manager.create_project.create_project.get_template', lambda *a, **k: None)
+    monkeypatch.setattr('bipy_gui_manager.create_project.create_project.apply_customizations', lambda *a, **k: None)
+    monkeypatch.setattr('bipy_gui_manager.create_project.create_project.generate_readme', lambda *a, **k: None)
+    monkeypatch.setattr('bipy_gui_manager.create_project.create_project.setup_version_control', lambda *a, **k: None)
+    monkeypatch.setattr('bipy_gui_manager.create_project.create_project.install_project', lambda *a, **k: None)
+    create_project.create_project(parameters)
+
+
+def test_create_project_handles_exceptions_ask_cleanup(monkeypatch):
+    # Handles exceptions internally and asks for a cleanup
+    parameters = create_project_parameters(interactive=False, crash=False)
+    monkeypatch.setattr('bipy_gui_manager.create_project.project_info.collect', lambda *a, **k: 1/0)
+    monkeypatch.setattr('bipy_gui_manager.create_project.create_project.get_template', lambda *a, **k: None)
+    monkeypatch.setattr('bipy_gui_manager.create_project.create_project.apply_customizations', lambda *a, **k: None)
+    monkeypatch.setattr('bipy_gui_manager.create_project.create_project.generate_readme', lambda *a, **k: None)
+    monkeypatch.setattr('bipy_gui_manager.create_project.create_project.setup_version_control', lambda *a, **k: None)
+    monkeypatch.setattr('bipy_gui_manager.create_project.create_project.install_project', lambda *a, **k: None)
+
+    # If not interactive, just exists
+    create_project.create_project(parameters)
+
+    # # Verify it's actually calling cleanup_on_failure
+    # def fail(*a, **k):
+    #     raise AssertionError("cleanup_on_failure was called")
+    # monkeypatch.setattr('bipy_gui_manager.create_project.create_project.cleanup_on_failure', fail)
+    # parameters = create_project_parameters(interactive=True, crash=False)
+    # with pytest.raises(AssertionError):
+    #     create_project.create_project(parameters)
 
 
 # ###############################
