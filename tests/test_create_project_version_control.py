@@ -1,7 +1,7 @@
 import os
 import io
 import pytest
-import urllib
+from urllib.error import HTTPError
 import subprocess
 from bipy_gui_manager.create_project import version_control
 from .conftest import create_template_files
@@ -57,7 +57,7 @@ def test_authenticate_on_gitlab_valid_credentials(tmpdir, monkeypatch):
 
 def test_authenticate_on_gitlab_invalid_credentials(tmpdir, monkeypatch):
     def raise_urllib_http_error(*args, **kwargs):
-        raise urllib.error.HTTPError(url="test-url/", code=401, msg="Test error", hdrs="", fp=None)
+        raise HTTPError(url="test-url/", code=401, msg="Test error", hdrs="", fp=None)
 
     monkeypatch.setattr('bipy_gui_manager.create_project.version_control.post_to_gitlab', raise_urllib_http_error)
     data = version_control.authenticate_on_gitlab("valid_username", "valid_password")
