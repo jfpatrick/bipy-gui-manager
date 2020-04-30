@@ -6,7 +6,6 @@ import getpass
 from bipy_gui_manager import cli_utils as cli
 from bipy_gui_manager.create_project import validation
 from bipy_gui_manager.create_project import version_control
-from bipy_gui_manager.create_project import phonebook
 
 
 def collect(parameters: argparse.Namespace) -> Mapping[str, Union[str, bool]]:
@@ -23,23 +22,25 @@ def collect(parameters: argparse.Namespace) -> Mapping[str, Union[str, bool]]:
         username = parameters.project_author
     else:
         username = getpass.getuser()
+    cli.positive_feedback("Looking for your user info on Phonebook for \033[0;32m{}\033[0;m".format(username))
 
-    username = validation.validate_as_arg_or_ask(
+    phonebook_entry = validation.resolve_as_arg_or_ask(
         cli_value=username,
-        validator=lambda u: phonebook.validate_cern_id(u),
+        resolver=lambda u: validation.validate_cern_id(u),
         question="Please type your \033[0;33mCERN username\033[0;m:",
         neg_feedback="This username does not exist.",
-        pos_feedback="Your CERN username is set to \033[0;32m{}\033[0;m",
         interactive=parameters.interactive
     )
     project_parameters["author_cern_id"] = username
+    cli.positive_feedback("Your CERN username is set to \033[0;32m{}\033[0;m ".format(username), newline=False)
 
     # Author full name
-    project_parameters["author_full_name"] = phonebook.discover_full_name(project_parameters["author_cern_id"])
-    cli.positive_feedback("Your name is set to \033[0;32m{}\033[0;m".format(project_parameters["author_full_name"]))
+    project_parameters["author_full_name"] = phonebook_entry.display_name
+    cli.positive_feedback("Your name is set to \033[0;32m{}\033[0;m".format(project_parameters["author_full_name"]),
+                          newline=False)
 
     # Author CERN email
-    project_parameters["author_email"] = phonebook.discover_email(project_parameters["author_cern_id"])
+    project_parameters["author_email"] = phonebook_entry.emails[0]
     cli.positive_feedback("Your email is set to \033[0;32m{}\033[0;m".format(project_parameters["author_email"]))
 
     # Project name
@@ -97,9 +98,9 @@ def collect(parameters: argparse.Namespace) -> Mapping[str, Union[str, bool]]:
         if parameters.gitlab_token is None:
             project_parameters["author_token"] = authenticate_user(project_parameters["author_cern_id"])
         else:
-            # TODO Validate token early!
+            # TODO Validate token!
             project_parameters["author_token"] = "private_token={}".format(parameters.gitlab_token)
-    cli.positive_feedback("You have been successfully authenticated on GitLab.")
+        cli.positive_feedback("You have been successfully authenticated on GitLab.")
 
     # Template path (light validation)
     if parameters.template_path:

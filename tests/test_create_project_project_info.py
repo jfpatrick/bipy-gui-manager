@@ -103,8 +103,7 @@ def test_collect_name_no_empty_string(monkeypatch, mock_phonebook):
 def test_collect_desc_valid(mock_phonebook):
     # Right values
     parameters = create_project_parameters(name="test-project", desc="A test project", author="me",
-                                           repo="ssh://git@gitlab.cern.ch:7999/user/project.git",
-                                           interactive=False)
+                                           repo="ssh://git@gitlab.cern.ch:7999/user/project.git")
     new_params = project_info.collect(parameters)
     assert new_params["project_desc"] == "A test project"
 
@@ -122,8 +121,7 @@ def test_collect_desc_not_given_ask_get_valid(monkeypatch, mock_phonebook):
 def test_collect_desc_no_double_quotes(mock_phonebook):
     # Double quotes not allowed
     parameters = create_project_parameters(name="test-project", desc="A \"test\" project", author="me",
-                                           repo="ssh://git@gitlab.cern.ch:7999/user/project.git",
-                                           interactive=False)
+                                           repo="ssh://git@gitlab.cern.ch:7999/user/project.git")
     with pytest.raises(ValueError):
         project_info.collect(parameters)
 
@@ -132,8 +130,7 @@ def test_collect_desc_no_empty_string(monkeypatch, mock_phonebook):
     # Empty string not allowed - will fail
     monkeypatch.setattr('builtins.input', lambda _: 1/0)  # Just to avoid hanging if the test fails
     parameters = create_project_parameters(name="test-project", desc="", author="me",
-                                           repo="ssh://git@gitlab.cern.ch:7999/user/project.git",
-                                           interactive=False)
+                                           repo="ssh://git@gitlab.cern.ch:7999/user/project.git")
     with pytest.raises(ValueError):
         project_info.collect(parameters)
 
@@ -142,8 +139,7 @@ def test_collect_desc_not_given(monkeypatch, mock_phonebook):
     # If not given as parameter will ask
     monkeypatch.setattr('builtins.input', lambda _: 1/0)
     parameters = create_project_parameters(name="test-project", author="me",
-                                           repo="ssh://git@gitlab.cern.ch:7999/user/project.git",
-                                           interactive=False)
+                                           repo="ssh://git@gitlab.cern.ch:7999/user/project.git")
     with pytest.raises(ZeroDivisionError):
         project_info.collect(parameters)
 
@@ -162,7 +158,7 @@ def test_collect_project_path_use_base_path_validation(monkeypatch, mock_cwd, mo
 def test_collect_project_path_empty_string(monkeypatch, mock_cwd, mock_phonebook):
     monkeypatch.setattr('builtins.input', lambda _: 1 / 0)
     parameters = create_project_parameters(name="test-project", desc="A test project", author="me", path="",
-                                            repo="https://:@gitlab.cern.ch:8443/user/project.git")
+                                           repo="https://:@gitlab.cern.ch:8443/user/project.git")
     # Empty string is valid, means "current directory"
     new_params = project_info.collect(parameters)
     assert new_params["base_path"] == ""

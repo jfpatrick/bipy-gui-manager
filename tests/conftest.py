@@ -1,9 +1,10 @@
 import os
 import pytest
 from argparse import Namespace
+from bipy_gui_manager.phonebook.phonebook import PhonebookEntry, LoginDataEntry
 
 
-GITLAB_TOKEN = "zznsVsiahNkpY1PBEZJ8"
+# GITLAB_TOKEN = "zznsVsiahNkpY1PBEZJ8"
 
 
 @pytest.fixture
@@ -11,11 +12,19 @@ def mock_cwd(tmpdir, monkeypatch):
     monkeypatch.setattr('os.getcwd', lambda: str(tmpdir))
 
 
+def mock_phonebook_entry(i):
+    if i == "me":
+        phonebook_entry = PhonebookEntry("")
+        phonebook_entry.login_list = [LoginDataEntry("me group st uid gid 01/01/20 00:00 /bin/bash /my/home/dir")]
+        phonebook_entry.display_name = "Test User"
+        phonebook_entry.emails = ["test.email@cern.ch"]
+        return phonebook_entry
+    return None
+
+
 @pytest.fixture()
 def mock_phonebook(monkeypatch):
-    monkeypatch.setattr('bipy_gui_manager.create_project.phonebook.validate_cern_id', lambda i: i == "me")
-    monkeypatch.setattr('bipy_gui_manager.create_project.phonebook.discover_full_name', lambda i: "Test User")
-    monkeypatch.setattr('bipy_gui_manager.create_project.phonebook.discover_email', lambda i: "test.email@cern.ch")
+    monkeypatch.setattr('bipy_gui_manager.create_project.validation.validate_cern_id', mock_phonebook_entry)
 
 
 @pytest.fixture
@@ -25,7 +34,7 @@ def mock_git(tmpdir, monkeypatch, mock_cwd):
 
 def create_project_parameters(demo=True, force_demo=True, path=".", name=None, desc=None, author=None,
                               repo=None, clone_protocol="https", upload_protocol="https", gitlab=True,
-                              gitlab_token=GITLAB_TOKEN, interactive=True, overwrite=False,
+                              gitlab_token=None, interactive=True, overwrite=False,
                               template_path=None, crash=True, create_repo=None):
     args = Namespace(
         demo=demo,

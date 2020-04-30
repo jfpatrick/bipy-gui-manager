@@ -2,45 +2,21 @@
 Original script from jbetz. Created on Jul 1, 2013
 """
 import subprocess
-
-
-def validate_cern_id(cern_id: str) -> bool:
-    phonebook = Phonebook(cern_id)
-    entries = phonebook.query_data()
-    print(entries[0].login_list)
-    if len(entries) == 1 and cern_id in [id for id, shell, home in entries[0].login_list]:
-        return True
-    return False
-
-
-def discover_full_name(cern_id: str) -> str:
-    phonebook = Phonebook(cern_id)
-    entries = phonebook.query_data()
-    if len(entries) == 1 and cern_id in [id for id, shell, home in entries[0].login_list]:
-        return entries[0].display_name
-    raise ValueError("Data for CERN ID {} not found (or multiple matches were returned).".format(cern_id))
-
-
-def discover_email(cern_id: str) -> str:
-    phonebook = Phonebook(cern_id)
-    entries = phonebook.query_data()
-    # TODO return all cern emails instead of just the first one
-    if len(entries) == 1 and cern_id in [id for id, shell, home in entries[0].login_list] and len(entries[0].emails) > 0:
-        return entries[0].emails[0]
-    raise ValueError("Data for CERN ID {} not found (or multiple matches were returned).".format(cern_id))
+import datetime
 
 
 class Phonebook:
-    
+    """
+    Uses the installed CLI util 'phonebook' to retrieve phonebook data.
+    Can perform queries based on any parameter (CERN ID, name, office, phone, email...)
+    """
+
     def __init__(self, search_string=''):
         if search_string == '':
             raise ValueError('At least any search string should be provided!')
         self.search_string = search_string
         self.results = list()
         self.found_entries = list()
-
-    # def __itr__(self):
-    #     pass
 
     def query_data(self):
         arguments = ['phonebook', '-all', self.search_string]
@@ -68,9 +44,9 @@ class Phonebook:
                 line_number = line_number + 1
                 continue
 
-            if end_line is None and line_data[line_number].startswith('#--') :
+            if end_line is None and line_data[line_number].startswith('#--'):
                 end_line = line_number - 1
-                dataset = line_data[start_line:end_line+1]
+                dataset = line_data[start_line:end_line + 1]
                 possible_results.append(dataset)
                 start_line = line_number + 1
                 end_line = None
@@ -86,6 +62,27 @@ class Phonebook:
 
 
 class PhonebookEntry(object):
+    """ Represents a single returned entry from a Phonebook query.
+        Contains all the user's data:
+         - surname
+         - first_name
+         - display_name: first name + surname
+         - emails: list of all user's emails
+         - phones: list of all user's landline numbers
+         - mobiles: list of all user's mobile numbers
+         - fax_list: list of all user's fax numbers
+         - department
+         - group
+         - section
+         - post_box
+         - location: office location
+         - organizations: list of belonging organizations
+         - computer_center_id
+         - login_list: composite list of:
+            - cern id used to login
+            - shell used at login
+            - user's home directory
+    """
     def __init__(self, data):
         self.surname = ''
         self.first_name = ''
@@ -96,6 +93,7 @@ class PhonebookEntry(object):
         self.fax_list = list()
         self.department = ''
         self.group = ''
+        self.section = ''
         self.post_box = ''
         self.location = ''
         self.organizations = list()
@@ -138,6 +136,9 @@ class PhonebookEntry(object):
             if line.startswith('Group'):
                 self.extract_group(line)
                 continue
+            if line.startswith('Section'):
+                self.extract_section(line)
+                continue
             if line.startswith('POBox'):
                 self.extract_post_box(line)
                 continue
@@ -158,7 +159,7 @@ class PhonebookEntry(object):
                 self.extract_account_data(line)
 
     def __str__(self):
-        string  = 'Phonebook entry\n'
+        string = 'Phonebook entry\n'
         string += 'Surname      : %s\n' % self.surname
         string += 'Firstname    : %s\n' % self.first_name
         string += 'Display name : %s\n' % self.display_name
@@ -172,14 +173,14 @@ class PhonebookEntry(object):
             string += 'Fax          : %s\n' % str(fax)
         string += 'Department   : %s\n' % self.department
         string += 'Group        : %s\n' % self.group
+        string += 'Section        : %s\n' % self.section
         string += 'Building     : %s\n' % self.location
         for organisation in self.organizations:
             string += 'Organization : %s\n' % organisation
         string += 'Computer Center ID : %s\n' % self.computer_center_id
+        string += "Last Login Information:\n"
         for login in self.login_list:
-            string += 'Login name   : %s\n' % login[0]
-            string += 'Shell        : %s\n' % login[1]
-            string += 'Home         : %s\n' % login[2]
+            string += str(login) + "\n"
         return string
 
     def extract_surname(self, line):
@@ -230,6 +231,11 @@ class PhonebookEntry(object):
         data = data.strip(' ')
         self.group = data
 
+    def extract_section(self, line):
+        element, data = line.split(':', 1)
+        data = data.strip(' ')
+        self.section = data
+
     def extract_post_box(self, line):
         element, data = line.split(':', 1)
         data = data.replace('(internal mail)', '')
@@ -252,5 +258,35 @@ class PhonebookEntry(object):
         self.computer_center_id = data
 
     def extract_account_data(self, line):
-        data = line.split(' ')
-        self.login_list.append((data[0].strip(), data[-2].strip(), data[-1].strip()))
+        self.login_list.append(LoginDataEntry(line))
+
+
+class LoginDataEntry:
+    """ Represents a login data extracted from a PhonebookEntry raw data.
+        Contains all the login's data:
+        - cern id used to login
+        - shell used at login
+        - user's home directory
+    """
+    def __init__(self, line):
+        data = line.split()
+        self.cern_id = data[0]
+        self.user_group = data[1]
+        self.st = data[2]
+        self.uid = data[3]
+        self.gid = data[4]
+        self.last_login = datetime.datetime.strptime(" ".join(data[5:7]), "%d/%m/%y %H:%M")
+        self.shell = data[7]
+        self.home_directory = data[8]
+
+    def __str__(self):
+        string  = '     CERN ID       : %s\n' % self.cern_id
+        string += '     User Group    : %s\n' % self.user_group
+        string += '     St            : %s\n' % self.st
+        string += '     UID           : %s\n' % self.uid
+        string += '     GID           : %s\n' % self.gid
+        string += '     Last Login    : %s\n' % self.last_login
+        string += '     Shell         : %s\n' % self.shell
+        string += '     Home Directory: %s\n' % self.home_directory
+        return string
+

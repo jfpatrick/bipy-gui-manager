@@ -1,9 +1,10 @@
-from typing import Mapping, Union
+from typing import Any, Optional, Mapping, Union, Tuple
 import os
 import re
 import shutil
 from bipy_gui_manager import cli_utils as cli
 from bipy_gui_manager.create_project import GROUP_NAME
+from bipy_gui_manager.phonebook.phonebook import Phonebook, PhonebookEntry
 
 
 def validate_or_fail(value, validator, neg_feedback):
@@ -27,7 +28,8 @@ def validate_or_ask(validator, question, neg_feedback, start_value=None, pos_fee
     return value
 
 
-def validate_as_arg_or_ask(cli_value, validator, question, neg_feedback, pos_feedback=None, hints=(), interactive=True):
+def validate_as_arg_or_ask(cli_value, validator, question, neg_feedback, pos_feedback=None, hints=(), interactive=True)\
+        -> bool:
     """
         If an initial value is given and valid, return it.
         If an initial value is given and invalid, fail.
@@ -43,6 +45,40 @@ def validate_as_arg_or_ask(cli_value, validator, question, neg_feedback, pos_fee
         return result
     else:
         return validate_or_ask(validator, question, neg_feedback, pos_feedback=pos_feedback, hints=hints)
+
+
+def resolve_as_arg_or_ask(cli_value, resolver, question, neg_feedback, pos_feedback=None, hints=(), interactive=True)\
+        -> Any:
+    """
+        If an initial value is given and valid, resolve and return it.
+        If an initial value is given and invalid, fail.
+        If it's not given, ask the user until a valid value is received and return it's resolved version.
+        if interactive is False, fail rather than asking.
+    """
+    if not interactive and cli_value is None:
+        raise ValueError(neg_feedback)
+    if cli_value is not None or not interactive:
+        # Resolve or fail - never ask
+        value = resolver(cli_value)
+        if value is None:
+            raise ValueError(neg_feedback)
+        if pos_feedback:
+            cli.positive_feedback(pos_feedback.format(value))
+        return value
+    else:
+        # Ask and resolve until valid
+        value = None
+        while value is None:
+            value = cli.ask_input(question)
+            value = resolver(value)
+            if value is None:
+                cli.negative_feedback(neg_feedback)
+                for hint in hints:
+                    cli.give_hint(hint)
+            else:
+                if pos_feedback:
+                    cli.positive_feedback(pos_feedback.format(value))
+                return value
 
 
 def validate_base_path(base_path: str, project_name: str, interactive: bool = True, overwrite: bool = False) -> bool:
@@ -68,6 +104,8 @@ def validate_base_path(base_path: str, project_name: str, interactive: bool = Tr
             if answer == "overwrite":
                 cli.list_subtask("Overwriting existing folder")
                 shutil.rmtree(project_path)
+                return True
+            return False
     return True
 
 
@@ -107,6 +145,46 @@ def validate_demo_flags(force_demo: bool, demo: bool, interactive: bool) -> bool
                 value = cli.handle_failure("Please type yes or no:")
 
 
+def resolve_gitlab_repo_url(repo_url, upload_protocol, project_name) -> Tuple[Optional[str], bool]:
+
+    if repo_url is None:
+        # Invalid
+        return None, False
+
+    repo_validator_ssh = re.compile("^ssh://git@gitlab.cern.ch:7999/[a-zA-Z0-9_%-]+/[a-zA-Z0-9_%/-]+.git$")
+    repo_validator_https = re.compile("^https://gitlab.cern.ch/[a-zA-Z0-9_%-]+/[a-zA-Z0-9_%/-]+.git$")
+    repo_validator_kerb = re.compile("^https://:@gitlab.cern.ch:8443/[a-zA-Z0-9_%-]+/[a-zA-Z0-9_%/-]+.git$")
+
+    if repo_validator_https.match(repo_url) or \
+       repo_validator_ssh.match(repo_url) or \
+       repo_validator_kerb.match(repo_url):
+        # Repo URL explicit: should be created by the user
+        return repo_url, False
+
+    elif repo_url == '' or repo_url == "default":
+        # Default case: we need to resolve this
+        repo_url = "default"
+
+    else:
+        # Any other case is invalid
+        # NOTE: "no-gitlab" should be intercepted separately
+        return None, False
+
+    # Resolve 'default' by protocol
+    if repo_url == 'default':
+
+        if upload_protocol == 'ssh':
+            repo_url = "ssh://git@gitlab.cern.ch:7999/{}/{}.git".format(GROUP_NAME, project_name)
+        elif upload_protocol == 'https':
+            repo_url = "https://gitlab.cern.ch/{}/{}.git".format(GROUP_NAME, project_name)
+        elif upload_protocol == 'kerberos':
+            repo_url = "https://:@gitlab.cern.ch:8443/{}/{}.git".format(GROUP_NAME, project_name)
+        else:
+            raise ValueError("Upload protocol not recognized: '{}'".format(upload_protocol))
+
+    return repo_url, True
+
+
 def validate_gitlab(gitlab, repo, interactive, upload_protocol, clone_protocol, project_name) \
         -> Mapping[str, Union[str, bool, None]]:
     """
@@ -114,51 +192,46 @@ def validate_gitlab(gitlab, repo, interactive, upload_protocol, clone_protocol, 
     :return: a dictionary containing the 'gitlab', 'create_repo' and 'repo_url' values
     """
     if gitlab:
-        # Validate explicit repo values
-        repo_validator_ssh = re.compile("^ssh://git@gitlab.cern.ch:7999/[a-zA-Z0-9_%-]+/[a-zA-Z0-9_%/-]+.git$")
-        repo_validator_https = re.compile("^https://gitlab.cern.ch/[a-zA-Z0-9_%-]+/[a-zA-Z0-9_%/-]+.git$")
-        repo_validator_kerb = re.compile("^https://:@gitlab.cern.ch:8443/[a-zA-Z0-9_%-]+/[a-zA-Z0-9_%/-]+.git$")
-        repo = validate_as_arg_or_ask(
-            cli_value=repo,
-            validator=lambda v: (v is not None and (
-                                 v == "" or
-                                 v == "default" or
-                                 v == "no-gitlab" or
-                                 repo_validator_https.match(v) or
-                                 repo_validator_ssh.match(v) or
-                                 repo_validator_kerb.match(v))),
-            question="Press ENTER to create a GitLab repository for your project under 'bisw-python', or enter your "
-                     "existing GitLab repository address here (or type 'no-gitlab' to keep your repository local):",
-            neg_feedback="Invalid GitLab repository URL.",
-            pos_feedback="The project GitLab repository address is set to: \033[0;32m{}\033[0;m",
-            hints=("copy the address from the Clone button, choosing the protocol you prefer (HTTPS, SSH, KRB5)", ),
-            interactive=interactive
-        )
-        # Resolve 'no-gitlab' and ''
-        if repo == 'no-gitlab':
-            repo = None
+
+        # Make sure the upload protocol is specified
+        if upload_protocol is None:
+            upload_protocol = clone_protocol
+
+        resolver = lambda r: resolve_gitlab_repo_url(r, upload_protocol, project_name)
+        question = "Press ENTER to create a GitLab repository for your project under 'bisw-python', or enter your " \
+                   "existing GitLab repository address here (or type 'no-gitlab' to keep your repository local):"
+        neg_feedback = "Invalid GitLab repository URL."
+        pos_feedback = "The project GitLab repository address is set to: \033[0;32m{}\033[0;m"
+
+        # Deal with CLI passing 'no-gitlab'
+        if repo == "no-gitlab":
+            cli.positive_feedback(pos_feedback.format(repo))
             gitlab = False
-        if repo == '':
-            repo = "default"
+            repo = None
+            create_repo = False
 
-        # Make sure to remember whether the repo should be created or not
-        create_repo = repo == 'default'
-
-        # Resolve 'default' by protocol
-        if repo == 'default':
-
-            # Make sure the protocol is specified
-            if upload_protocol is None:
-                upload_protocol = clone_protocol
-
-            if upload_protocol == 'ssh':
-                repo = "ssh://git@gitlab.cern.ch:7999/{}/{}.git".format(GROUP_NAME, project_name)
-            elif upload_protocol == 'https':
-                repo = "https://gitlab.cern.ch/{}/{}.git".format(GROUP_NAME, project_name)
-            elif upload_protocol == 'kerberos':
-                repo = "https://:@gitlab.cern.ch:8443/{}/{}.git".format(GROUP_NAME, project_name)
+        else:
+            # This part is very similar to validate_as_arg_or_ask, but it returns the resolved values instead of a bool
+            # TODO make validate_as_arg_or_ask able to deal with this case too
+            if repo is not None or not interactive:
+                repo, create_repo = resolver(repo)
+                if repo is None:
+                    raise ValueError(neg_feedback)
+                cli.positive_feedback(pos_feedback.format(repo))
             else:
-                raise ValueError("Upload protocol not recognized: '{}'".format(upload_protocol))
+                while repo is None:
+                    repo = cli.ask_input(question)
+                    if repo == "no-gitlab":
+                        break
+                    repo, create_repo = resolver(repo)
+                    if repo is None:
+                        cli.negative_feedback(neg_feedback)
+                cli.positive_feedback(pos_feedback.format(repo))
+
+            if repo == "no-gitlab":
+                gitlab = False
+                repo = None
+                create_repo = False
 
     else:
         create_repo = False
@@ -170,3 +243,15 @@ def validate_gitlab(gitlab, repo, interactive, upload_protocol, clone_protocol, 
         "create_repo": create_repo,
     }
 
+
+def validate_cern_id(cern_id: str) -> Optional[PhonebookEntry]:
+    """
+    Uses the Phonebook utilities to validate CERN IDs and retrieve their data.
+    :param cern_id: The CERN ID of the user
+    :return: A PhonebookEntry object containing all the user's info
+    """
+    phonebook = Phonebook(cern_id)
+    entries = phonebook.query_data()
+    if len(entries) == 1 and cern_id in [login.cern_id for login in entries[0].login_list]:
+        return entries[0]
+    return None

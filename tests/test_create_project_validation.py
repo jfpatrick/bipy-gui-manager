@@ -67,9 +67,13 @@ def test_validate_gitlab_repo_https():
     # Right value
     new_params = validation.validate_gitlab(**args, repo="https://gitlab.cern.ch/user/project.git")
     assert new_params["repo_url"] == "https://gitlab.cern.ch/user/project.git"
+    assert new_params["gitlab"]
+    assert not new_params["create_repo"]
     # Nested
     new_params = validation.validate_gitlab(**args, repo="https://gitlab.cern.ch/group/subgroup/project.git")
     assert new_params["repo_url"] == "https://gitlab.cern.ch/group/subgroup/project.git"
+    assert new_params["gitlab"]
+    assert not new_params["create_repo"]
     # Too short
     with pytest.raises(ValueError):
         validation.validate_gitlab(**args, repo="https://gitlab.cern.ch/project.git")
@@ -81,9 +85,13 @@ def test_validate_gitlab_repo_ssh():
     # Right value
     new_params = validation.validate_gitlab(**args, repo="ssh://git@gitlab.cern.ch:7999/user/project.git")
     assert new_params["repo_url"] == "ssh://git@gitlab.cern.ch:7999/user/project.git"
+    assert new_params["gitlab"]
+    assert not new_params["create_repo"]
     # Nested more than 2
     new_params = validation.validate_gitlab(**args, repo="ssh://git@gitlab.cern.ch:7999/group/subgroup/project.git")
     assert new_params["repo_url"] == "ssh://git@gitlab.cern.ch:7999/group/subgroup/project.git"
+    assert new_params["gitlab"]
+    assert not new_params["create_repo"]
     # Too short
     with pytest.raises(ValueError):
         validation.validate_gitlab(**args, repo="ssh://git@gitlab.cern.ch:7999/project.git")
@@ -95,9 +103,13 @@ def test_validate_gitlab_repo_krb5():
     # Right value
     new_params = validation.validate_gitlab(**args, repo="https://:@gitlab.cern.ch:8443/user/project.git")
     assert new_params["repo_url"] == "https://:@gitlab.cern.ch:8443/user/project.git"
+    assert new_params["gitlab"]
+    assert not new_params["create_repo"]
     # Nested more than 2
     new_params = validation.validate_gitlab(**args, repo="https://:@gitlab.cern.ch:8443/group/subgroup/project.git")
     assert new_params["repo_url"] == "https://:@gitlab.cern.ch:8443/group/subgroup/project.git"
+    assert new_params["gitlab"]
+    assert not new_params["create_repo"]
     # Too short
     with pytest.raises(ValueError):
         validation.validate_gitlab(**args, repo="https://:@gitlab.cern.ch:8443/project.git")
@@ -113,6 +125,7 @@ def test_validate_gitlab_repo_no_gitlab(monkeypatch):
     new_params = validation.validate_gitlab(**args)
     assert new_params["repo_url"] is None
     assert not new_params["gitlab"]
+    assert not new_params["create_repo"]
 
 
 def test_validate_gitlab_repo_no_gitlab_interactive(monkeypatch):
@@ -123,6 +136,7 @@ def test_validate_gitlab_repo_no_gitlab_interactive(monkeypatch):
     new_params = validation.validate_gitlab(**args)
     assert new_params["repo_url"] is None
     assert not new_params["gitlab"]
+    assert not new_params["create_repo"]
 
 
 def test_validate_gitlab_repo_no_garbage_address():
@@ -140,6 +154,8 @@ def test_validate_gitlab_repo_empty_string_interactive(monkeypatch):
     monkeypatch.setattr('builtins.input', lambda _: "")
     new_params = validation.validate_gitlab(**args)
     assert new_params["repo_url"] == "https://gitlab.cern.ch/test-group/test-project.git"
+    assert new_params["gitlab"]
+    assert new_params["create_repo"]
 
 
 def test_validate_gitlab_repo_not_given(monkeypatch):
@@ -151,7 +167,7 @@ def test_validate_gitlab_repo_not_given(monkeypatch):
         validation.validate_gitlab(**args)
 
 
-def test_validate_gitlab_repo_not_given_ask(monkeypatch):
+def test_validate_gitlab_repo_not_given_ask_get_url(monkeypatch):
     args = {'gitlab': True, 'interactive': True, 'upload_protocol': "https", 'clone_protocol': "https",
             'project_name': "test-project", 'repo': None}
     # If not given as parameter will ask and process the reply
@@ -159,11 +175,18 @@ def test_validate_gitlab_repo_not_given_ask(monkeypatch):
     new_params = validation.validate_gitlab(**args)
     assert new_params["gitlab"]
     assert new_params["repo_url"] == "https://gitlab.cern.ch/test-group/test-project.git"
+    assert not new_params["create_repo"]
 
+
+def test_validate_gitlab_repo_not_given_ask_get_no_gitlab(monkeypatch):
+    args = {'gitlab': True, 'interactive': True, 'upload_protocol': "https", 'clone_protocol': "https",
+            'project_name': "test-project", 'repo': None}
+    # If not given as parameter will ask and process the reply
     monkeypatch.setattr('builtins.input', lambda _: "no-gitlab")
     new_params = validation.validate_gitlab(**args)
     assert not new_params["gitlab"]
     assert new_params["repo_url"] is None
+    assert not new_params["create_repo"]
 
 
 def test_validate_gitlab_repo_not_checked_if_gitlab_false():
@@ -172,6 +195,7 @@ def test_validate_gitlab_repo_not_checked_if_gitlab_false():
             'project_name': "test-project", 'repo': None}
     new_params = validation.validate_gitlab(**args)
     assert not new_params["gitlab"]
+    assert not new_params["create_repo"]
     assert new_params["repo_url"] is None
 
     # TODO If gitlab=False but repo is defined, throw exception
@@ -179,6 +203,7 @@ def test_validate_gitlab_repo_not_checked_if_gitlab_false():
             'project_name': "test-project", 'repo': "https://gitlab.cern.ch.git"}
     new_params = validation.validate_gitlab(**args)
     assert not new_params["gitlab"]
+    assert not new_params["create_repo"]
     assert new_params["repo_url"] is None
 
 
@@ -192,6 +217,8 @@ def upload_protocol_not_given(monkeypatch):
             'upload_protocol': None}
     new_params = validation.validate_gitlab(**args)
     assert new_params["repo_url"] == "ssh://git@gitlab.cern.ch:7999/test-group/test-project.git"
+    assert new_params["gitlab"]
+    assert new_params["create_repo"]
 
 
 def upload_protocol_https(monkeypatch):
@@ -200,6 +227,8 @@ def upload_protocol_https(monkeypatch):
             'repo': None, 'upload_protocol': None}
     new_params = validation.validate_gitlab(**args)
     assert new_params["repo_url"] == "https://gitlab.cern.ch/test-group/test-project.git"
+    assert new_params["gitlab"]
+    assert new_params["create_repo"]
 
 
 def upload_protocol_ssh(monkeypatch):
@@ -208,6 +237,8 @@ def upload_protocol_ssh(monkeypatch):
             'upload_protocol': None}
     new_params = validation.validate_gitlab(**args)
     assert new_params["repo_url"] == "ssh://git@gitlab.cern.ch:7999/test-group/test-project.git"
+    assert new_params["gitlab"]
+    assert new_params["create_repo"]
 
 
 def upload_protocol_kerberos(monkeypatch):
@@ -216,6 +247,8 @@ def upload_protocol_kerberos(monkeypatch):
             'repo': None, 'upload_protocol': None}
     new_params = validation.validate_gitlab(**args)
     assert new_params["repo_url"] == "https://:@gitlab.cern.ch:8443/test-group/test-project.git"
+    assert new_params["gitlab"]
+    assert new_params["create_repo"]
 
 
 def upload_protocol_wrong(monkeypatch):
@@ -237,6 +270,7 @@ def test_validate_gitlab_repo_default_and_create_repo(monkeypatch):
             'repo': 'default', 'upload_protocol': None}
     new_params = validation.validate_gitlab(**args)
     assert new_params["repo_url"] == "https://gitlab.cern.ch/test-group/test-project.git"
+    assert new_params["gitlab"]
     assert new_params['create_repo']
 
     # If it's not default create_repo is not set
@@ -246,6 +280,7 @@ def test_validate_gitlab_repo_default_and_create_repo(monkeypatch):
             'repo': "https://gitlab.cern.ch/test-group/test-project.git", 'upload_protocol': None}
     new_params = validation.validate_gitlab(**args)
     assert new_params["repo_url"] == "https://gitlab.cern.ch/test-group/test-project.git"
+    assert new_params["gitlab"]
     assert not new_params['create_repo']
 
 

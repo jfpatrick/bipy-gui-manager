@@ -1,4 +1,4 @@
-from bipy_gui_manager.create_project.phonebook import Phonebook
+from bipy_gui_manager.phonebook.phonebook import Phonebook
 
 
 TEST_DATA = """#------------------------------------------------------------------------------
