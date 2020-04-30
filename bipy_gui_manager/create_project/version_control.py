@@ -2,12 +2,14 @@ from typing import Mapping, Optional
 import os
 import json
 import urllib
+from urllib.error import HTTPError
 try:
     import requests  # requests might not be installed, but is needed only for the avatar upload
 except ImportError:
     pass
 from subprocess import Popen, PIPE
 from bipy_gui_manager import cli_utils as cli
+from bipy_gui_manager.create_project import GROUP_ID
 
 
 def invoke_git(parameters=(), cwd=os.getcwd(), neg_feedback="An error occurred in Git!"):
@@ -42,7 +44,7 @@ def authenticate_on_gitlab(username: str, password: str) -> Optional[str]:
     try:
         auth_token = post_to_gitlab(endpoint='/oauth/token',
                                     post_fields={'grant_type': 'password', 'username': username, 'password': password})
-    except urllib.error.HTTPError as he:
+    except HTTPError as he:
         if he.code == 401:  # Unauthorized
             return None
         else:
@@ -99,6 +101,7 @@ def create_gitlab_repository(project_name: str, project_desc: str, auth_token: s
     repo_data = post_to_gitlab(endpoint='api/v4/projects?{}'.format(auth_token),
                                post_fields={'path': project_name,
                                             'name': project_name.replace("-", " ").title(),
+                                            'namespace_id': GROUP_ID,
                                             'description': project_desc
                                             })
 
