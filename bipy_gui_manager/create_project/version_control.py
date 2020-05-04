@@ -91,7 +91,7 @@ def init_local_repo(project_path: str) -> None:
     )
 
 
-def create_gitlab_repository(project_name: str, project_desc: str, auth_token: str):
+def create_gitlab_repository(repo_type: str, project_name: str, project_desc: str, auth_token: str):
     """
     Create a GitLab repo under bisw-python
     :param project_name: Name of the project
@@ -101,8 +101,10 @@ def create_gitlab_repository(project_name: str, project_desc: str, auth_token: s
     post_fields = {'path': project_name,
                    'name': project_name.replace("-", " ").title(),
                    'description': project_desc}
-    if GROUP_ID is not None:
-        post_fields['namespace_id'] = GROUP_ID
+
+    if repo_type == "operational":
+        post_fields['namespace_id'] = str(GROUP_ID)
+
     repo_data = post_to_gitlab(endpoint='api/v4/projects?{}'.format(auth_token),
                                post_fields=post_fields)
 
@@ -118,14 +120,14 @@ def create_gitlab_repository(project_name: str, project_desc: str, auth_token: s
         print("  - Avatar upload failed: {}.".format(e))
 
 
-def push_first_commit(project_path: str, gitlab_repo: str) -> None:
+def push_first_commit(project_path: str, repo_url: str) -> None:
     """
     Adds a remote to the Git repo and pushes the first commit
     :param project_path: Path to the project root
-    :param gitlab_repo: GitLab repo to push to
+    :param repo_url: GitLab repo to push to
     """
     invoke_git(
-        parameters=['remote', 'add', 'origin', gitlab_repo],
+        parameters=['remote', 'add', 'origin', repo_url],
         cwd=project_path,
         neg_feedback="Failed to add the remote on the project's local repo."
     )
@@ -133,7 +135,7 @@ def push_first_commit(project_path: str, gitlab_repo: str) -> None:
     invoke_git(
         parameters=['ls-remote'],
         cwd=project_path,
-        neg_feedback="Seems like {} is not an existing and empty GitLab repository. ".format(gitlab_repo) +
+        neg_feedback="Seems like {} is not an existing and empty GitLab repository. ".format(repo_url) +
                      "The repository should EXIST and be EMPTY at this stage. \n" +
                      "You can create the repo yourself and then pass the link with the --repo flag." +
                      "If you think this is a bug, please report it to the maintainers."

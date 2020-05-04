@@ -46,8 +46,8 @@ def main():
     repo_commands = new_project_parser.add_mutually_exclusive_group()
     repo_commands.add_argument('--repo', dest='gitlab_repo', default=None,
                                help="Sets the project's GitLab repository address."
-                                    "Set it to 'default' to create a repository under "
-                                    "gitlab.cern.ch/bisw-python/<project_name>, if the name is available.")
+                                    "Set it to 'operational' to have a repo created under 'bisw-python' "
+                                    "or to 'test' to have a repo created in your personal space.")
     repo_commands.add_argument('--no-gitlab', dest='gitlab', action='store_false',
                                help="Skips the GitLab upload, but still inits the repository locally.")
     new_project_parser.add_argument('--clone-protocol', dest='clone_protocol', default="kerberos",

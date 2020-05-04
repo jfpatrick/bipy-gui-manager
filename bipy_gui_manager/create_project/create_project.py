@@ -42,12 +42,12 @@ def create_project(parameters: argparse.Namespace):
                         gitlab_repo=valid_project_data["repo_url"])
 
         setup_version_control(project_path=valid_project_data["project_path"],
-                              gitlab=valid_project_data["gitlab"],
-                              create_repo=valid_project_data["create_repo"],
+                              gitlab=parameters.gitlab,
                               project_name=valid_project_data["project_name"],
                               project_desc=valid_project_data["project_desc"],
                               gitlab_token=valid_project_data.get("author_token", None),
-                              repo=valid_project_data.get("repo_url", None),)
+                              repo_type=valid_project_data.get("repo_type", "test"),
+                              repo_url=valid_project_data.get("repo_url", None))
 
         install_project(project_path=valid_project_data["project_path"])
 
@@ -212,17 +212,16 @@ def generate_readme(project_path: str, project_name: str, project_desc: str, pro
         raise e
 
 
-def setup_version_control(project_path: str, gitlab: bool, create_repo: bool, project_name: Optional[str],
-                          project_desc: Optional[str], gitlab_token: Optional[str], repo: Optional[str]):
+def setup_version_control(project_path: str, gitlab: bool, project_name: Optional[str], project_desc: Optional[str],
+                          gitlab_token: Optional[str], repo_type: Optional[str], repo_url: Optional[str]) -> None:
     """
     Sets up the local and remote version control for the project.
     :param project_path: Path to the new project
     :param project_name: Name of the project
     :param project_desc: Description of the project
     :param gitlab: True if the project needs to be uploaded to GitLab
-    :param create_repo: True if we need to create a new GitLab repository for the project
     :param gitlab_token: Authentication token to login into GitLab
-    :param repo: Repository URL
+    :param repo_type: Repository URL
     :return:
     """
     cli.positive_feedback("Setting up local Git repository", newline=False)
@@ -234,12 +233,11 @@ def setup_version_control(project_path: str, gitlab: bool, create_repo: bool, pr
     version_control.init_local_repo(project_path)
 
     if gitlab:
-        if create_repo:
-            cli.positive_feedback("Creating repository on GitLab", newline=False)
-            version_control.create_gitlab_repository(str(project_name), str(project_desc), auth_token=gitlab_token)
+        cli.positive_feedback("Creating repository on GitLab", newline=False)
+        version_control.create_gitlab_repository(repo_type, project_name, project_desc, auth_token=gitlab_token)
 
         cli.positive_feedback("Uploading project on GitLab", newline=False)
-        version_control.push_first_commit(project_path, repo)
+        version_control.push_first_commit(project_path, repo_url)
 
 
 def install_project(project_path: str) -> None:
