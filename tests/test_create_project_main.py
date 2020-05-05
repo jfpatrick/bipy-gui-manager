@@ -170,6 +170,9 @@ def test_download_template_wrong_protocol(tmpdir, mock_git):
     assert not os.path.isdir(project_path)
 
 
+# ###############################
+# #     Apply Customizations    #
+# ###############################
 def test_apply_customizations_valid_template(tmpdir):
     project_path = os.path.join(tmpdir, "be-bi-pyqt-template")
     create_template_files(project_path, "be-bi-pyqt-template", True)

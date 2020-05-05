@@ -35,14 +35,12 @@ def main():
     new_project_parser.add_argument('--path', dest='base_path', default=None,
                                     help="Specify the path to the new project. "
                                          "If not set, uses the current working directory.")
-    new_project_parser.add_argument('--name', dest='project_name', default="",
+    new_project_parser.add_argument('--name', dest='project_name', default=None,
                                     help="Sets the project name.")
-    new_project_parser.add_argument('--desc', dest='project_desc', default="",
+    new_project_parser.add_argument('--desc', dest='project_desc', default=None,
                                     help="Sets the project's short description.")
-    new_project_parser.add_argument('--author', dest='project_author', default="",
-                                    help="Sets the project author's name.")
-    new_project_parser.add_argument('--email', dest='author_email', default="",
-                                    help="Sets the project author's email.")
+    new_project_parser.add_argument('--author', dest='project_author', default=None,
+                                    help="Sets the project author's CERN ID (must be valid).")
     repo_commands = new_project_parser.add_mutually_exclusive_group()
     repo_commands.add_argument('--repo', dest='gitlab_repo', default=None,
                                help="Sets the project's GitLab repository address."

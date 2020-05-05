@@ -79,6 +79,9 @@ def test_create_gitlab_repo(monkeypatch):
         pass
     monkeypatch.setattr('bipy_gui_manager.create_project.version_control.post_to_gitlab', lambda *args, **kwargs: "")
     monkeypatch.setattr('bipy_gui_manager.create_project.version_control.authenticate_on_gitlab', lambda *args, **kwargs: 1/0)
-    version_control.create_gitlab_repository("test-project", "A test project", auth_token="access_token=auth-token")
+    version_control.create_gitlab_repository(repo_type="test",
+                                             project_name="test-project",
+                                             project_desc="A test project",
+                                             auth_token="access_token=auth-token")
 
 

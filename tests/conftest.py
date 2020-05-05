@@ -18,8 +18,8 @@ def mock_phonebook_entry(i):
         phonebook_entry.login_list = [LoginDataEntry("me group st uid gid 01/01/20 00:00 /bin/bash /my/home/dir")]
         phonebook_entry.display_name = "Test User"
         phonebook_entry.emails = ["test.email@cern.ch"]
-        return phonebook_entry
-    return None
+        return phonebook_entry, True
+    return None, False
 
 
 @pytest.fixture()
@@ -33,9 +33,9 @@ def mock_git(tmpdir, monkeypatch, mock_cwd):
 
 
 def create_project_parameters(demo=True, force_demo=True, path=".", name=None, desc=None, author=None,
-                              repo=None, clone_protocol="https", upload_protocol="https", gitlab=True,
+                              repo_type=None, clone_protocol="https", upload_protocol="https", gitlab=True,
                               gitlab_token=None, interactive=True, overwrite=False,
-                              template_path=None, crash=True, create_repo=None):
+                              template_path=None, crash=True):
     args = Namespace(
         demo=demo,
         force_demo=force_demo,
@@ -43,7 +43,7 @@ def create_project_parameters(demo=True, force_demo=True, path=".", name=None, d
         project_name=name,
         project_desc=desc,
         project_author=author,
-        gitlab_repo=repo,
+        gitlab_repo=repo_type,
         clone_protocol=clone_protocol,
         upload_protocol=upload_protocol,
         gitlab=gitlab,
@@ -52,7 +52,6 @@ def create_project_parameters(demo=True, force_demo=True, path=".", name=None, d
         overwrite=overwrite,
         template_path=template_path,
         crash=crash,
-        create_repo=create_repo
     )
     return args
 

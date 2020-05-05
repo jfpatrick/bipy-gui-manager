@@ -47,7 +47,7 @@ def collect(parameters: argparse.Namespace) -> Mapping[str, Union[str, bool]]:
     project_name_validator = re.compile("^[a-z0-9-]+$")
     project_parameters["project_name"] = validation.resolve_as_arg_or_ask(
         initial_value=parameters.project_name,
-        resolver=lambda v: (v, project_name_validator.match(str(v))),
+        resolver=lambda v: (v, v is not None and project_name_validator.match(str(v))),
         question="Please enter your \033[0;33mproject's name\033[0;m:",
         neg_feedback="The project name can contain only lowercase letters, numbers and dashes.",
         pos_feedback="The project name is set to: \033[0;32m{}\033[0;m",
@@ -57,7 +57,7 @@ def collect(parameters: argparse.Namespace) -> Mapping[str, Union[str, bool]]:
     # Project description
     project_parameters["project_desc"] = validation.resolve_as_arg_or_ask(
         initial_value=parameters.project_desc,
-        resolver=lambda v: (v, v != "" and "\"" not in v),
+        resolver=lambda v: (v, v is not None and v != "" and "\"" not in str(v)),
         question="Please enter a \033[0;33mone-line description\033[0;m of your project:",
         neg_feedback="The project description cannot contain the character \".",
         pos_feedback="The project description is set to: \033[0;32m{}\033[0;m",
