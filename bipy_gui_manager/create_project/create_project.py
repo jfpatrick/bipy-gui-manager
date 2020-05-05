@@ -25,7 +25,7 @@ def create_project(parameters: argparse.Namespace):
 
         get_template(project_path=valid_project_data["project_path"],
                      clone_protocol=parameters.clone_protocol,
-                     demo=valid_project_data["project_path"],
+                     demo=valid_project_data["demo"],
                      template_path=valid_project_data.get("template_path", None))
 
         apply_customizations(project_path=valid_project_data["project_path"],
