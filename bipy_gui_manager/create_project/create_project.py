@@ -39,7 +39,7 @@ def create_project(parameters: argparse.Namespace):
                         project_desc=valid_project_data["project_desc"],
                         project_author=valid_project_data["author_full_name"],
                         project_email=valid_project_data["author_email"],
-                        gitlab_repo=valid_project_data["repo_url"])
+                        gitlab_repo=valid_project_data.get("repo_url", None))
 
         setup_version_control(project_path=valid_project_data["project_path"],
                               gitlab=parameters.gitlab,

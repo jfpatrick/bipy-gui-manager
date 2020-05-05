@@ -25,6 +25,9 @@ def resolve_as_arg_or_ask(initial_value, resolver, question, neg_feedback, hints
         # Either it's valid or I ask
         value, success = resolver(initial_value)
 
+        if not success and initial_value is not None:
+            cli.negative_feedback(neg_feedback)
+
         while not success:
             value = cli.ask_input(question)
             value, success = resolver(value)
