@@ -31,8 +31,9 @@ def collect(parameters: argparse.Namespace) -> Mapping[str, Union[str, bool]]:
         neg_feedback="This username does not exist.",
         interactive=parameters.interactive
     )
-    project_parameters["author_cern_id"] = username
-    cli.positive_feedback("Your CERN username is set to \033[0;32m{}\033[0;m ".format(username), newline=False)
+    project_parameters["author_cern_id"] = phonebook_entry.cern_id
+    cli.positive_feedback("Your CERN username is set to \033[0;32m{}\033[0;m ".format(
+        project_parameters["author_cern_id"]), newline=False)
 
     # Author full name
     project_parameters["author_full_name"] = phonebook_entry.display_name
@@ -49,20 +50,21 @@ def collect(parameters: argparse.Namespace) -> Mapping[str, Union[str, bool]]:
         initial_value=parameters.project_name,
         resolver=lambda v: (v, v is not None and project_name_validator.match(str(v))),
         question="Please enter your \033[0;33mproject's name\033[0;m:",
-        neg_feedback="The project name can contain only lowercase letters, numbers and dashes.",
-        pos_feedback="The project name is set to: \033[0;32m{}\033[0;m",
+        neg_feedback="The project name can contain only lowercase letters, digits, dashes and cannot be left empty.",
         interactive=parameters.interactive
     )
+    cli.positive_feedback("The project name is set to: \033[0;32m{}\033[0;m".format(project_parameters["project_name"]))
 
     # Project description
     project_parameters["project_desc"] = validation.resolve_as_arg_or_ask(
         initial_value=parameters.project_desc,
         resolver=lambda v: (v, v is not None and v != "" and "\"" not in str(v)),
         question="Please enter a \033[0;33mone-line description\033[0;m of your project:",
-        neg_feedback="The project description cannot contain the character \".",
-        pos_feedback="The project description is set to: \033[0;32m{}\033[0;m",
+        neg_feedback="The project description cannot be None and cannot contain the character \".",
         interactive=parameters.interactive
     )
+    cli.positive_feedback("The project description is set to: \033[0;32m{}\033[0;m".format(
+        project_parameters["project_desc"]))
 
     # Path to project
     project_parameters["base_path"] = validation.resolve_as_arg_or_ask(
@@ -73,16 +75,20 @@ def collect(parameters: argparse.Namespace) -> Mapping[str, Union[str, bool]]:
         question="Please type the \033[0;33mpath\033[0;m where to create the new project, or type '.' to create it "
                  "in the current directory ({}):".format(os.getcwd()),
         neg_feedback="Please provide a valid path.",
-        pos_feedback="The project will be created under \033[0;32m{}\033[0;m".format(
-            os.path.join("{}", project_parameters["project_name"])),
         interactive=parameters.interactive
     )
     project_parameters["project_path"] = os.path.join(project_parameters["base_path"],
                                                       project_parameters["project_name"])
+    cli.positive_feedback("The project will be created under \033[0;32m{}\033[0;m".format(
+        project_parameters["project_path"]))
 
     # Demo is required
     project_parameters["demo"] = validation.validate_demo_flags(parameters.force_demo, parameters.demo,
                                                                 parameters.interactive)
+    if project_parameters["demo"]:
+        cli.positive_feedback("Your project will contain a demo application.")
+    else:
+        cli.positive_feedback("Your project will not contain the demo application.")
 
     # GitLab URL
     if parameters.gitlab:
@@ -94,7 +100,6 @@ def collect(parameters: argparse.Namespace) -> Mapping[str, Union[str, bool]]:
                      "contrary requires manual intervention. Is this project \033[0;33moperational\033[0;m or a "
                      "personal \033[0;33mtest\033[0;m? (operational/test)",
             neg_feedback="Please type 'operational' or 'test'",
-            pos_feedback="Your project type is set to \033[0;32m{}\033[0;m",
             interactive=parameters.interactive
         )
         project_parameters["repo_url"] = validation.validate_gitlab(gitlab=parameters.gitlab,
@@ -103,6 +108,10 @@ def collect(parameters: argparse.Namespace) -> Mapping[str, Union[str, bool]]:
                                                                     clone_protocol=parameters.clone_protocol,
                                                                     project_name=project_parameters["project_name"],
                                                                     cern_id=project_parameters["author_cern_id"])
+        cli.positive_feedback("Your project type is set to \033[0;32m{}\033[0;m".format(
+            project_parameters["repo_type"]), newline=False)
+        cli.positive_feedback("Your project's GitLab repository will be created under \033[0;32m{}\033[0;m".format(
+            project_parameters["repo_url"]))
 
     # GitLab authorization token
     if parameters.gitlab:

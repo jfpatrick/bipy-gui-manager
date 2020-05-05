@@ -275,7 +275,12 @@ class LoginDataEntry:
         self.st = data[2]
         self.uid = data[3]
         self.gid = data[4]
-        self.last_login = datetime.datetime.strptime(" ".join(data[5:7]), "%d/%m/%y %H:%M")
+        try:
+            self.last_login = datetime.datetime.strptime(" ".join(data[5:7]), "%d/%m/%y %H:%M")
+        except ValueError:
+            # It can happen for some users that the last login date is not known.
+            # In such cases, Phonebook prints '--/--/-- --:--'
+            self.last_login = None
         self.shell = data[7]
         self.home_directory = data[8]
 

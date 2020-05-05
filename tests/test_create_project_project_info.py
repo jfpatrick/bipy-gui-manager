@@ -21,6 +21,63 @@ def test_collect_most_common_right_values(mock_phonebook):
 
 
 # #########################
+# #  Author Credentials   #
+# #########################
+def test_collect_credentials_cernid_given(mock_phonebook):
+    parameters = create_project_parameters(name="test-project", desc="A test project", author="me",
+                                           repo_type="test", gitlab_token="skip-authentication")
+    new_params = project_info.collect(parameters)
+    assert new_params["author_cern_id"] == "me"
+    assert new_params["author_full_name"] == "Test User"
+    assert new_params["author_email"] == "test.email@cern.ch"
+
+
+def test_collect_credentials_cernid_discovered(monkeypatch, mock_phonebook):
+    monkeypatch.setattr('getpass.getuser', lambda: "me")
+    parameters = create_project_parameters(name="test-project", desc="A test project",
+                                           repo_type="test", gitlab_token="skip-authentication")
+    new_params = project_info.collect(parameters)
+    assert new_params["author_cern_id"] == "me"
+    assert new_params["author_full_name"] == "Test User"
+    assert new_params["author_email"] == "test.email@cern.ch"
+
+
+def test_collect_credentials_cernid_given_wrong(monkeypatch, mock_phonebook):
+    parameters = create_project_parameters(name="test-project", desc="A test project", author="you", interactive=False,
+                                           repo_type="test", gitlab_token="skip-authentication")
+    with pytest.raises(ValueError):
+        project_info.collect(parameters)
+
+
+def test_collect_credentials_cernid_discovered_wrong(monkeypatch, mock_phonebook):
+    monkeypatch.setattr('getpass.getuser', lambda: "you")
+    parameters = create_project_parameters(name="test-project", desc="A test project", interactive=False,
+                                           repo_type="test", gitlab_token="skip-authentication")
+    with pytest.raises(ValueError):
+        project_info.collect(parameters)
+
+
+def test_collect_credentials_cernid_missing_ask(monkeypatch, mock_phonebook):
+    monkeypatch.setattr('getpass.getuser', lambda: None)
+    monkeypatch.setattr('builtins.input', lambda _: 1 / 0)
+    parameters = create_project_parameters(name="test-project", desc="A test project",
+                                           repo_type="test", gitlab_token="skip-authentication")
+    with pytest.raises(ZeroDivisionError):
+        project_info.collect(parameters)
+
+
+def test_collect_credentials_cernid_ask_process_input(monkeypatch, mock_phonebook):
+    monkeypatch.setattr('getpass.getuser', lambda: "")
+    monkeypatch.setattr('builtins.input', lambda _: "me")
+    parameters = create_project_parameters(name="test-project", desc="A test project",
+                                           repo_type="test", gitlab_token="skip-authentication")
+    new_params = project_info.collect(parameters)
+    assert new_params["author_cern_id"] == "me"
+    assert new_params["author_full_name"] == "Test User"
+    assert new_params["author_email"] == "test.email@cern.ch"
+
+
+# #########################
 # #         Name          #
 # #########################
 def test_collect_name_valid(mock_phonebook):
@@ -200,6 +257,61 @@ def test_collect_project_path_contains_folder_named_as_project_overwrite(monkeyp
     new_params = project_info.collect(parameters)
     assert new_params["base_path"] == project_path
     assert not os.path.isdir(existing_path)
+
+
+# #########################
+# #      Repo Type        #
+# #########################
+def test_collect_repo_type_operational(monkeypatch, mock_phonebook):
+    parameters = create_project_parameters(name="test-project", desc="A test project", author="me", interactive=False,
+                                           repo_type="operational", gitlab_token="skip-authentication")
+    new_params = project_info.collect(parameters)
+    assert new_params["repo_type"] == "operational"
+
+
+def test_collect_repo_type_test(monkeypatch, mock_phonebook):
+    parameters = create_project_parameters(name="test-project", desc="A test project", author="me", interactive=False,
+                                           repo_type="test", gitlab_token="skip-authentication")
+    new_params = project_info.collect(parameters)
+    assert new_params["repo_type"] == "test"
+
+
+def test_collect_repo_type_wrong(monkeypatch, mock_phonebook):
+    parameters = create_project_parameters(name="test-project", desc="A test project", author="me", interactive=False,
+                                           repo_type="wrong", gitlab_token="skip-authentication")
+    with pytest.raises(ValueError):
+        project_info.collect(parameters)
+
+
+def test_collect_repo_type_missing(monkeypatch, mock_phonebook):
+    parameters = create_project_parameters(name="test-project", desc="A test project", author="me",
+                                           interactive=False, gitlab_token="skip-authentication")
+    with pytest.raises(ValueError):
+        project_info.collect(parameters)
+
+
+def test_collect_repo_type_missing_ask(monkeypatch, mock_phonebook):
+    monkeypatch.setattr('builtins.input', lambda _: 1 / 0)
+    parameters = create_project_parameters(name="test-project", desc="A test project", author="me",
+                                           gitlab_token="skip-authentication")
+    with pytest.raises(ZeroDivisionError):
+        project_info.collect(parameters)
+
+
+def test_collect_repo_type_missing_ask_process_input(monkeypatch, mock_phonebook):
+    monkeypatch.setattr('builtins.input', lambda _: "test")
+    parameters = create_project_parameters(name="test-project", desc="A test project", author="me",
+                                           gitlab_token="skip-authentication")
+    new_params = project_info.collect(parameters)
+    assert new_params["repo_type"] == "test"
+
+
+def test_collect_repo_type_no_gitlab(monkeypatch, mock_phonebook):
+    monkeypatch.setattr('builtins.input', lambda _: "test")
+    parameters = create_project_parameters(name="test-project", desc="A test project", author="me",
+                                           gitlab=False)
+    new_params = project_info.collect(parameters)
+    assert "repo_type" not in new_params
 
 
 # #########################

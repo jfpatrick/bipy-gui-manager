@@ -1,10 +1,7 @@
 import os
 import pytest
 from argparse import Namespace
-from bipy_gui_manager.phonebook.phonebook import PhonebookEntry, LoginDataEntry
-
-
-# GITLAB_TOKEN = "zznsVsiahNkpY1PBEZJ8"
+from bipy_gui_manager.phonebook.phonebook import PhonebookEntry
 
 
 @pytest.fixture
@@ -15,7 +12,7 @@ def mock_cwd(tmpdir, monkeypatch):
 def mock_phonebook_entry(i):
     if i == "me":
         phonebook_entry = PhonebookEntry("")
-        phonebook_entry.login_list = [LoginDataEntry("me group st uid gid 01/01/20 00:00 /bin/bash /my/home/dir")]
+        phonebook_entry.cern_id = "me"
         phonebook_entry.display_name = "Test User"
         phonebook_entry.emails = ["test.email@cern.ch"]
         return phonebook_entry, True

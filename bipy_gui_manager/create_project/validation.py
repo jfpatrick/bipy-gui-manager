@@ -2,56 +2,15 @@ from typing import Any, Optional, Tuple
 import os
 import shutil
 from bipy_gui_manager import cli_utils as cli
+from bipy_gui_manager.create_project import GROUP_NAME
 from bipy_gui_manager.phonebook.phonebook import Phonebook, PhonebookEntry
 
 
-def validate_or_fail(value, validator, neg_feedback):
-    """ Either return the value if valid, or throw ValueError """
-    if value is None or not validator(value):
-        raise ValueError(neg_feedback)
-    return value
-
-
-def validate_or_ask(validator, question, neg_feedback, start_value=None, pos_feedback=None, hints=()):
-    """ Either return start_value if valid, or ask the user until they give a valid value """
-    value = start_value
-    while value is None or not validator(value):
-        if value:
-            cli.negative_feedback(neg_feedback)
-            for hint in hints:
-                cli.give_hint(hint)
-        value = cli.ask_input(question)
-    if pos_feedback:
-        cli.positive_feedback(pos_feedback.format(value))
-    return value
-
-
-# def validate_as_arg_or_ask(cli_value, validator, question, neg_feedback, pos_feedback=None, hints=(), interactive=True)\
-#         -> bool:
-#     """
-#         If an initial value is given and valid, return it.
-#         If an initial value is given and invalid, fail.
-#         If it's not given, ask the user until a valid value is received.
-#         if interactive is False, fail rather than asking.
-#     """
-#     if not interactive and cli_value is None:
-#         raise ValueError(neg_feedback)
-#     if cli_value is not None or not interactive:
-#         result = validate_or_fail(cli_value, validator, neg_feedback)
-#         if pos_feedback:
-#             cli.positive_feedback(pos_feedback.format(result))
-#         return result
-#     else:
-#         return validate_or_ask(validator, question, neg_feedback, pos_feedback=pos_feedback, hints=hints)
-
-
-def resolve_as_arg_or_ask(initial_value, resolver, question, neg_feedback, pos_feedback=None, hints=(),
+def resolve_as_arg_or_ask(initial_value, resolver, question, neg_feedback, hints=(),
                           interactive=True) -> Any:
     """
-        If an initial value is given and valid, resolve and return it.
-        If an initial value is given and invalid, fail.
-        If it's not given, ask the user until a valid value is received and return it's resolved version.
-        if interactive is False, fail rather than asking.
+        if not interactive resolve and either succeed or fail
+        If interactive, resolve and either succeed or ask again
     """
     # Can't ask for a new value if what's given is wrong
     if not interactive:
@@ -60,8 +19,6 @@ def resolve_as_arg_or_ask(initial_value, resolver, question, neg_feedback, pos_f
         value, success = resolver(initial_value)
         if not success:
             raise ValueError(neg_feedback)
-        if pos_feedback:
-            cli.positive_feedback(pos_feedback.format(value))
         return value
 
     else:
@@ -76,8 +33,6 @@ def resolve_as_arg_or_ask(initial_value, resolver, question, neg_feedback, pos_f
                 for hint in hints:
                     cli.give_hint(hint)
             else:
-                if pos_feedback:
-                    cli.positive_feedback(pos_feedback.format(value))
                 return value
 
         return value
@@ -126,15 +81,12 @@ def validate_demo_flags(force_demo: bool, demo: bool, interactive: bool) -> bool
     """
     if force_demo and demo:
         # --with-demo was passed
-        cli.positive_feedback("Your project will contain a demo application.")
         return True
     elif not force_demo and not demo:
         # only --no-demo was passed
-        cli.positive_feedback("Your project will not contain the demo application.")
         return False
     elif not force_demo and demo and not interactive:
         # Neither --with-demo nor --no-demo were passed, but --not-interactive was specified: default to yes
-        cli.positive_feedback("Your project will contain a demo application.")
         return True
     elif not force_demo and demo:
         # Neither --with-demo nor --no-demo were passed, but --not-interactive was specified
@@ -142,10 +94,8 @@ def validate_demo_flags(force_demo: bool, demo: bool, interactive: bool) -> bool
                               "It's especially recommended to beginners (yes/no)")
         while True:
             if value == "n" or value == "no":
-                cli.positive_feedback("Your project will \033[0;33mnot contain the demo application\033[0;m.")
                 return False
             elif value == "y" or value == "yes":
-                cli.positive_feedback("Your project will \033[0;32mcontain a demo application\033[0;m.")
                 return True
             else:
                 value = cli.handle_failure("Please type yes or no:")
@@ -162,7 +112,7 @@ def validate_gitlab(gitlab, repo_type, upload_protocol, clone_protocol, project_
             upload_protocol = clone_protocol
 
         if repo_type == 'operational':
-            group = "bisw-python"
+            group = GROUP_NAME
         elif repo_type == 'test':
             group = cern_id
         else:
@@ -182,15 +132,19 @@ def validate_gitlab(gitlab, repo_type, upload_protocol, clone_protocol, project_
     return repo_url
 
 
-def validate_cern_id(cern_id: str) -> Tuple[Optional[PhonebookEntry], bool]:
+def validate_cern_id(cern_id: Optional[str]) -> Tuple[Optional[PhonebookEntry], bool]:
     """
     Uses the Phonebook utilities to validate CERN IDs and retrieve their data.
     :param cern_id: The CERN ID of the user
     :return: A PhonebookEntry object containing all the user's info
     """
+    if cern_id is None:
+        return None, False
     phonebook = Phonebook(cern_id)
     entries = phonebook.query_data()
-    print(entries)
     if len(entries) == 1 and cern_id in [login.cern_id for login in entries[0].login_list]:
-        return entries[0], True
+        entry = entries[0]
+        # FIXME is this really a good way to handle this thing??? entry.cern_id does not exist in Phonebook objects.
+        entry.cern_id = cern_id
+        return entry, True
     return None, False

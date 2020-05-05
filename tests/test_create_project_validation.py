@@ -1,30 +1,12 @@
 import os
 import pytest
 from bipy_gui_manager.create_project import validation
-from .conftest import create_project_parameters
 
 
-def test_validate_or_fail():
-    # Value is valid
-    assert "test value" == validation.validate_or_fail("test value", lambda v: "test" in v, "neg test feedback")
-    # Value is not valid
-    with pytest.raises(ValueError):
-        validation.validate_or_fail("test value", lambda v: "test" not in v, "neg test feedback")
-
-
-def test_validate_or_ask(monkeypatch):
-    # Valid value
-    monkeypatch.setattr('builtins.input', lambda _: 1/0)
-    assert "test value" == validation.validate_or_ask(lambda v: "test" in v, "Test question", "test Neg Feedback",
-                                                      start_value="test value")
-    # Not valid value - ask
-    monkeypatch.setattr('builtins.input', lambda _: "valid value")
-    assert "valid value" == validation.validate_or_ask(lambda v: "test" not in v, "Test question", "test Neg Feedback",
-                                                       start_value="test value")
-
-    # No value - ask
-    monkeypatch.setattr('builtins.input', lambda _: "test value")
-    assert "test value" == validation.validate_or_ask(lambda v: "test" in v, "Test question", "test Neg Feedback")
+@pytest.fixture()
+def mock_group_name(monkeypatch):
+    # NOTE: this fixture lives here because it's custom to the validation module.
+    monkeypatch.setattr('bipy_gui_manager.create_project.validation.GROUP_NAME', 'test-group')
 
 
 # ################################
@@ -60,126 +42,71 @@ def test_resolve_as_arg_or_ask_not_given_not_interactive(monkeypatch):
                                          interactive=False)
 
 # #########################
-# #       GitLab Repo     #
+# #       Repo URL        #
 # #########################
-# def test_validate_gitlab_repo_operational(monkeypatch):
-#     args = {'gitlab': True, 'interactive': True, 'upload_protocol': "https", 'clone_protocol': "https",
-#             'project_name': "test-project", 'repo': 'operational'}
-#     # Replying 'operational' in the repo flag translates into an URL under 'bisw-python'
-#     # TODO
-#     new_params = validation.validate_gitlab(**args)
-#
-#
-# def test_validate_gitlab_repo_test(monkeypatch):
-#     args = {'gitlab': True, 'interactive': True, 'upload_protocol': "https", 'clone_protocol': "https",
-#             'project_name': "test-project", 'repo': 'operational'}
-#     # Replying 'test' in the repo flag translates into an URL under the user's personal space
-#     # TODO
-#     new_params = validation.validate_gitlab(**args)
-#
-#
-# def test_validate_gitlab_repo_no_gitlab_not_allowed(monkeypatch):
-#     args = {'gitlab': True, 'interactive': True, 'upload_protocol': "https", 'clone_protocol': "https",
-#             'project_name': "test-project", 'repo': 'no-gitlab'}
-#     # Replying 'no-gitlab' in the repo flag is not allowed
-#     with pytest.raises(ValueError):
-#         validation.validate_gitlab(**args)
-#
-#
-# def test_validate_gitlab_repo_no_gitlab_interactive(monkeypatch):
-#     args = {'gitlab': True, 'interactive': True, 'upload_protocol': "https", 'clone_protocol': "https",
-#             'project_name': "test-project", 'repo': None}
-#     # Replying 'no-gitlab' interactively is not allowed
-#     monkeypatch.setattr('builtins.input', lambda _: 'no-gitlab')
-#     with pytest.raises(ValueError):
-#         validation.validate_gitlab(**args)
-#
-#
-# def test_validate_gitlab_repo_operational_interactive(monkeypatch):
-#     args = {'gitlab': True, 'interactive': True, 'upload_protocol': "https", 'clone_protocol': "https",
-#             'project_name': "test-project", 'repo': None}
-#     # Replying 'operational' interactively is allowed
-#     # TODO
-#     monkeypatch.setattr('builtins.input', lambda _: 'operational')
-#     new_params = validation.validate_gitlab(**args)
-#
-#
-# def test_validate_gitlab_repo_test_interactive(monkeypatch):
-#     args = {'gitlab': True, 'interactive': True, 'upload_protocol': "https", 'clone_protocol': "https",
-#             'project_name': "test-project", 'repo': None}
-#     # Replying 'test' interactively is allowed
-#     # TODO
-#     monkeypatch.setattr('builtins.input', lambda _: 'test')
-#     new_params = validation.validate_gitlab(**args)
-#
-#
-# def test_validate_gitlab_repo_empty_string_interactive_not_allowed(monkeypatch):
-#     args = {'gitlab': True, 'interactive': True, 'upload_protocol': "https", 'clone_protocol': "https",
-#             'project_name': "test-project", 'repo': None}
-#     # Translate empty string as "default" if given interactively
-#     monkeypatch.setattr('bipy_gui_manager.create_project.validation.GROUP_NAME', 'test-group')
-#     monkeypatch.setattr('builtins.input', lambda _: "")
-#     with pytest.raises(ValueError):
-#         validation.validate_gitlab(**args)
-#
-#
-# def test_validate_gitlab_repo_not_given(monkeypatch):
-#     args = {'gitlab': True, 'interactive': True, 'upload_protocol': "https", 'clone_protocol': "https",
-#             'project_name': "test-project", 'repo': None}
-#     # If not given as parameter will ask
-#     monkeypatch.setattr('builtins.input', lambda _: 1 / 0)
-#     with pytest.raises(ZeroDivisionError):
-#         validation.validate_gitlab(**args)
-
-
-def test_validate_gitlab_repo_not_checked_if_gitlab_false():
-    # If gitlab=False, repo is not needed
-    args = {'gitlab': False, 'upload_protocol': "https", 'clone_protocol': "https",
-            'project_name': "test-project", 'repo_type': 'operational', 'cern_id': 'me'}
+def test_repo_type_operational(monkeypatch, mock_group_name):
+    args = {'gitlab': True, 'clone_protocol': "ssh", 'project_name': "test-project",
+            'upload_protocol': "https", 'repo_type': 'operational', 'cern_id': "me"}
     repo_url = validation.validate_gitlab(**args)
-    assert repo_url is None
+    assert repo_url == "https://gitlab.cern.ch/test-group/test-project.git"
 
+
+def test_repo_type_test(monkeypatch, mock_group_name):
+    args = {'gitlab': True, 'clone_protocol': "ssh", 'project_name': "test-project",
+            'upload_protocol': "https", 'repo_type': 'test', 'cern_id': "me"}
+    repo_url = validation.validate_gitlab(**args)
+    assert repo_url == "https://gitlab.cern.ch/me/test-project.git"
+
+
+def test_repo_type_wrong(monkeypatch, mock_group_name):
+    args = {'gitlab': True, 'clone_protocol': "ssh", 'project_name': "test-project",
+            'upload_protocol': "https", 'repo_type': 'wrong', 'cern_id': "me"}
+    with pytest.raises(ValueError):
+        validation.validate_gitlab(**args)
+
+
+def test_repo_type_missing(monkeypatch, mock_group_name):
+    args = {'gitlab': True, 'clone_protocol': "ssh", 'project_name': "test-project",
+            'upload_protocol': "https", 'repo_type': None, 'cern_id': "me"}
+    with pytest.raises(ValueError):
+        validation.validate_gitlab(**args)
 
 
 # #########################
 # #    Upload Protocol    #
 # #########################
-def upload_protocol_not_given(monkeypatch):
+def test_upload_protocol_not_given(monkeypatch, mock_group_name):
     # If not given, is set to match the clone protocol
-    monkeypatch.setattr('bipy_gui_manager.create_project.GROUP_NAME', 'test-group')
-    args = {'gitlab': True, 'interactive': True, 'clone_protocol': "ssh", 'project_name': "test-project",
-            'upload_protocol': None, 'repo_type': 'operational'}
+    args = {'gitlab': True, 'clone_protocol': "ssh", 'project_name': "test-project",
+            'upload_protocol': None, 'repo_type': 'operational', 'cern_id': None}
     repo_url = validation.validate_gitlab(**args)
     assert repo_url == "ssh://git@gitlab.cern.ch:7999/test-group/test-project.git"
 
 
-def upload_protocol_https(monkeypatch):
-    monkeypatch.setattr('bipy_gui_manager.create_project.GROUP_NAME', 'test-group')
-    args = {'gitlab': True, 'interactive': True, 'clone_protocol': "https", 'project_name': "test-project",
-            'upload_protocol': None, 'repo_type': 'operational'}
+def test_upload_protocol_https(monkeypatch, mock_group_name):
+    args = {'gitlab': True, 'clone_protocol': "https", 'project_name': "test-project",
+            'upload_protocol': None, 'repo_type': 'operational', 'cern_id': None}
     repo_url = validation.validate_gitlab(**args)
     assert repo_url == "https://gitlab.cern.ch/test-group/test-project.git"
 
 
-def upload_protocol_ssh(monkeypatch):
-    monkeypatch.setattr('bipy_gui_manager.create_project.GROUP_NAME', 'test-group')
-    args = {'gitlab': True, 'interactive': True, 'clone_protocol': "ssh", 'project_name': "test-project",
-            'upload_protocol': None, 'repo_type': 'operational'}
+def test_upload_protocol_ssh(monkeypatch, mock_group_name):
+    args = {'gitlab': True, 'clone_protocol': "ssh", 'project_name': "test-project",
+            'upload_protocol': None, 'repo_type': 'operational', 'cern_id': None}
     repo_url = validation.validate_gitlab(**args)
     assert repo_url == "ssh://git@gitlab.cern.ch:7999/test-group/test-project.git"
 
 
-def upload_protocol_kerberos(monkeypatch):
-    monkeypatch.setattr('bipy_gui_manager.create_project.GROUP_NAME', 'test-group')
-    args = {'gitlab': True, 'interactive': True, 'clone_protocol': "kerberos", 'project_name': "test-project",
-            'repo_type': 'operational', 'upload_protocol': None}
+def test_upload_protocol_kerberos(monkeypatch, mock_group_name):
+    args = {'gitlab': True, 'clone_protocol': "kerberos", 'project_name': "test-project",
+            'repo_type': 'operational', 'upload_protocol': None, 'cern_id': None}
     repo_url = validation.validate_gitlab(**args)
     assert repo_url == "https://:@gitlab.cern.ch:8443/test-group/test-project.git"
 
-def upload_protocol_wrong(monkeypatch):
-    monkeypatch.setattr('bipy_gui_manager.create_project.GROUP_NAME', 'test-group')
-    args = {'gitlab': True, 'interactive': True, 'clone_protocol': "wrongprotocol", 'upload_protocol': None,
-            'project_name': "test-project", 'repo_type': 'operational'}
+
+def test_upload_protocol_wrong(monkeypatch, mock_group_name):
+    args = {'gitlab': True, 'clone_protocol': "wrongprotocol", 'upload_protocol': None,
+            'project_name': "test-project", 'repo_type': 'operational', 'cern_id': None}
     with pytest.raises(ValueError):
         validation.validate_gitlab(**args)
 
