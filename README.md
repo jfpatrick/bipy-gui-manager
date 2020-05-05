@@ -3,33 +3,25 @@
 This is the repository for the BI Python GUI Manager.
 
 It is a tool for bootstrapping PyQt GUI projects, which:
-- Provides a wizard to create and setup new projects with a predefined project structure (
+- Provides a wizard to create and setup new projects based on a common template (
 see [BE BI Pyqt Template](https://gitlab.cern.ch/bisw-python/be-bi-pyqt-template))
 - Configures existing projects (modify author name, email description, GitLab repo, etc...)
-- Releases the project on the CERN Python repository
+- Releases the project under the shared folder `/user/bdisoft/<development or operational>/python/gui` and versions it.
 - Manages the project's entry points (commands available in the console to launch the PyQt application)
-- Self-updates
 
 ## Getting started
 
-#### Install
+A stable version of this script is available under `/user/bdisoft/development/python/gui/bipy-gui-manager`.
 
-Assuming Python 3.6 is installed, or `acc-pyqt` is active in your shell
-([more info here](https://wikis.cern.ch/display/ACCPY/PyQt+distribution)), type:
+In order to use it, execute:
 ```bash
-pip install --user bipy-gui-manager
+source /user/bdisoft/development/python/gui/bipy-gui-manager/enable.sh
 ```
-
-If `pip` is not present in your system, try instead:
-```bash
-python3 -m pip install --user bipy-gui-manager
-```
-
-To make sure the installation was successful, type:
+in your terminal. Once done, you can type
 ```bash
 bipy-gui-manager
 ```
-You should see a help message.
+and a help message should appear.
 
 ## Usage
 
@@ -41,18 +33,31 @@ bipy-gui-manager --help
 The most important are:
  - `bipy-gui-manager create-project`: starts a wizard that guides
 you through the setup of a new PyQt project.
- - `bipy-gui-manager release`: release the project on CERN's repos _TODO_ .
- - `bipy-gui-manager dev-release`: _TODO when CO will have a strategy for this_.
- - `bipy-gui-manager self-update`: checks whether any update for itself _TODO_
-is available and, if so, update itself. Does not affect the application's code.
- - `bipy-gui-manager update-project`: checks whether any update for the
-project's dependencies is available and, if so, install them _TODO_.
- - `bipy-gui-manager entry-points`: manages the entry-points of your application,
-if any. _TODO_
+ - _TODO_ `bipy-gui-manager release`: releases the project under the `operational` folder of `/user/bdisoft/`.
+ - _TODO_ `bipy-gui-manager dev-release`: releases the project under the `development` folder of `/user/bdisoft/`.
+ - _TODO_ `bipy-gui-manager update-project`: checks whether any update for the
+project's dependencies is available and, if so, install them.
+ -  _TODO_ `bipy-gui-manager entry-points`: manages the entry-points of your application, if any.
+
+Each of these commands have their own options. For example, to know more about the
+options available for `create-project`, type
+```bash
+bipy-gui-manager create-project --help
+```
 
 
 ## Contribute
 If you are a developer and want to contribute, or you're taking over this project:
+
+#### Install
+First, activate Acc-Py. Then:
+```bash
+git clone https://:@gitlab.cern.ch:8443/bisw-python/bipy-gui-manager.git
+cd bipy-gui-manager
+acc-py venv venv
+source venv/bin/activate
+pip install -e .[all]
+```
 
 #### Setup
 Do the following every time you begin working:
