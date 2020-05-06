@@ -9,19 +9,44 @@ see [BE BI Pyqt Template](https://gitlab.cern.ch/bisw-python/be-bi-pyqt-template
 - Releases the project under the shared folder `/user/bdisoft/<development or operational>/python/gui` and versions it.
 - Manages the project's entry points (commands available in the console to launch the PyQt application)
 
-## Getting started
+## Setup
 
 A stable version of this script is available under `/user/bdisoft/development/python/gui/bipy-gui-manager`.
 
-In order to use it, execute:
+In order to use it, you should add it to your PATH or alias it.
+
+#### Add it to PATH under '~/.local/bin'
+This method assumes that '~/.local/bin' is already in your PATH, or that you can add it yourself. It will
+create a symlink to `bipy-gui-manager` under `~/.local/bin`
+
+Simply type:
 ```bash
-source /user/bdisoft/development/python/gui/bipy-gui-manager/enable.sh
+ln -s /user/bdisoft/development/python/gui/bipy-gui-manager-venv/bin/bipy-gui-manager ~/.local/bin/bipy-gui-manager
 ```
-in your terminal. Once done, you can type
+
+#### Add it to PATH under '/usr/local/bin'
+This method assumes that '/usr/local/bin' is already in your PATH, which is true for most users, and that you can
+perform operations as `sudo`. It will create a symlink to `bipy-gui-manager` under `/usr/local/bin`
+
+Simply type:
+```bash
+sudo ln -s /user/bdisoft/development/python/gui/bipy-gui-manager-venv/bin/bipy-gui-manager /usr/local/bin/bipy-gui-manager
+```
+
+#### Alias it
+This method will not modify your PATH and won't create symlinks, but requires you to edit your `~/.bashrc`.
+
+Add the following line to your `~/.bashrc`:
+```bash
+alias bipy-gui-manager="/user/bdisoft/development/python/gui/bipy-gui-manager-venv/bin/bipy-gui-manager"
+```
+## Verify
+
+Once you did one of the above, typing
 ```bash
 bipy-gui-manager
 ```
-and a help message should appear.
+should show you a help message.
 
 ## Usage
 
