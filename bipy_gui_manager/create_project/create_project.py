@@ -52,12 +52,35 @@ def create_project(parameters: argparse.Namespace):
         install_project(project_path=valid_project_data["project_path"])
 
         cli.draw_line()
-        cli.positive_feedback("New project '{}' installed successfully".format(valid_project_data["project_name"]))
-        cli.positive_feedback("Please make sure by typing 'source activate.sh' "
-                              "and '{}' in the console".format(valid_project_data["project_name"]))
-        cli.give_hint("type 'pyqt-manager --help' to see more workflows.")
-        cli.give_hint("launch PyCharm from the project folder to start working - "
-                      "remember to type 'source activate.sh' in PyCharm terminal too")
+        cli.positive_feedback("New project '{}' installed successfully.\033[1A".format(
+            valid_project_data["project_name"]), newline=False)
+        cli.draw_line()
+
+        what_you_see: str
+        if valid_project_data["demo"]:
+            what_you_see = "a window with the demo app inside"
+        else:
+            what_you_see = "an empty window"
+
+        cli.positive_feedback("What now?\n\n"
+                              "Your project now lives under '{}'. \n".format(valid_project_data["project_path"]) +
+                              "To make sure the installation was successful, you should move into that \nfolder and " +
+                              "type the following commands:\n" +
+                              "   > source activate.sh        (activates acc-py and your virtual env)\n"
+                              "   > {}        (launches your PyQt application)\n".format(
+                                  valid_project_data["project_name"]) +
+                              "You should see {}. \n".format(what_you_see) +
+                              "If you don't, or you see and error of some kind, please report it to us.\n\n" +
+                              "Once this is done, you can start working on your new app. If you have \n" +
+                              "already acc-py active in you shell, type 'charm' from your project's \n"+
+                              "directory: this will launch PyCharm and make it load the right project \n"+
+                              "directly. \n"+
+                              "If this doesn't work, try launching PyCharm manually by executing \n" +
+                              "'/acc/local/share/python/pycharm/pycharm-community-2019.2.3/bin/pycharm.sh'\n"
+                              "or contact acc-py support for help.\n\n" +
+                              "Remember also to activate your virtual env with 'source activate.sh'\n"+
+                              "every time you start working.\n\n"
+                              "Happy development!\033[1A", newline=False)
         cli.draw_line()
 
     except Exception as e:

@@ -4,7 +4,6 @@ import argparse
 
 from bipy_gui_manager import cli_utils as cli
 from bipy_gui_manager.create_project.create_project import create_project
-from bipy_gui_manager.self_update import self_update
 from bipy_gui_manager.configure import configure
 from bipy_gui_manager.entry_points import entry_points
 
@@ -85,14 +84,9 @@ def main():
                                     help="[DEBUG] Do not try to recover from errors.")
 
     # 'release' subcommand
-    self_update_parser = subparsers.add_parser('release',
-           help="Releases the application in the shared folders, to it becomes visible from BI's AppLauncher")
-    self_update_parser.set_defaults(func=self_update)
-
-    # 'self-update' subcommand
-    self_update_parser = subparsers.add_parser('self-update',
-           help='Checks for updates for pyqt-manager (does not affects applications).')
-    self_update_parser.set_defaults(func=self_update)
+    # release_parser = subparsers.add_parser('release',
+    #        help="Releases the application in the shared folders, to it becomes visible from BI's AppLauncher")
+    # release_parser.set_defaults(func=release)
 
     # 'configure' subcommand
     project_configuration_parser = subparsers.add_parser('configure',
