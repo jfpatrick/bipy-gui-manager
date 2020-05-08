@@ -3,7 +3,7 @@
 This is the repository for the BI Python GUI Manager.
 
 It is a tool for bootstrapping PyQt GUI projects, which:
-- Provides a wizard to create and setup new projects based on a common template (
+- Provides a wizard to create and setup new Python-based BI Expert GUI projects based on a common template (
 see [BE BI Pyqt Template](https://gitlab.cern.ch/bisw-python/be-bi-pyqt-template))
 - Configures existing projects (modify author name, email description, GitLab repo, etc...)
 - Releases the project under the shared folder `/user/bdisoft/<development or operational>/python/gui` and versions it.
