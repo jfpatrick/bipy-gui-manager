@@ -3,7 +3,7 @@
 This is the repository for the BI Python GUI Manager.
 
 It is a tool for bootstrapping PyQt GUI projects, which:
-- Provides a wizard to create and setup new projects based on a common template (
+- Provides a wizard to create and setup new Python-based BI Expert GUI projects based on a common template (
 see [BE BI Pyqt Template](https://gitlab.cern.ch/bisw-python/be-bi-pyqt-template))
 - Configures existing projects (modify author name, email description, GitLab repo, etc...)
 - Releases the project under the shared folder `/user/bdisoft/<development or operational>/python/gui` and versions it.
@@ -13,9 +13,9 @@ see [BE BI Pyqt Template](https://gitlab.cern.ch/bisw-python/be-bi-pyqt-template
 
 A stable version of this script is available under `/user/bdisoft/development/python/gui/bipy-gui-manager`.
 
-In order to use it, you should add it to your PATH or alias it.
+In order to use it, you should add it to your PATH or alias it - you can follow 1), 2) or 3) below:
 
-#### Add it to PATH under '~/.local/bin'
+#### 1) Add it to PATH under '~/.local/bin'
 This method assumes that '~/.local/bin' is already in your PATH, or that you can add it yourself. It will
 create a symlink to `bipy-gui-manager` under `~/.local/bin`
 
@@ -24,7 +24,7 @@ Simply type:
 ln -s /user/bdisoft/development/python/gui/bipy-gui-manager-venv/bin/bipy-gui-manager ~/.local/bin/bipy-gui-manager
 ```
 
-#### Add it to PATH under '/usr/local/bin'
+#### 2) Add it to PATH under '/usr/local/bin'
 This method assumes that '/usr/local/bin' is already in your PATH, which is true for most users, and that you can
 perform operations as `sudo`. It will create a symlink to `bipy-gui-manager` under `/usr/local/bin`
 
@@ -33,7 +33,7 @@ Simply type:
 sudo ln -s /user/bdisoft/development/python/gui/bipy-gui-manager-venv/bin/bipy-gui-manager /usr/local/bin/bipy-gui-manager
 ```
 
-#### Alias it
+#### 3) Alias it
 This method will not modify your PATH and won't create symlinks, but requires you to edit your `~/.bashrc`.
 
 Add the following line to your `~/.bashrc`:
