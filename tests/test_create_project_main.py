@@ -225,8 +225,6 @@ def test_apply_customizations_valid_template(tmpdir):
             "0.0.1.dev1",
             "setup",
             "REQUIREMENTS",
-            "pyqt5",
-            "pytest",
         ]
         for word in not_present:
             assert word not in content

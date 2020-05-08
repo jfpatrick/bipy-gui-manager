@@ -76,8 +76,8 @@ def create_template_files(project_path, project_name, demo=True):
             """
 from setuptools import setup
 REQUIREMENTS = {
-    'core': [ "pyqt5", ],
-    'test': [ "pytest", ],
+    'core': [  ],
+    'test': [  ],
 }
 setup(
     name='be-bi-pyqt-template', 
