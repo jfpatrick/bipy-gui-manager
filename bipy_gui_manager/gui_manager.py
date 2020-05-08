@@ -58,11 +58,11 @@ def main():
     new_project_parser.add_argument('--gitlab-auth-token', dest='gitlab_token', default=None,
                                     help="GitLab private access token. Can be used to avoid the password prompt.")
     demo_commands = new_project_parser.add_mutually_exclusive_group()
-    demo_commands.add_argument('--no-demo', dest='demo', action='store_false',
+    demo_commands.add_argument('--no-demo', dest='demo', action='store_false', default=None,
                                help="Install the template without demo application without asking the user "
                                     "(the default behavior is to ask the user interactively, "
                                     "or to install the demo in case --not-interactive is passed)")
-    demo_commands.add_argument('--with-demo', dest='force_demo', action='store_true',
+    demo_commands.add_argument('--with-demo', dest='demo', action='store_true', default=None,
                                help="Install the template with the demo application without asking the user "
                                     "(the default behavior is to ask the user interactively, "
                                     "or to install the demo in case --not-interactive is passed)")

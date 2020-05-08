@@ -73,35 +73,37 @@ def validate_base_path(base_path: str, project_name: str, interactive: bool = Tr
     return base_path, True
 
 
-def validate_demo_flags(force_demo: bool, demo: bool, interactive: bool) -> bool:
+def validate_demo_flags(demo: Optional[bool], interactive: bool) -> bool:
     """
     Checks which combination of values are contained in the parameters and returns the correct value
     for parameters.demo, eventually asking the user if necessary
-    :param force_demo: whether the --with-demo flag was passed
-    :param demo: opposite of whether the --no-demo flag was passed
+    :param demo: whether the --no-demo or --with-demo flag was passed
     :param interactive: whether the script overall is allowed to ask anything to the user interactively
     :return: True if demo should be included, False otherwise
     """
-    if force_demo and demo:
+    if demo is None:
+        # Neither --with-demo nor --no-demo were passed
+        if not interactive:
+            # --not-interactive was specified - default to True
+            return True
+        else:
+            # --not-interactive was not specified - ask
+            value = cli.ask_input(
+                "Do you want to install a \033[0;33mdemo application\033[0;m within your project? "
+                "It's especially recommended to beginners (yes/no)")
+            while True:
+                if value == "n" or value == "no":
+                    return False
+                elif value == "y" or value == "yes":
+                    return True
+                else:
+                    value = cli.handle_failure("Please type yes or no:")
+    elif demo:
         # --with-demo was passed
         return True
-    elif not force_demo and not demo:
-        # only --no-demo was passed
+    elif not demo:
+        # --no-demo was passed
         return False
-    elif not force_demo and demo and not interactive:
-        # Neither --with-demo nor --no-demo were passed, but --not-interactive was specified: default to yes
-        return True
-    elif not force_demo and demo:
-        # Neither --with-demo nor --no-demo were passed, but --not-interactive was specified
-        value = cli.ask_input("Do you want to install a \033[0;33mdemo application\033[0;m within your project? "
-                              "It's especially recommended to beginners (yes/no)")
-        while True:
-            if value == "n" or value == "no":
-                return False
-            elif value == "y" or value == "yes":
-                return True
-            else:
-                value = cli.handle_failure("Please type yes or no:")
 
 
 def validate_gitlab(gitlab, repo_type, upload_protocol, clone_protocol, project_name, cern_id) -> Optional[str]:

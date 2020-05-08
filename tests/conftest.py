@@ -1,4 +1,5 @@
 import os
+import json
 import pytest
 from argparse import Namespace
 from bipy_gui_manager.phonebook.phonebook import PhonebookEntry
@@ -25,17 +26,22 @@ def mock_phonebook(monkeypatch):
 
 
 @pytest.fixture
-def mock_git(tmpdir, monkeypatch, mock_cwd):
+def mock_git(monkeypatch, mock_cwd):
     monkeypatch.setattr('bipy_gui_manager.create_project.version_control.invoke_git', mock_git_invocation)
 
 
-def create_project_parameters(demo=True, force_demo=True, path=".", name=None, desc=None, author=None,
+@pytest.fixture
+def mock_gitlab(monkeypatch, mock_cwd):
+    monkeypatch.setattr('bipy_gui_manager.create_project.version_control.authenticate_on_gitlab', mock_gitlab_auth)
+    monkeypatch.setattr('bipy_gui_manager.create_project.version_control.post_to_gitlab', mock_gitlab_call)
+
+
+def create_project_parameters(demo=True, path=None, name=None, desc=None, author=None,
                               repo_type=None, clone_protocol="https", upload_protocol="https", gitlab=True,
-                              gitlab_token=None, interactive=True, overwrite=False,
+                              gitlab_token=None, interactive=True, overwrite=False, cleanup_on_failure=False,
                               template_path=None, crash=True):
     args = Namespace(
         demo=demo,
-        force_demo=force_demo,
         base_path=path,
         project_name=name,
         project_desc=desc,
@@ -48,6 +54,7 @@ def create_project_parameters(demo=True, force_demo=True, path=".", name=None, d
         interactive=interactive,
         overwrite=overwrite,
         template_path=template_path,
+        cleanup_on_failure=cleanup_on_failure,
         crash=crash,
     )
     return args
@@ -65,23 +72,28 @@ def create_template_files(project_path, project_name, demo=True):
 
     # Write setup.py -  to test the customizations
     with open(os.path.join(project_path, "setup.py"), "w") as readme:
-        readme.writelines([
-            "REQUIREMENTS: dict = {",
-            "    'core': [ \"pyqt5\", ],",
-            "    'test': [ \"pytest\", ],",
-            "}",
-            "setup(",
-            "    name='be-bi-pyqt-template', ",
-            "    version=\"0.0.1.dev1\", ",
-            "    author=\"Sara Zanzottera\", ",
-            "    author_email=\"sara.zanzottera@cern.ch\", ",
-            "    description=\"BE BI PyQt Template Code\", ",
-            "    long_description=LONG_DESCRIPTION, ",
-            "    install_requires=REQUIREMENTS['core'], ",
-            "    entry_points={ 'console_scripts': [ 'be-bi-pyqt-template=be_bi_pyqt_template.main:main', ], },",
-            ")",
-        ])
-
+        readme.write(
+            """
+from setuptools import setup
+REQUIREMENTS = {
+    'core': [ "pyqt5", ],
+    'test': [ "pytest", ],
+}
+setup(
+    name='be-bi-pyqt-template', 
+    version="0.0.1.dev1", 
+    author="Sara Zanzottera", 
+    author_email="sara.zanzottera@cern.ch", 
+    description="BE BI PyQt Template Code", 
+    long_description="LONG_DESCRIPTION", 
+    install_requires=REQUIREMENTS['core'], 
+    entry_points={ 
+        'console_scripts': [ 
+            'be-bi-pyqt-template=be_bi_pyqt_template.main:main' 
+        ] 
+    }
+) """
+        )
     # Write README -  to test the customizations
     with open(os.path.join(project_path, "README.md"), "w") as _:
         pass
@@ -103,14 +115,14 @@ def create_template_files(project_path, project_name, demo=True):
             demo.write("raise ValueError('Somebody called this script??')")
 
 
-def mock_git_invocation(parameters, cwd, allow_retry=False, neg_feedback="Test exception"):
+def mock_git_invocation(parameters, cwd, neg_feedback):
     """
     Used to mock the invoke_git function, which relies on calling system Git through subprocess.
     """
     # Only the clone operation really has some visible effect
     if 'clone' in parameters:
         project_path = parameters[-1]
-        project_name = project_path.split(os.path.sep)[-1]
+        project_name = "be_bi_pyqt_template"  #project_path.split(os.path.sep)[-1]
         if 'no-demo' in parameters:
             demo = False
         else:
@@ -118,6 +130,13 @@ def mock_git_invocation(parameters, cwd, allow_retry=False, neg_feedback="Test e
         create_template_files(project_path, project_name, demo=demo)
 
 
+def mock_gitlab_auth(username, password):
+    if username == "me":
+        return True
+    return False
 
+
+def mock_gitlab_call(endpoint, post_fields):
+    return json.dumps({"id": "fake-rep-_id"})
 
 

@@ -163,32 +163,32 @@ def test_validate_base_path_overwrite_passed(tmpdir, monkeypatch):
 def test_validate_demo_flag_no_demo_flag_passed(monkeypatch):
     # If --no-demo is passed, the user is not asked anything and validate_demo_flags returns False
     monkeypatch.setattr('builtins.input', lambda _: 1/0)
-    assert not validation.validate_demo_flags(force_demo=False, demo=False, interactive=True)
+    assert not validation.validate_demo_flags(demo=False, interactive=True)
 
 
 def test_validate_demo_flag_with_demo_flag_passed(monkeypatch):
     # If --with-demo is passed, the user is not asked anything and validate_demo_flags returns True
     monkeypatch.setattr('builtins.input', lambda _: 1/0)
-    assert validation.validate_demo_flags(force_demo=True, demo=True, interactive=True)
+    assert validation.validate_demo_flags(demo=True, interactive=True)
 
 
 def test_validate_demo_flag_demo_neither_flag_passed(monkeypatch):
     # If no flag is passed, the user is asked what to do
     monkeypatch.setattr('builtins.input', lambda _: 1 / 0)
     with pytest.raises(ZeroDivisionError):
-        validation.validate_demo_flags(force_demo=False, demo=True, interactive=True)
+        validation.validate_demo_flags(demo=None, interactive=True)
 
 
 def test_validate_demo_flag_demo_neither_flag_passed_but_not_interactive_given(monkeypatch):
     # If no flag is passed but --not-interactive is passed, defaults to True without asking the user
     monkeypatch.setattr('builtins.input', lambda _: 1 / 0)
-    assert validation.validate_demo_flags(force_demo=False, demo=True, interactive=False)
+    assert validation.validate_demo_flags(demo=None, interactive=False)
 
 
 def test_validate_demo_flags_interactive(monkeypatch):
     # Interactive cases
     monkeypatch.setattr('builtins.input', lambda _: "yes")
-    assert validation.validate_demo_flags(force_demo=False, demo=True, interactive=True)
+    assert validation.validate_demo_flags(demo=None, interactive=True)
     monkeypatch.setattr('builtins.input', lambda _: "no")
-    assert not validation.validate_demo_flags(force_demo=False, demo=True, interactive=True)
+    assert not validation.validate_demo_flags(demo=None, interactive=True)
 

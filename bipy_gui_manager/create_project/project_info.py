@@ -83,8 +83,7 @@ def collect(parameters: argparse.Namespace) -> Mapping[str, Union[str, bool]]:
         project_parameters["project_path"]))
 
     # Demo is required
-    project_parameters["demo"] = validation.validate_demo_flags(parameters.force_demo, parameters.demo,
-                                                                parameters.interactive)
+    project_parameters["demo"] = validation.validate_demo_flags(parameters.demo, parameters.interactive)
     if project_parameters["demo"]:
         cli.positive_feedback("Your project will contain a demo application.")
     else:

@@ -1,4 +1,5 @@
 import os
+import time
 import pytest
 from bipy_gui_manager.create_project import create_project
 
@@ -8,43 +9,61 @@ from .conftest import create_project_parameters, create_template_files
 # ###############################
 # #      Create Project         #
 # ###############################
-def test_create_project_defaults(monkeypatch):
-    # Won't raise exceptions if all the calls are successful
-    parameters = create_project_parameters()
-    values = vars(parameters)
-    values["project_path"] = "project/path"
-    values["author_full_name"] = "Full Name"
-    values["author_email"] = "email@email.com"
-    values["repo_url"] = "https://repo.url"
-    monkeypatch.setattr('bipy_gui_manager.create_project.project_info.collect', lambda *a, **k: values)
-    monkeypatch.setattr('bipy_gui_manager.create_project.create_project.get_template', lambda *a, **k: None)
-    monkeypatch.setattr('bipy_gui_manager.create_project.create_project.apply_customizations', lambda *a, **k: None)
-    monkeypatch.setattr('bipy_gui_manager.create_project.create_project.generate_readme', lambda *a, **k: None)
-    monkeypatch.setattr('bipy_gui_manager.create_project.create_project.setup_version_control', lambda *a, **k: None)
-    monkeypatch.setattr('bipy_gui_manager.create_project.create_project.install_project', lambda *a, **k: None)
-    create_project.create_project(parameters)
+def test_create_project_defaults_all_in_flags(monkeypatch, tmpdir, mock_git, mock_gitlab, mock_phonebook):
+    # Runs the entire script mocking only the necessary
+    # all params come from CLI and should succeed, even though interactive=True
+    params = create_project_parameters(demo=True, path=tmpdir, name="test-project", desc="That's a test project!",
+                                       author="me",repo_type="test", clone_protocol="https", gitlab_token="fake-token",
+                                       upload_protocol="https", gitlab=True, crash=True)
+    create_project.create_project(params)
 
 
-def test_create_project_handles_exceptions_ask_cleanup(monkeypatch):
-    # Handles exceptions internally and asks for a cleanup
-    parameters = create_project_parameters(interactive=False, crash=False)
-    monkeypatch.setattr('bipy_gui_manager.create_project.project_info.collect', lambda *a, **k: 1/0)
-    monkeypatch.setattr('bipy_gui_manager.create_project.create_project.get_template', lambda *a, **k: None)
-    monkeypatch.setattr('bipy_gui_manager.create_project.create_project.apply_customizations', lambda *a, **k: None)
-    monkeypatch.setattr('bipy_gui_manager.create_project.create_project.generate_readme', lambda *a, **k: None)
-    monkeypatch.setattr('bipy_gui_manager.create_project.create_project.setup_version_control', lambda *a, **k: None)
-    monkeypatch.setattr('bipy_gui_manager.create_project.create_project.install_project', lambda *a, **k: None)
+def test_create_project_handles_exceptions_ask_cleanup(monkeypatch, tmpdir, mock_git, mock_gitlab, mock_phonebook):
+    # Check if it fails in a controlled way and asks the user whether to cleanup
+    params = create_project_parameters(demo=True, path=tmpdir, name="test-project", desc="That's a test project!",
+                                       author="me", repo_type="test", clone_protocol="https", gitlab_token="fake-token",
+                                       upload_protocol="https", gitlab=True, crash=False, interactive=True)
+    def fail(*args, **kwargs):
+        raise AttributeError("Imagine this function fails...")
+    monkeypatch.setattr('bipy_gui_manager.create_project.create_project.get_template', fail)
 
-    # If not interactive, just exists
-    create_project.create_project(parameters)
+    monkeypatch.setattr('builtins.input', lambda _: 1 / 0)
+    with pytest.raises(ZeroDivisionError):
+        create_project.create_project(params)
 
-    # # Verify it's actually calling cleanup_on_failure
-    # def fail(*a, **k):
-    #     raise AssertionError("cleanup_on_failure was called")
-    # monkeypatch.setattr('bipy_gui_manager.create_project.create_project.cleanup_on_failure', fail)
-    # parameters = create_project_parameters(interactive=True, crash=False)
-    # with pytest.raises(AssertionError):
-    #     create_project.create_project(parameters)
+
+def test_create_project_handles_exceptions_cleanup_no(monkeypatch, tmpdir, mock_git, mock_gitlab, mock_phonebook):
+    # Check if it fails in a controlled way and asks the user whether to cleanup
+    params = create_project_parameters(demo=True, path=tmpdir, name="test-project", desc="That's a test project!",
+                                       author="me", repo_type="test", clone_protocol="https",
+                                       gitlab_token="fake-token",
+                                       upload_protocol="https", gitlab=True, crash=False, interactive=True)
+    def fail(*args, **kwargs):
+        tmpdir.mkdir("test-project")
+        raise AttributeError("Imagine this function fails...")
+    monkeypatch.setattr('bipy_gui_manager.create_project.create_project.get_template', fail)
+
+    monkeypatch.setattr('builtins.input', lambda _: "no")
+    create_project.create_project(params)
+    time.sleep(0.1)
+    assert os.path.isdir(os.path.join(tmpdir, "test-project"))
+
+
+def test_create_project_handles_exceptions_cleanup_yes(monkeypatch, tmpdir, mock_git, mock_gitlab, mock_phonebook):
+    # Check if it fails in a controlled way and asks the user whether to cleanup
+    params = create_project_parameters(demo=True, path=tmpdir, name="test-project", desc="That's a test project!",
+                                       author="me", repo_type="test", clone_protocol="https",
+                                       gitlab_token="fake-token",
+                                       upload_protocol="https", gitlab=True, crash=False, interactive=True)
+    def fail(*args, **kwargs):
+        tmpdir.mkdir("test-project")
+        raise AttributeError("Imagine this function fails...")
+    monkeypatch.setattr('bipy_gui_manager.create_project.create_project.get_template', fail)
+
+    monkeypatch.setattr('builtins.input', lambda _: "yes")
+    create_project.create_project(params)
+    time.sleep(0.1)
+    assert not os.path.isdir(os.path.join(tmpdir, "test-project"))
 
 
 # ###############################
@@ -107,64 +126,64 @@ def test_get_template_copy_from_path_wrong(tmpdir, monkeypatch):
 # #      Download Template      #
 # ###############################
 def test_download_template_kerberos_no_demo(tmpdir, mock_git):
-    project_path = os.path.join(tmpdir, "test-project")
+    project_path = os.path.join(tmpdir, "be-bi-pyqt-template")
     create_project.download_template(project_path, "kerberos", False)
     assert os.path.isdir(project_path)
-    assert os.path.isdir(os.path.join(project_path, "test_project"))
+    assert os.path.isdir(os.path.join(project_path, "be_bi_pyqt_template"))
     assert os.path.exists(os.path.join(project_path, "README-template.md"))
 
 
 def test_download_template_kerberos_with_demo(tmpdir, mock_git):
-    project_path = os.path.join(tmpdir, "test-project")
+    project_path = os.path.join(tmpdir, "be-bi-pyqt-template")
     create_project.download_template(project_path, "kerberos", True)
     assert os.path.isdir(project_path)
-    assert os.path.isdir(os.path.join(project_path, "test_project"))
+    assert os.path.isdir(os.path.join(project_path, "be_bi_pyqt_template"))
     assert os.path.exists(os.path.join(project_path, "README-template.md"))
-    assert os.path.exists(os.path.join(project_path, "test_project", "demo_code.py"))
-    with open(os.path.join(project_path, "test_project", "demo_code.py"), "r") as demo:
+    assert os.path.exists(os.path.join(project_path, "be_bi_pyqt_template", "demo_code.py"))
+    with open(os.path.join(project_path, "be_bi_pyqt_template", "demo_code.py"), "r") as demo:
         assert demo.read() == "raise ValueError('Somebody called this script??')"
 
 
 def test_download_template_ssh_no_demo(tmpdir, mock_git):
-    project_path = os.path.join(tmpdir, "test-project")
+    project_path = os.path.join(tmpdir, "be-bi-pyqt-template")
     create_project.download_template(project_path, "ssh", False)
     assert os.path.isdir(project_path)
-    assert os.path.isdir(os.path.join(project_path, "test_project"))
+    assert os.path.isdir(os.path.join(project_path, "be_bi_pyqt_template"))
     assert os.path.exists(os.path.join(project_path, "README-template.md"))
 
 
 def test_download_template_ssh_with_demo(tmpdir, mock_git):
-    project_path = os.path.join(tmpdir, "test-project")
+    project_path = os.path.join(tmpdir, "be-bi-pyqt-template")
     create_project.download_template(project_path, "ssh", True)
     assert os.path.isdir(project_path)
-    assert os.path.isdir(os.path.join(project_path, "test_project"))
+    assert os.path.isdir(os.path.join(project_path, "be_bi_pyqt_template"))
     assert os.path.exists(os.path.join(project_path, "README-template.md"))
-    assert os.path.exists(os.path.join(project_path, "test_project", "demo_code.py"))
-    with open(os.path.join(project_path, "test_project", "demo_code.py"), "r") as demo:
+    assert os.path.exists(os.path.join(project_path, "be_bi_pyqt_template", "demo_code.py"))
+    with open(os.path.join(project_path, "be_bi_pyqt_template", "demo_code.py"), "r") as demo:
         assert demo.read() == "raise ValueError('Somebody called this script??')"
 
 
 def test_download_template_https_no_demo(tmpdir, mock_git):
-    project_path = os.path.join(tmpdir, "test-project")
+    project_path = os.path.join(tmpdir, "be-bi-pyqt-template")
     create_project.download_template(project_path, "https", False)
     assert os.path.isdir(project_path)
-    assert os.path.isdir(os.path.join(project_path, "test_project"))
+    assert os.path.isdir(os.path.join(project_path, "be_bi_pyqt_template"))
     assert os.path.exists(os.path.join(project_path, "README-template.md"))
 
 
 def test_download_template_https_with_demo(tmpdir, mock_git):
-    project_path = os.path.join(tmpdir, "test-project")
+    project_path = os.path.join(tmpdir, "be-bi-pyqt-template")
     create_project.download_template(project_path, "https", True)
     assert os.path.isdir(project_path)
-    assert os.path.isdir(os.path.join(project_path, "test_project"))
+    assert os.path.isdir(os.path.join(project_path, "be_bi_pyqt_template"))
     assert os.path.exists(os.path.join(project_path, "README-template.md"))
-    assert os.path.exists(os.path.join(project_path, "test_project", "demo_code.py"))
-    with open(os.path.join(project_path, "test_project", "demo_code.py"), "r") as demo:
+    assert os.path.exists(os.path.join(project_path, "be_bi_pyqt_template", "demo_code.py"))
+    with open(os.path.join(project_path, "be_bi_pyqt_template", "demo_code.py"), "r") as demo:
         assert demo.read() == "raise ValueError('Somebody called this script??')"
 
 
 def test_download_template_wrong_protocol(tmpdir, mock_git):
-    project_path = os.path.join(tmpdir, "test-project")
+    project_path = os.path.join(tmpdir, "be-bi-pyqt-template")
     with pytest.raises(ValueError):
         create_project.download_template(project_path, "wrongprotocol", True)
     assert not os.path.isdir(project_path)
