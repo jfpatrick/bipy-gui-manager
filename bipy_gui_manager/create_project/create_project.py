@@ -65,9 +65,9 @@ def create_project(parameters: argparse.Namespace):
         cli.positive_feedback("What now?\n\n"
                               "Your project now lives under '{}'. \n".format(valid_project_data["project_path"]) +
                               "To make sure the installation was successful, you should move into that \nfolder and " +
-                              "type the following commands:\n" +
+                              "type the following commands:\n\n" +
                               "   > source activate.sh        (activates acc-py and your virtual env)\n"
-                              "   > {}        (launches your PyQt application)\n".format(
+                              "   > {}        (launches your PyQt application)\n\n".format(
                                   valid_project_data["project_name"]) +
                               "You should see {}. \n".format(what_you_see) +
                               "If you don't, or you see and error of some kind, please report it to us.\n\n" +
@@ -277,7 +277,7 @@ def install_project(project_path: str) -> None:
     os.chmod(script_temp_location, 0o777)
     current_dir = os.getcwd()
     os.chdir(project_path)
-    error = os.WEXITSTATUS(os.system("source ./.tmp.sh"))
+    error = os.WEXITSTATUS(os.system("/bin/bash -c \"source ./.tmp.sh\""))
     os.chdir(current_dir)
     # Remove temporary script
     os.remove(script_temp_location)
