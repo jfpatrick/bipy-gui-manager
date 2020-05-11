@@ -21,7 +21,7 @@ create a symlink to `bipy-gui-manager` under `~/.local/bin`
 
 Simply type:
 ```bash
-ln -s /user/bdisoft/development/python/gui/bipy-gui-manager-venv/bin/bipy-gui-manager ~/.local/bin/bipy-gui-manager
+ln -s /user/bdisoft/development/python/gui/bipy-gui-manager ~/.local/bin/bipy-gui-manager
 ```
 
 #### 2) Add it to PATH under '/usr/local/bin'
@@ -30,7 +30,7 @@ perform operations as `sudo`. It will create a symlink to `bipy-gui-manager` und
 
 Simply type:
 ```bash
-sudo ln -s /user/bdisoft/development/python/gui/bipy-gui-manager-venv/bin/bipy-gui-manager /usr/local/bin/bipy-gui-manager
+sudo ln -s /user/bdisoft/development/python/gui/bipy-gui-manager /usr/local/bin/bipy-gui-manager
 ```
 
 #### 3) Alias it
@@ -38,7 +38,7 @@ This method will not modify your PATH and won't create symlinks, but requires yo
 
 Add the following line to your `~/.bashrc`:
 ```bash
-alias bipy-gui-manager="/user/bdisoft/development/python/gui/bipy-gui-manager-venv/bin/bipy-gui-manager"
+alias bipy-gui-manager="/user/bdisoft/development/python/gui/bipy-gui-manager"
 ```
 ## Verify
 
