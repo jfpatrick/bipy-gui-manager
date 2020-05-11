@@ -1,7 +1,8 @@
 from typing import Optional
 import os
-import argparse
 import shutil
+import logging
+import argparse
 from bipy_gui_manager import cli_utils as cli
 from bipy_gui_manager.create_project import project_info, version_control
 
@@ -12,6 +13,9 @@ def create_project(parameters: argparse.Namespace):
     :param parameters: the parameters passed through the CLI
     :return: None, but creates a project according to the information gathered.
     """
+    if parameters.verbose:
+        logging.basicConfig(format='[%(levelname)s] %(message)s', level=logging.DEBUG)
+
     # Initially defined here to be available for an eventual cleanup procedure, if something goes wrong
     valid_project_data = {}
     try:
@@ -49,7 +53,8 @@ def create_project(parameters: argparse.Namespace):
                               repo_type=valid_project_data.get("repo_type", "test"),
                               repo_url=valid_project_data.get("repo_url", None))
 
-        install_project(project_path=valid_project_data["project_path"])
+        install_project(project_path=valid_project_data["project_path"],
+                        verbose=parameters.verbose)
 
         cli.draw_line()
         cli.positive_feedback("New project '{}' installed successfully.\033[1A".format(
@@ -133,6 +138,7 @@ def download_template(project_path: str, clone_protocol: str, get_demo: bool) ->
         template_url = 'ssh://git@gitlab.cern.ch:7999/bisw-python/be-bi-pyqt-template.git'
     else:
         raise ValueError("Clone protocol not recognized: {}".format(clone_protocol))
+    logging.debug("Template URL set to {}".format(template_url))
 
     if get_demo:
         git_command = ['clone', template_url, project_path]
@@ -161,17 +167,25 @@ def apply_customizations(project_path: str, project_name: str, project_desc: str
 
     project_name_underscores = project_name.replace("-", "_")
     project_name_capitals = project_name.replace("-", " ").title()
+    logging.debug("Python package name is set to {} and the name in capitals is {}".format(project_name_underscores,
+                                                                                           project_name_capitals))
     try:
-        # Rename the root dir and remove the image folder
+        logging.debug("Renaming the root dir from be_bi_pyqt_template to {}".format(project_name_underscores))
         shutil.move("{}/be_bi_pyqt_template".format(project_path),
                     "{}/{}".format(project_path, project_name_underscores))
+
+        logging.debug("Remove images/ folder")
         shutil.rmtree("{}/images".format(project_path))
+
         # Edit the files and double-check on the directories
+        logging.debug("Performing replacements into the template files")
         for rootdir, dirs, files in os.walk(project_path):
             for filename in files:
                 filepath = os.path.join(rootdir, filename)
+
                 # Filtering to avoid binary files
                 if filename.split(".")[-1] in ["py", "md", "ui", "qrc", "yml", "gitignore", "sh", "in"]:
+                    logging.debug("Processing file {}".format(filepath))
                     with open(filepath, 'r') as f:
                         s = f.read()
                     s = s.replace("be-bi-pyqt-template", project_name)
@@ -182,12 +196,17 @@ def apply_customizations(project_path: str, project_name: str, project_desc: str
                     s = s.replace("sara.zanzottera@cern.ch", project_email)
                     with open(filepath, "w") as f:
                         f.write(s)
+
             for dirname in dirs:
                 if "be_bi_pyqt_template" in dirname:
                     dirpath = os.path.join(rootdir, dirname)
+                    logging.debug("Replacing 'be_bi_pyqt_template' with '{}' in the folder '{}'".format(
+                        project_name_underscores, dirpath))
                     os.rename(dirpath, dirpath.replace("be_bi_pyqt_template", project_name_underscores))
                 if "be-bi-pyqt-template" in dirname:
                     dirpath = os.path.join(rootdir, dirname)
+                    logging.debug("Replacing 'be-bi-pyqt-template' with '{}' in the folder named '{}'".format(
+                        project_name, dirpath))
                     os.rename(dirpath, dirpath.replace("be-bi-pyqt-template", project_name))
 
     except Exception as e:
@@ -210,10 +229,15 @@ def generate_readme(project_path: str, project_name: str, project_desc: str, pro
 
     project_name_capitals = project_name.replace("-", " ").title()
     project_name_underscores = project_name.replace("-", "_")
+    logging.debug("Python package name is set to {} and the name in capitals is {}".format(project_name_underscores,
+                                                                                           project_name_capitals))
     try:
+        logging.debug("Replacing README.md with README-template.md")
         os.remove(os.path.join(project_path, "README.md"))
         os.rename(os.path.join(project_path, "README-template.md"), os.path.join(project_path, "README.md"))
         readme = os.path.join(project_path, "README.md")
+
+        logging.debug("Operating substitutions into the new README.md")
         with open(readme) as f:
             s = f.read()
         if not gitlab_repo:
@@ -251,6 +275,7 @@ def setup_version_control(project_path: str, gitlab: bool, project_name: Optiona
 
     # In most cases, the failure is due to .git not existing.
     # In any case, if the failure is due to something else, most likely git will fail right after.
+    logging.debug("Remove potential .git/ folders present in the downloaded template")
     shutil.rmtree("{}/.git".format(project_path), ignore_errors=True)
 
     version_control.init_local_repo(project_path)
@@ -263,7 +288,7 @@ def setup_version_control(project_path: str, gitlab: bool, project_name: Optiona
         version_control.push_first_commit(project_path, repo_url)
 
 
-def install_project(project_path: str) -> None:
+def install_project(project_path: str, verbose: bool) -> None:
     """
     Copies a bash script into the project, executes it and remove it.
     The bash script will activate the venvs and install the project in its own
@@ -271,16 +296,29 @@ def install_project(project_path: str) -> None:
     :param project_path: Path to the project root
     """
     # Copy shell script in project
+    logging.debug("Copying bash script .tmp.sh into the new project tree")
     script_temp_location = os.path.join(project_path, ".tmp.sh")
-    shutil.copy(os.path.join(os.path.dirname(__file__), "resources", "install-project.sh"), script_temp_location)
+    if verbose:
+        shutil.copy(os.path.join(os.path.dirname(__file__), "resources", "install-project-verbose.sh"), script_temp_location)
+    else:
+        shutil.copy(os.path.join(os.path.dirname(__file__), "resources", "install-project.sh"), script_temp_location)
+
     # Execute it (create venvs and install folder in venv)
+    logging.debug("Make .tmp.sh executable")
     os.chmod(script_temp_location, 0o777)
+    logging.debug("Save current working directory: {}".format(os.getcwd()))
     current_dir = os.getcwd()
+    logging.debug("Move in the project's directory: {}".format(project_path))
     os.chdir(project_path)
+    logging.debug("Execute .tmp.sh with Bash source")
     error = os.WEXITSTATUS(os.system("/bin/bash -c \"source ./.tmp.sh\""))
+    logging.debug("Move back to original working directory: {}".format(current_dir))
     os.chdir(current_dir)
+
     # Remove temporary script
+    logging.debug("Remove .tmp.sh")
     os.remove(script_temp_location)
+
     # Render error if present
     if error:
         cli.negative_feedback("New project failed to install: {}.".format(error))
@@ -299,8 +337,10 @@ def cleanup_on_failure(project_path: str, interactive: bool, force_cleanup: bool
     :return: Nothing, but might delete the project folder.
     """
     if force_cleanup:
+        logging.debug("--force-cleanup was passed: cleaning up directly")
         cli.negative_feedback("Cleaning up...")
         shutil.rmtree(project_path, ignore_errors=True)
+
     elif interactive:
         answer = cli.handle_failure("Do you want to clean up what was created so far? "
                                     "This will delete the folder {}. (yes/no)".format(project_path))

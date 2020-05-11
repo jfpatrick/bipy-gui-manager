@@ -45,28 +45,28 @@ def test_resolve_as_arg_or_ask_not_given_not_interactive(monkeypatch):
 # #       Repo URL        #
 # #########################
 def test_repo_type_operational(monkeypatch, mock_group_name):
-    args = {'gitlab': True, 'clone_protocol': "ssh", 'project_name': "test-project",
+    args = {'clone_protocol': "ssh", 'project_name': "test-project",
             'upload_protocol': "https", 'repo_type': 'operational', 'cern_id': "me"}
     repo_url = validation.validate_gitlab(**args)
     assert repo_url == "https://gitlab.cern.ch/test-group/test-project.git"
 
 
 def test_repo_type_test(monkeypatch, mock_group_name):
-    args = {'gitlab': True, 'clone_protocol': "ssh", 'project_name': "test-project",
+    args = {'clone_protocol': "ssh", 'project_name': "test-project",
             'upload_protocol': "https", 'repo_type': 'test', 'cern_id': "me"}
     repo_url = validation.validate_gitlab(**args)
     assert repo_url == "https://gitlab.cern.ch/me/test-project.git"
 
 
 def test_repo_type_wrong(monkeypatch, mock_group_name):
-    args = {'gitlab': True, 'clone_protocol': "ssh", 'project_name': "test-project",
+    args = {'clone_protocol': "ssh", 'project_name': "test-project",
             'upload_protocol': "https", 'repo_type': 'wrong', 'cern_id': "me"}
     with pytest.raises(ValueError):
         validation.validate_gitlab(**args)
 
 
 def test_repo_type_missing(monkeypatch, mock_group_name):
-    args = {'gitlab': True, 'clone_protocol': "ssh", 'project_name': "test-project",
+    args = {'clone_protocol': "ssh", 'project_name': "test-project",
             'upload_protocol': "https", 'repo_type': None, 'cern_id': "me"}
     with pytest.raises(ValueError):
         validation.validate_gitlab(**args)
@@ -77,35 +77,35 @@ def test_repo_type_missing(monkeypatch, mock_group_name):
 # #########################
 def test_upload_protocol_not_given(monkeypatch, mock_group_name):
     # If not given, is set to match the clone protocol
-    args = {'gitlab': True, 'clone_protocol': "ssh", 'project_name': "test-project",
+    args = {'clone_protocol': "ssh", 'project_name': "test-project",
             'upload_protocol': None, 'repo_type': 'operational', 'cern_id': None}
     repo_url = validation.validate_gitlab(**args)
     assert repo_url == "ssh://git@gitlab.cern.ch:7999/test-group/test-project.git"
 
 
 def test_upload_protocol_https(monkeypatch, mock_group_name):
-    args = {'gitlab': True, 'clone_protocol': "https", 'project_name': "test-project",
+    args = {'clone_protocol': "https", 'project_name': "test-project",
             'upload_protocol': None, 'repo_type': 'operational', 'cern_id': None}
     repo_url = validation.validate_gitlab(**args)
     assert repo_url == "https://gitlab.cern.ch/test-group/test-project.git"
 
 
 def test_upload_protocol_ssh(monkeypatch, mock_group_name):
-    args = {'gitlab': True, 'clone_protocol': "ssh", 'project_name': "test-project",
+    args = {'clone_protocol': "ssh", 'project_name': "test-project",
             'upload_protocol': None, 'repo_type': 'operational', 'cern_id': None}
     repo_url = validation.validate_gitlab(**args)
     assert repo_url == "ssh://git@gitlab.cern.ch:7999/test-group/test-project.git"
 
 
 def test_upload_protocol_kerberos(monkeypatch, mock_group_name):
-    args = {'gitlab': True, 'clone_protocol': "kerberos", 'project_name': "test-project",
+    args = {'clone_protocol': "kerberos", 'project_name': "test-project",
             'repo_type': 'operational', 'upload_protocol': None, 'cern_id': None}
     repo_url = validation.validate_gitlab(**args)
     assert repo_url == "https://:@gitlab.cern.ch:8443/test-group/test-project.git"
 
 
 def test_upload_protocol_wrong(monkeypatch, mock_group_name):
-    args = {'gitlab': True, 'clone_protocol': "wrongprotocol", 'upload_protocol': None,
+    args = {'clone_protocol': "wrongprotocol", 'upload_protocol': None,
             'project_name': "test-project", 'repo_type': 'operational', 'cern_id': None}
     with pytest.raises(ValueError):
         validation.validate_gitlab(**args)

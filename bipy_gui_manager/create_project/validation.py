@@ -12,7 +12,6 @@ def resolve_as_arg_or_ask(initial_value, resolver, question, neg_feedback, hints
         if not interactive resolve and either succeed or fail
         If interactive, resolve and either succeed or ask again
     """
-    # Can't ask for a new value if what's given is wrong
     if not interactive:
 
         # Either it's valid or I fail
@@ -106,33 +105,30 @@ def validate_demo_flags(demo: Optional[bool], interactive: bool) -> bool:
         return False
 
 
-def validate_gitlab(gitlab, repo_type, upload_protocol, clone_protocol, project_name, cern_id) -> Optional[str]:
+def validate_gitlab(repo_type, upload_protocol, clone_protocol, project_name, cern_id) -> Optional[str]:
     """
     Ensures all the parameters related to GitLab are in order.
     :return: a dictionary containing the 'gitlab' and 'repo_url' values
     """
-    if gitlab:
-        # Make sure the upload protocol is specified
-        if upload_protocol is None:
-            upload_protocol = clone_protocol
+    # Make sure the upload protocol is specified
+    if upload_protocol is None:
+        upload_protocol = clone_protocol
 
-        if repo_type == 'operational':
-            group = GROUP_NAME
-        elif repo_type == 'test':
-            group = cern_id
-        else:
-            raise ValueError("Repository type not recognized: '{}'".format(repo_type))
-
-        if upload_protocol == 'ssh':
-            repo_url = "ssh://git@gitlab.cern.ch:7999/{}/{}.git".format(group, project_name)
-        elif upload_protocol == 'https':
-            repo_url = "https://gitlab.cern.ch/{}/{}.git".format(group, project_name)
-        elif upload_protocol == 'kerberos':
-            repo_url = "https://:@gitlab.cern.ch:8443/{}/{}.git".format(group, project_name)
-        else:
-            raise ValueError("Upload protocol not recognized: '{}'".format(upload_protocol))
+    if repo_type == 'operational':
+        group = GROUP_NAME
+    elif repo_type == 'test':
+        group = cern_id
     else:
-        repo_url = None
+        raise ValueError("Repository type not recognized: '{}'".format(repo_type))
+
+    if upload_protocol == 'ssh':
+        repo_url = "ssh://git@gitlab.cern.ch:7999/{}/{}.git".format(group, project_name)
+    elif upload_protocol == 'https':
+        repo_url = "https://gitlab.cern.ch/{}/{}.git".format(group, project_name)
+    elif upload_protocol == 'kerberos':
+        repo_url = "https://:@gitlab.cern.ch:8443/{}/{}.git".format(group, project_name)
+    else:
+        raise ValueError("Upload protocol not recognized: '{}'".format(upload_protocol))
 
     return repo_url
 

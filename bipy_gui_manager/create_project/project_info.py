@@ -1,8 +1,9 @@
 from typing import Mapping, Optional, Union
 import re
 import os
-import argparse
+import logging
 import getpass
+import argparse
 from bipy_gui_manager import cli_utils as cli
 from bipy_gui_manager.create_project import validation
 from bipy_gui_manager.create_project import version_control
@@ -20,10 +21,13 @@ def collect(parameters: argparse.Namespace) -> Mapping[str, Union[str, bool]]:
     # CERN Username
     if parameters.project_author:
         username = parameters.project_author
+        logging.debug("Username found among the CLI arguments: {}".format(username))
     else:
         username = getpass.getuser()
+        logging.debug("Username obtained from getpass: {}".format(username))
     cli.positive_feedback("Looking for \033[0;32m{}\033[0;m info on Phonebook".format(username))
 
+    logging.debug("Validating username in PhoneBook if previously found...".format(username))
     phonebook_entry = validation.resolve_as_arg_or_ask(
         initial_value=username,
         resolver=lambda u: validation.validate_cern_id(u),
@@ -36,15 +40,18 @@ def collect(parameters: argparse.Namespace) -> Mapping[str, Union[str, bool]]:
         project_parameters["author_cern_id"]), newline=False)
 
     # Author full name
+    logging.debug("Obtaining full name for {} from PhoneBook".format(username))
     project_parameters["author_full_name"] = phonebook_entry.display_name
     cli.positive_feedback("Your name is set to \033[0;32m{}\033[0;m".format(project_parameters["author_full_name"]),
                           newline=False)
 
     # Author CERN email
+    logging.debug("Obtaining email for {} from PhoneBook".format(username))
     project_parameters["author_email"] = phonebook_entry.emails[0]
     cli.positive_feedback("Your email is set to \033[0;32m{}\033[0;m".format(project_parameters["author_email"]))
 
     # Project name
+    logging.debug("Collecting project name")
     project_name_validator = re.compile("^[a-z0-9-]+$")
     project_parameters["project_name"] = validation.resolve_as_arg_or_ask(
         initial_value=parameters.project_name,
@@ -56,6 +63,7 @@ def collect(parameters: argparse.Namespace) -> Mapping[str, Union[str, bool]]:
     cli.positive_feedback("The project name is set to: \033[0;32m{}\033[0;m".format(project_parameters["project_name"]))
 
     # Project description
+    logging.debug("Collecting project description")
     project_parameters["project_desc"] = validation.resolve_as_arg_or_ask(
         initial_value=parameters.project_desc,
         resolver=lambda v: (v, v is not None and v != "" and "\"" not in str(v)),
@@ -67,6 +75,7 @@ def collect(parameters: argparse.Namespace) -> Mapping[str, Union[str, bool]]:
         project_parameters["project_desc"]))
 
     # Path to project
+    logging.debug("Collecting project base path")
     project_parameters["base_path"] = validation.resolve_as_arg_or_ask(
         initial_value=parameters.base_path,
         resolver=lambda v: validation.validate_base_path(v, project_parameters["project_name"],
@@ -83,6 +92,7 @@ def collect(parameters: argparse.Namespace) -> Mapping[str, Union[str, bool]]:
         project_parameters["project_path"]))
 
     # Demo is required
+    logging.debug("Collecting demo request")
     project_parameters["demo"] = validation.validate_demo_flags(parameters.demo, parameters.interactive)
     if project_parameters["demo"]:
         cli.positive_feedback("Your project will contain a demo application.")
@@ -91,6 +101,7 @@ def collect(parameters: argparse.Namespace) -> Mapping[str, Union[str, bool]]:
 
     # GitLab URL
     if parameters.gitlab:
+        logging.debug("Collecting GitLab configuration")
         project_parameters["repo_type"] = validation.resolve_as_arg_or_ask(
             initial_value=parameters.gitlab_repo,
             resolver=lambda v: (v, v == "operational" or v == "test"),
@@ -101,8 +112,8 @@ def collect(parameters: argparse.Namespace) -> Mapping[str, Union[str, bool]]:
             neg_feedback="Please type 'operational' or 'test'",
             interactive=parameters.interactive
         )
-        project_parameters["repo_url"] = validation.validate_gitlab(gitlab=parameters.gitlab,
-                                                                    repo_type=project_parameters["repo_type"],
+        logging.debug("Validate configuration passed")
+        project_parameters["repo_url"] = validation.validate_gitlab(repo_type=project_parameters["repo_type"],
                                                                     upload_protocol=parameters.upload_protocol,
                                                                     clone_protocol=parameters.clone_protocol,
                                                                     project_name=project_parameters["project_name"],
@@ -112,17 +123,22 @@ def collect(parameters: argparse.Namespace) -> Mapping[str, Union[str, bool]]:
         cli.positive_feedback("Your project's GitLab repository will be created under \033[0;32m{}\033[0;m".format(
             project_parameters["repo_url"]))
 
-    # GitLab authorization token
-    if parameters.gitlab:
+        # GitLab authorization token
         if parameters.gitlab_token is None:
+            logging.debug("Collecting GitLab credentials")
             project_parameters["author_token"] = authenticate_user(project_parameters["author_cern_id"])
         else:
             # TODO Validate token!
+            logging.debug("A GitLab token was passed")
             project_parameters["author_token"] = "private_token={}".format(parameters.gitlab_token)
         cli.positive_feedback("You have been successfully authenticated on GitLab.")
 
+    else:
+        logging.debug("--no-gitlab was passed, no need to collect GitLab configuration")
+
     # Template path (light validation)
     if parameters.template_path:
+        logging.debug("A template path was passed: {}".format(parameters.template_path))
         if os.path.isdir(parameters.template_path):
             project_parameters["template_path"] = parameters.template_path
         else:

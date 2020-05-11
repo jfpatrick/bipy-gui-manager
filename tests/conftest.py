@@ -39,7 +39,7 @@ def mock_gitlab(monkeypatch, mock_cwd):
 def create_project_parameters(demo=True, path=None, name=None, desc=None, author=None,
                               repo_type=None, clone_protocol="https", upload_protocol="https", gitlab=True,
                               gitlab_token=None, interactive=True, overwrite=False, cleanup_on_failure=False,
-                              template_path=None, crash=True):
+                              template_path=None, crash=True, verbose=False):
     args = Namespace(
         demo=demo,
         base_path=path,
@@ -56,6 +56,7 @@ def create_project_parameters(demo=True, path=None, name=None, desc=None, author
         template_path=template_path,
         cleanup_on_failure=cleanup_on_failure,
         crash=crash,
+        verbose=verbose
     )
     return args
 

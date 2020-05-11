@@ -2,6 +2,7 @@ from typing import Mapping, Optional
 import os
 import json
 import urllib
+import logging
 from urllib.error import HTTPError
 try:
     import requests  # requests might not be installed, but is needed only for the avatar upload
@@ -20,6 +21,7 @@ def invoke_git(parameters=(), cwd=os.getcwd(), neg_feedback="An error occurred i
     :param neg_feedback: message to explain a potential failure
     :return: Nothing if the command succeeds, OSError if it fails
     """
+    logging.debug("invoke_git received the following parameters: {}".format(parameters))
     command = ['/usr/bin/git']
     command.extend(parameters)
 
@@ -28,6 +30,7 @@ def invoke_git(parameters=(), cwd=os.getcwd(), neg_feedback="An error occurred i
         (stdout, stderr) = git_query.communicate()
 
         if git_query.poll() == 0:
+            logging.debug("invoke_git was successful")
             return
         else:
             cli.negative_feedback(stderr.decode('utf-8'))
@@ -42,10 +45,12 @@ def authenticate_on_gitlab(username: str, password: str) -> Optional[str]:
     :return: the token if authentication is successful, None otherwise
     """
     try:
+        logging.debug("Authenticating user {} on GitLab".format(username))
         auth_token = post_to_gitlab(endpoint='/oauth/token',
                                     post_fields={'grant_type': 'password', 'username': username, 'password': password})
     except HTTPError as he:
         if he.code == 401:  # Unauthorized
+            logging.debug("Authentication on GitLab failed (the server returned a code 401)")
             return None
         else:
             raise he
@@ -60,10 +65,13 @@ def post_to_gitlab(endpoint: str, post_fields: Mapping[str, str]) -> Mapping[str
     :param post_fields: what the POST request body will contain
     :return: the eventual response, decoded from JSON
     """
+    logging.debug("POSTing to GitLab's endpoint https://gitlab.cern.ch/{} the following fields: {}".format(endpoint,
+                                                                                                           post_fields))
     url = 'https://gitlab.cern.ch/{}'.format(endpoint)
     request_data = urllib.parse.urlencode(post_fields).encode()
     request = urllib.request.Request(url, data=request_data)
     response = urllib.request.urlopen(request).read().decode()
+    logging.info("Server responds: {}".format(response))
     return json.loads(response)
 
 

@@ -82,6 +82,8 @@ def main():
                                          "to the default one.")
     new_project_parser.add_argument('--crash', dest='crash', action='store_true',
                                     help="[DEBUG] Do not try to recover from errors.")
+    new_project_parser.add_argument('--verbose', dest='verbose', action='store_true',
+                                    help="Set the logger to verbose mode (useful to report bugs).")
 
     # 'release' subcommand
     # release_parser = subparsers.add_parser('release',
