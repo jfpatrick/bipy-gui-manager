@@ -27,8 +27,8 @@ Test Full Install:
 
 
 # A push of the source distribution to the acc-py PyPI, only on git tag.
-Release on Tag:
-  extends: .acc_py_release_sdist
+#Release on Tag:
+#  extends: .acc_py_release_sdist
 
 
 # A push of the source distribution to the acc-py PyPI, to be triggered manually.
