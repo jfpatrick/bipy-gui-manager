@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Color Escapes
 NC='\033[0;m'
 BOLD='\033[1;m'
