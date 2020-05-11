@@ -82,7 +82,8 @@ def create_project(parameters: argparse.Namespace):
                               "directly. \n"+
                               "If this doesn't work, try launching PyCharm manually by executing \n" +
                               "'/acc/local/share/python/pycharm/pycharm-community-2019.2.3/bin/pycharm.sh'\n"
-                              "or contact acc-py support for help.\n\n" +
+                              "or contact acc-py support for help (see https://wikis.cern.ch/display/ACCPY \n"
+                              "for contact info).\n\n" +
                               "Remember also to activate your virtual env with 'source activate.sh'\n"+
                               "every time you start working.\n\n"
                               "Happy development!\033[1A", newline=False)
