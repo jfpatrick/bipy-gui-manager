@@ -58,11 +58,7 @@ bipy-gui-manager --help
 The most important are:
  - `bipy-gui-manager create-project`: starts a wizard that guides
 you through the setup of a new PyQt project.
- - _TODO_ `bipy-gui-manager release`: releases the project under the `operational` folder of `/user/bdisoft/`.
- - _TODO_ `bipy-gui-manager dev-release`: releases the project under the `development` folder of `/user/bdisoft/`.
- - _TODO_ `bipy-gui-manager update-project`: checks whether any update for the
-project's dependencies is available and, if so, install them.
- -  _TODO_ `bipy-gui-manager entry-points`: manages the entry-points of your application, if any.
+ - _Others coming soon_
 
 Each of these commands have their own options. For example, to know more about the
 options available for `create-project`, type
