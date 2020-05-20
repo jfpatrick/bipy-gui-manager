@@ -4,8 +4,6 @@ import argparse
 
 from bipy_gui_manager import cli_utils as cli
 from bipy_gui_manager.create_project.create_project import create_project
-from bipy_gui_manager.configure import configure
-from bipy_gui_manager.entry_points import entry_points
 
 
 # Gracefully handle Ctrl+C and other kill signals
@@ -91,14 +89,14 @@ def main():
     # release_parser.set_defaults(func=release)
 
     # 'configure' subcommand
-    project_configuration_parser = subparsers.add_parser('configure',
-            help='Configure the current project (set author, email, etc...).')
-    project_configuration_parser.set_defaults(func=configure)
-
-    # 'entry-points' subcommand
-    entry_points_parser = subparsers.add_parser('entry-points',
-            help='Manages the application\'s entry points.')
-    entry_points_parser.set_defaults(func=entry_points)
+    # project_configuration_parser = subparsers.add_parser('configure',
+    #         help='Configure the current project (set author, email, etc...).')
+    # project_configuration_parser.set_defaults(func=configure)
+    #
+    # # 'entry-points' subcommand
+    # entry_points_parser = subparsers.add_parser('entry-points',
+    #         help='Manages the application\'s entry points.')
+    # entry_points_parser.set_defaults(func=entry_points)
 
     # Parse and call relevant subcommand
     args = parser.parse_args(args=None if sys.argv[1:] else ['--help'])

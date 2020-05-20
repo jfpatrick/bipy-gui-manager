@@ -1,9 +1,9 @@
 from typing import Any, Optional, Tuple
 import os
 import shutil
+from pyphonebook import PhoneBook, PhoneBookEntry
 from bipy_gui_manager import cli_utils as cli
 from bipy_gui_manager.create_project import GROUP_NAME
-from bipy_gui_manager.phonebook.phonebook import Phonebook, PhonebookEntry
 
 
 def resolve_as_arg_or_ask(initial_value, resolver, question, neg_feedback, hints=(),
@@ -133,7 +133,7 @@ def validate_gitlab(repo_type, upload_protocol, clone_protocol, project_name, ce
     return repo_url
 
 
-def validate_cern_id(cern_id: Optional[str]) -> Tuple[Optional[PhonebookEntry], bool]:
+def validate_cern_id(cern_id: Optional[str]) -> Tuple[Optional[PhoneBookEntry], bool]:
     """
     Uses the Phonebook utilities to validate CERN IDs and retrieve their data.
     :param cern_id: The CERN ID of the user
@@ -141,11 +141,14 @@ def validate_cern_id(cern_id: Optional[str]) -> Tuple[Optional[PhonebookEntry], 
     """
     if cern_id is None:
         return None, False
-    phonebook = Phonebook(cern_id)
-    entries = phonebook.query_data()
-    if len(entries) == 1 and cern_id in [login.cern_id for login in entries[0].login_list]:
+
+    phonebook = PhoneBook()
+    if not phonebook.validate_login_name(cern_id):
+        return None, False
+
+    entries = phonebook.search_by_login_name(cern_id)
+    if len(entries) == 1 and cern_id in entries[0].login_name:
         entry = entries[0]
-        # FIXME is this really a good way to handle this thing??? entry.cern_id does not exist in Phonebook objects.
-        entry.cern_id = cern_id
+        entry.login_name = entry.login_name[0]  # Assume this use has only the login name we validated it on
         return entry, True
     return None, False

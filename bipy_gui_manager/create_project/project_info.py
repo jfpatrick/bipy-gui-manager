@@ -35,19 +35,19 @@ def collect(parameters: argparse.Namespace) -> Mapping[str, Union[str, bool]]:
         neg_feedback="This username does not exist.",
         interactive=parameters.interactive
     )
-    project_parameters["author_cern_id"] = phonebook_entry.cern_id
+    project_parameters["author_cern_id"] = phonebook_entry.login_name
     cli.positive_feedback("Your CERN username is set to \033[0;32m{}\033[0;m ".format(
         project_parameters["author_cern_id"]), newline=False)
 
     # Author full name
     logging.debug("Obtaining full name for {} from PhoneBook".format(username))
-    project_parameters["author_full_name"] = phonebook_entry.display_name
+    project_parameters["author_full_name"] = phonebook_entry.full_name[0]
     cli.positive_feedback("Your name is set to \033[0;32m{}\033[0;m".format(project_parameters["author_full_name"]),
                           newline=False)
 
     # Author CERN email
     logging.debug("Obtaining email for {} from PhoneBook".format(username))
-    project_parameters["author_email"] = phonebook_entry.emails[0]
+    project_parameters["author_email"] = phonebook_entry.email[0]
     cli.positive_feedback("Your email is set to \033[0;32m{}\033[0;m".format(project_parameters["author_email"]))
 
     # Project name
