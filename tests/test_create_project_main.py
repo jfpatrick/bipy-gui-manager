@@ -189,6 +189,12 @@ def test_download_template_wrong_protocol(tmpdir, mock_git):
     assert not os.path.isdir(project_path)
 
 
+def test_download_template_custom_url(tmpdir, mock_git):
+    project_path = os.path.join(tmpdir, "be-bi-pyqt-template")
+    create_project.download_template(project_path, "", False, custom_url="custom_url")
+    assert os.path.isdir(project_path)
+
+
 # ###############################
 # #     Apply Customizations    #
 # ###############################

@@ -105,13 +105,15 @@ def create_project(parameters: argparse.Namespace):
         cli.negative_feedback("Exiting\n")
 
 
-def get_template(project_path, clone_protocol, demo, template_path: Optional[str] = None) -> None:
+def get_template(project_path, clone_protocol, demo, template_path: Optional[str] = None,
+                 template_url: Optional[str] = None) -> None:
     """
     Retrieves the template code for the new project.
     :param project_path: Where to create the new project
     :param clone_protocol: Which protocol to use to clone the template from GitLab (https, ssh, kerberos)
     :param demo: whether to include the demo in the project
     :param template_path: If given, points to a local path to copy the content of, instead of cloning from GitLab
+    :param template_path: If given, points to a URL to copy the content of, instead of cloning from the regular repo
     :return: Nothing, but creates a folder with the template code
     """
     if template_path is not None:
@@ -119,19 +121,28 @@ def get_template(project_path, clone_protocol, demo, template_path: Optional[str
         shutil.copytree(template_path, project_path)
         # Change this into a os.rename operation?
         shutil.move(template_path, os.path.join(os.path.dirname(template_path), os.path.basename(project_path)))
+
+    elif template_url is not None:
+        cli.positive_feedback("Downloading the template from {}".format(template_url), newline=False)
+        download_template(project_path, clone_protocol, demo)
+
     else:
         cli.positive_feedback("Downloading the template from GitLab", newline=False)
         download_template(project_path, clone_protocol, demo)
 
 
-def download_template(project_path: str, clone_protocol: str, get_demo: bool) -> None:
+def download_template(project_path: str, clone_protocol: str, get_demo: bool, custom_url: Optional[str] = None) -> None:
     """
     Downloads the template code from its GitLab repository
     :param project_path: Where to clone the template (folder must not exists)
     :param clone_protocol: use HTTPS, SSH or Kerberos
     :param get_demo: Clone the template with the demo application or without.
+    :param custom_url: Clone the template from the specified repo.
     """
-    if clone_protocol == 'https':
+    if custom_url is not None:
+        template_url = custom_url
+
+    elif clone_protocol == 'https':
         template_url = 'https://gitlab.cern.ch/bisw-python/be-bi-pyqt-template.git'
     elif clone_protocol == 'kerberos':
         template_url = 'https://:@gitlab.cern.ch:8443/bisw-python/be-bi-pyqt-template.git'

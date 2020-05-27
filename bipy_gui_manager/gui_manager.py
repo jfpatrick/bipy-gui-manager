@@ -78,6 +78,10 @@ def main():
                                     help="[DEBUG] Copy the template from a custom location on the filesystem. "
                                          "NOTE: further customizations might break if the template does not correspond "
                                          "to the default one.")
+    new_project_parser.add_argument('--template-url', dest='template_url',
+                                    help="[DEBUG] Copy the template from a custom URL."
+                                         "NOTE: further customizations might break if the template does not correspond "
+                                         "to the default one.")
     new_project_parser.add_argument('--crash', dest='crash', action='store_true',
                                     help="[DEBUG] Do not try to recover from errors.")
     new_project_parser.add_argument('--verbose', dest='verbose', action='store_true',
