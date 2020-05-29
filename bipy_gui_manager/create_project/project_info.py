@@ -123,6 +123,11 @@ def collect(parameters: argparse.Namespace) -> Mapping[str, Union[str, bool]]:
         cli.positive_feedback("Your project's GitLab repository will be created under \033[0;32m{}\033[0;m".format(
             project_parameters["repo_url"]))
 
+        if project_parameters["repo_type"] == "test":
+            project_parameters["gitlab_space"] = phonebook_entry.login_name[0]
+        else:
+            project_parameters["gitlab_space"] = "bisw-python"
+
         # GitLab authorization token
         if parameters.gitlab_token is None:
             logging.debug("Collecting GitLab credentials")
@@ -143,6 +148,11 @@ def collect(parameters: argparse.Namespace) -> Mapping[str, Union[str, bool]]:
             project_parameters["template_path"] = parameters.template_path
         else:
             raise ValueError("The template_path value ({}) is not a directory.".format(parameters.template_path))
+
+    if parameters.template_url:
+        # No real validation possible
+        logging.debug("A template URL was passed: {}".format(parameters.template_url))
+        project_parameters["template_url"] = parameters.template_url
 
     return project_parameters
 

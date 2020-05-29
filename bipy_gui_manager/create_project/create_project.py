@@ -30,13 +30,15 @@ def create_project(parameters: argparse.Namespace):
         get_template(project_path=valid_project_data["project_path"],
                      clone_protocol=parameters.clone_protocol,
                      demo=valid_project_data["demo"],
-                     template_path=valid_project_data.get("template_path", None))
+                     template_path=valid_project_data.get("template_path", None),
+                     template_url=valid_project_data.get("template_url", None))
 
         apply_customizations(project_path=valid_project_data["project_path"],
                              project_name=valid_project_data["project_name"],
                              project_desc=valid_project_data["project_desc"],
                              project_author=valid_project_data["author_full_name"],
-                             project_email=valid_project_data["author_email"],)
+                             project_email=valid_project_data["author_email"],
+                             gitlab_space=valid_project_data["gitlab_space"],)
 
         generate_readme(project_path=valid_project_data["project_path"],
                         project_name=valid_project_data["project_name"],
@@ -166,7 +168,7 @@ def download_template(project_path: str, clone_protocol: str, get_demo: bool, cu
 
 
 def apply_customizations(project_path: str, project_name: str, project_desc: str, project_author: str,
-                         project_email: str) -> None:
+                         project_email: str, gitlab_space: str = "") -> None:
     """
     Modify the template by applying all the customizations specified in setup.
     :param project_path: path to the project folder
@@ -174,6 +176,8 @@ def apply_customizations(project_path: str, project_name: str, project_desc: str
     :param project_desc: description of the project
     :param project_author: name of the project's author
     :param project_email: email of the project's author, or support email
+    :param gitlab_space: either bisw-python or the username (i.e. the GitLab group where the project is hosted).
+        Note that this parameter might be an empty string if the ``--no-gitlab`` flag is passed.
     """
     cli.positive_feedback("Applying customizations", newline=False)
 
@@ -206,6 +210,7 @@ def apply_customizations(project_path: str, project_name: str, project_desc: str
                     s = s.replace("BE BI PyQt Template", project_name_capitals)
                     s = s.replace("Sara Zanzottera", project_author)
                     s = s.replace("sara.zanzottera@cern.ch", project_email)
+                    s = s.replace("gitlab-group", gitlab_space)
                     with open(filepath, "w") as f:
                         f.write(s)
 
