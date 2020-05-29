@@ -38,7 +38,7 @@ def create_project(parameters: argparse.Namespace):
                              project_desc=valid_project_data["project_desc"],
                              project_author=valid_project_data["author_full_name"],
                              project_email=valid_project_data["author_email"],
-                             gitlab_space=valid_project_data["gitlab_space"],)
+                             gitlab_space=valid_project_data.get("gitlab_space", ""))
 
         generate_readme(project_path=valid_project_data["project_path"],
                         project_name=valid_project_data["project_name"],
