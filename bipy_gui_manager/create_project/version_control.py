@@ -116,10 +116,18 @@ def create_gitlab_repository(repo_type: str, project_name: str, project_desc: st
     repo_data = post_to_gitlab(endpoint='api/v4/projects?{}'.format(auth_token),
                                post_fields=post_fields)
 
+    project_id = repo_data['id']
+
+    # Add the acc-py docserver GitLab user, so it can build documentation for private repos
+    post_to_gitlab(endpoint='api/v4/projects/{}/members?{}'.format(project_id, auth_token),
+                   post_fields={
+                       'user_id': '19185',  # accpydocserver's user ID
+                       'access_level': '20',
+                   })
+
     # The avatar setting honestly is not critical: if it fails, amen
     # Note: This might fail due to the lack of the 'requests' package. It's ok.
     try:
-        project_id = repo_data['id']
         avatar_path = os.path.join(os.path.dirname(__file__), "resources", "PyQt-logo-gray.png")
         url = 'https://gitlab.cern.ch/api/v4/projects/{}?{}'.format(project_id, auth_token)
         avatar = {'avatar': (avatar_path, open(avatar_path, 'rb'), 'multipart/form-data')}

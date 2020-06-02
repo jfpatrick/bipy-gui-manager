@@ -79,8 +79,9 @@ def create_project(parameters: argparse.Namespace):
                               "You should see {}. \n".format(what_you_see) +
                               "If you don't, or you see and error of some kind, please report it to us.\n\n" +
                               "Once this is done, you can start working on your new app. If you have \n" +
-                              "already acc-py active in you shell, type 'pycharm.sh' from your project's \n" +
-                              "directory: this will launch PyCharm and make it load the right project \n" +
+                              "already the virtualenv active in you shell, type from your project's directory:\n\n" +
+                              "   > pycharm.sh\n\n" +
+                              "This will launch PyCharm and make it load the right project \n" +
                               "directly. \n" +
                               "Remember also to activate your virtual env with 'source activate.sh'\n" +
                               "every time you start working.\n\n" +

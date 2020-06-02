@@ -33,7 +33,8 @@ def mock_git(monkeypatch, mock_cwd):
 @pytest.fixture
 def mock_gitlab(monkeypatch, mock_cwd):
     monkeypatch.setattr('bipy_gui_manager.create_project.version_control.authenticate_on_gitlab', mock_gitlab_auth)
-    monkeypatch.setattr('bipy_gui_manager.create_project.version_control.post_to_gitlab', mock_gitlab_call)
+    monkeypatch.setattr('bipy_gui_manager.create_project.version_control.post_to_gitlab',
+                        lambda *a, **k: {"id": "00000"})
 
 
 def create_project_parameters(demo=True, path=None, name=None, desc=None, author=None,
@@ -137,9 +138,5 @@ def mock_gitlab_auth(username, password):
     if username == "me":
         return True
     return False
-
-
-def mock_gitlab_call(endpoint, post_fields):
-    return json.dumps({"id": "fake-rep-_id"})
 
 

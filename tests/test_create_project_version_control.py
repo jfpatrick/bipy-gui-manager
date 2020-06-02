@@ -71,14 +71,13 @@ def test_git_init_and_push(tmpdir, mock_git):
     version_control.push_first_commit(project_path, "https://gitlab.cern.ch/test-project.git")
 
 
-def test_create_gitlab_repo(monkeypatch):
+def test_create_gitlab_repo(monkeypatch, mock_gitlab):
     try:
         monkeypatch.setattr('requests.put', lambda *args, **kwargs: '')
     except ModuleNotFoundError:
         # requests is not installed in the test environment
         pass
-    monkeypatch.setattr('bipy_gui_manager.create_project.version_control.post_to_gitlab', lambda *args, **kwargs: "")
-    monkeypatch.setattr('bipy_gui_manager.create_project.version_control.authenticate_on_gitlab', lambda *args, **kwargs: 1/0)
+    monkeypatch.setattr('bipy_gui_manager.create_project.version_control.authenticate_on_gitlab', lambda *a, **k: 1/0)
     version_control.create_gitlab_repository(repo_type="test",
                                              project_name="test-project",
                                              project_desc="A test project",
