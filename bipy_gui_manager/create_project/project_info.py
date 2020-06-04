@@ -124,7 +124,7 @@ def collect(parameters: argparse.Namespace) -> Mapping[str, Union[str, bool]]:
             project_parameters["repo_url"]))
 
         if project_parameters["repo_type"] == "test":
-            project_parameters["gitlab_space"] = phonebook_entry.login_name[0]
+            project_parameters["gitlab_space"] = phonebook_entry.login_name
         else:
             project_parameters["gitlab_space"] = "bisw-python"
 
