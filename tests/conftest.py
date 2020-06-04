@@ -37,12 +37,11 @@ def mock_gitlab(monkeypatch, mock_cwd):
                         lambda *a, **k: {"id": "00000"})
 
 
-def create_project_parameters(demo=True, path=None, name=None, desc=None, author=None,
-                              repo_type=None, clone_protocol="https", upload_protocol="https", gitlab=True,
+def create_project_parameters(path=None, name=None, desc=None, author=None, repo_type=None,
+                              clone_protocol="https", upload_protocol="https", gitlab=True,
                               gitlab_token=None, interactive=True, overwrite=False, cleanup_on_failure=False,
                               template_path=None, template_url=None, crash=True, verbose=False, gitlab_space=""):
     args = Namespace(
-        demo=demo,
         base_path=path,
         project_name=name,
         project_desc=desc,
@@ -64,7 +63,7 @@ def create_project_parameters(demo=True, path=None, name=None, desc=None, author
     return args
 
 
-def create_template_files(project_path, project_name, demo=True):
+def create_template_files(project_path, project_name):
     # Make folders
     template_module = project_name.replace("-", "_")
     os.makedirs(os.path.join(project_path, template_module))
@@ -113,11 +112,6 @@ setup(
             "Something that does not change"
         ])
 
-    if demo:
-        # Write demo file - to test demo selection
-        with open(os.path.join(project_path, template_module, "demo_code.py"), "w") as demo:
-            demo.write("raise ValueError('Somebody called this script??')")
-
 
 def mock_git_invocation(parameters, cwd, neg_feedback):
     """
@@ -127,11 +121,7 @@ def mock_git_invocation(parameters, cwd, neg_feedback):
     if 'clone' in parameters:
         project_path = parameters[-1]
         project_name = "be_bi_pyqt_template"  #project_path.split(os.path.sep)[-1]
-        if 'no-demo' in parameters:
-            demo = False
-        else:
-            demo = True
-        create_template_files(project_path, project_name, demo=demo)
+        create_template_files(project_path, project_name)
 
 
 def mock_gitlab_auth(username, password):

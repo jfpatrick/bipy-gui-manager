@@ -12,7 +12,7 @@ from .conftest import create_project_parameters, create_template_files
 def test_create_project_defaults_all_in_flags(monkeypatch, tmpdir, mock_git, mock_gitlab, mock_phonebook):
     # Runs the entire script mocking only the necessary
     # all params come from CLI and should succeed, even though interactive=True
-    params = create_project_parameters(demo=True, path=tmpdir, name="test-project", desc="That's a test project!",
+    params = create_project_parameters(path=tmpdir, name="test-project", desc="That's a test project!",
                                        author="me",repo_type="test", clone_protocol="https", gitlab_token="fake-token",
                                        upload_protocol="https", gitlab=True, crash=True)
     create_project.create_project(params)
@@ -20,7 +20,7 @@ def test_create_project_defaults_all_in_flags(monkeypatch, tmpdir, mock_git, moc
 
 def test_create_project_handles_exceptions_ask_cleanup(monkeypatch, tmpdir, mock_git, mock_gitlab, mock_phonebook):
     # Check if it fails in a controlled way and asks the user whether to cleanup
-    params = create_project_parameters(demo=True, path=tmpdir, name="test-project", desc="That's a test project!",
+    params = create_project_parameters(path=tmpdir, name="test-project", desc="That's a test project!",
                                        author="me", repo_type="test", clone_protocol="https", gitlab_token="fake-token",
                                        upload_protocol="https", gitlab=True, crash=False, interactive=True)
     def fail(*args, **kwargs):
@@ -34,7 +34,7 @@ def test_create_project_handles_exceptions_ask_cleanup(monkeypatch, tmpdir, mock
 
 def test_create_project_handles_exceptions_cleanup_no(monkeypatch, tmpdir, mock_git, mock_gitlab, mock_phonebook):
     # Check if it fails in a controlled way and asks the user whether to cleanup
-    params = create_project_parameters(demo=True, path=tmpdir, name="test-project", desc="That's a test project!",
+    params = create_project_parameters(path=tmpdir, name="test-project", desc="That's a test project!",
                                        author="me", repo_type="test", clone_protocol="https",
                                        gitlab_token="fake-token",
                                        upload_protocol="https", gitlab=True, crash=False, interactive=True)
@@ -51,7 +51,7 @@ def test_create_project_handles_exceptions_cleanup_no(monkeypatch, tmpdir, mock_
 
 def test_create_project_handles_exceptions_cleanup_yes(monkeypatch, tmpdir, mock_git, mock_gitlab, mock_phonebook):
     # Check if it fails in a controlled way and asks the user whether to cleanup
-    params = create_project_parameters(demo=True, path=tmpdir, name="test-project", desc="That's a test project!",
+    params = create_project_parameters(path=tmpdir, name="test-project", desc="That's a test project!",
                                        author="me", repo_type="test", clone_protocol="https",
                                        gitlab_token="fake-token",
                                        upload_protocol="https", gitlab=True, crash=False, interactive=True)
@@ -72,17 +72,16 @@ def test_create_project_handles_exceptions_cleanup_yes(monkeypatch, tmpdir, mock
 def test_get_template_call_download_template(tmpdir, monkeypatch):
     # Make template folder
     template_folder = os.path.join(tmpdir, "template-folder")
-    create_template_files(template_folder, "test-project", True)
+    create_template_files(template_folder, "test-project")
 
     # Monkeypatch download_template
     monkeypatch.setattr('bipy_gui_manager.create_project.create_project.download_template',
-                        lambda path, protocol, demo: os.makedirs(os.path.join(tmpdir, path, "downloaded-files")))
+                        lambda path, protocol: os.makedirs(os.path.join(tmpdir, path, "downloaded-files")))
 
     # Ensure it's calling download_template instead of copying
     project_path = os.path.join(tmpdir, "test_project")
     create_project.get_template(project_path=project_path,
                                 clone_protocol="https",
-                                demo=True,
                                 template_path=None)
 
     assert os.path.isdir(project_path)  # Should exist in both cases
@@ -93,12 +92,11 @@ def test_get_template_call_download_template(tmpdir, monkeypatch):
 def test_get_template_copy_from_path_valid(tmpdir, monkeypatch):
     # Make template folder
     template_folder = os.path.join(tmpdir, "template-folder")
-    create_template_files(template_folder, "test-project", True)
+    create_template_files(template_folder, "test-project")
     # Ensure it's copied if template_folder is not None
     project_path = os.path.join(tmpdir, "test-project")
     create_project.get_template(project_path=project_path,
                                 clone_protocol="https",
-                                demo=True,
                                 template_path=template_folder)
     assert os.path.isdir(project_path)
     assert os.path.exists(os.path.join(project_path, "test_project"))
@@ -106,8 +104,6 @@ def test_get_template_copy_from_path_valid(tmpdir, monkeypatch):
         assert testfile.read() != ""
     with open(os.path.join(project_path, ".hidden_file"), "r") as testfile:
         assert testfile.read() == "Something hidden"
-    with open(os.path.join(project_path, "test_project", "demo_code.py"), "r") as testfile:
-        assert testfile.read() != ""
     assert not os.path.exists(os.path.join(project_path, "be_bi_pyqt_template"))
 
 
@@ -117,7 +113,6 @@ def test_get_template_copy_from_path_wrong(tmpdir, monkeypatch):
     with pytest.raises(OSError):
         create_project.get_template(project_path=project_path,
                                     clone_protocol="https",
-                                    demo=True,
                                     template_path=os.path.join(tmpdir, "wrong_folder"))
     assert not os.path.isdir(project_path)
 
@@ -125,73 +120,40 @@ def test_get_template_copy_from_path_wrong(tmpdir, monkeypatch):
 # ###############################
 # #      Download Template      #
 # ###############################
-def test_download_template_kerberos_no_demo(tmpdir, mock_git):
+def test_download_template_kerberos(tmpdir, mock_git):
     project_path = os.path.join(tmpdir, "be-bi-pyqt-template")
-    create_project.download_template(project_path, "kerberos", False)
+    create_project.download_template(project_path, "kerberos")
     assert os.path.isdir(project_path)
     assert os.path.isdir(os.path.join(project_path, "be_bi_pyqt_template"))
     assert os.path.exists(os.path.join(project_path, "README-template.md"))
 
 
-def test_download_template_kerberos_with_demo(tmpdir, mock_git):
+def test_download_template_ssh(tmpdir, mock_git):
     project_path = os.path.join(tmpdir, "be-bi-pyqt-template")
-    create_project.download_template(project_path, "kerberos", True)
-    assert os.path.isdir(project_path)
-    assert os.path.isdir(os.path.join(project_path, "be_bi_pyqt_template"))
-    assert os.path.exists(os.path.join(project_path, "README-template.md"))
-    assert os.path.exists(os.path.join(project_path, "be_bi_pyqt_template", "demo_code.py"))
-    with open(os.path.join(project_path, "be_bi_pyqt_template", "demo_code.py"), "r") as demo:
-        assert demo.read() == "raise ValueError('Somebody called this script??')"
-
-
-def test_download_template_ssh_no_demo(tmpdir, mock_git):
-    project_path = os.path.join(tmpdir, "be-bi-pyqt-template")
-    create_project.download_template(project_path, "ssh", False)
+    create_project.download_template(project_path, "ssh")
     assert os.path.isdir(project_path)
     assert os.path.isdir(os.path.join(project_path, "be_bi_pyqt_template"))
     assert os.path.exists(os.path.join(project_path, "README-template.md"))
 
 
-def test_download_template_ssh_with_demo(tmpdir, mock_git):
+def test_download_template_https(tmpdir, mock_git):
     project_path = os.path.join(tmpdir, "be-bi-pyqt-template")
-    create_project.download_template(project_path, "ssh", True)
+    create_project.download_template(project_path, "https")
     assert os.path.isdir(project_path)
     assert os.path.isdir(os.path.join(project_path, "be_bi_pyqt_template"))
     assert os.path.exists(os.path.join(project_path, "README-template.md"))
-    assert os.path.exists(os.path.join(project_path, "be_bi_pyqt_template", "demo_code.py"))
-    with open(os.path.join(project_path, "be_bi_pyqt_template", "demo_code.py"), "r") as demo:
-        assert demo.read() == "raise ValueError('Somebody called this script??')"
-
-
-def test_download_template_https_no_demo(tmpdir, mock_git):
-    project_path = os.path.join(tmpdir, "be-bi-pyqt-template")
-    create_project.download_template(project_path, "https", False)
-    assert os.path.isdir(project_path)
-    assert os.path.isdir(os.path.join(project_path, "be_bi_pyqt_template"))
-    assert os.path.exists(os.path.join(project_path, "README-template.md"))
-
-
-def test_download_template_https_with_demo(tmpdir, mock_git):
-    project_path = os.path.join(tmpdir, "be-bi-pyqt-template")
-    create_project.download_template(project_path, "https", True)
-    assert os.path.isdir(project_path)
-    assert os.path.isdir(os.path.join(project_path, "be_bi_pyqt_template"))
-    assert os.path.exists(os.path.join(project_path, "README-template.md"))
-    assert os.path.exists(os.path.join(project_path, "be_bi_pyqt_template", "demo_code.py"))
-    with open(os.path.join(project_path, "be_bi_pyqt_template", "demo_code.py"), "r") as demo:
-        assert demo.read() == "raise ValueError('Somebody called this script??')"
 
 
 def test_download_template_wrong_protocol(tmpdir, mock_git):
     project_path = os.path.join(tmpdir, "be-bi-pyqt-template")
     with pytest.raises(ValueError):
-        create_project.download_template(project_path, "wrongprotocol", True)
+        create_project.download_template(project_path, "wrongprotocol")
     assert not os.path.isdir(project_path)
 
 
 def test_download_template_custom_url(tmpdir, mock_git):
     project_path = os.path.join(tmpdir, "be-bi-pyqt-template")
-    create_project.download_template(project_path, "", False, custom_url="custom_url")
+    create_project.download_template(project_path, "", custom_url="custom_url")
     assert os.path.isdir(project_path)
 
 
@@ -200,7 +162,7 @@ def test_download_template_custom_url(tmpdir, mock_git):
 # ###############################
 def test_apply_customizations_valid_template(tmpdir):
     project_path = os.path.join(tmpdir, "be-bi-pyqt-template")
-    create_template_files(project_path, "be-bi-pyqt-template", True)
+    create_template_files(project_path, "be-bi-pyqt-template")
     assert os.path.isdir(os.path.join(tmpdir, "be-bi-pyqt-template"))
     assert os.path.isdir(os.path.join(tmpdir, "be-bi-pyqt-template", "be_bi_pyqt_template"))
 
@@ -240,7 +202,7 @@ def test_apply_customizations_valid_template(tmpdir):
 
 def test_readme(tmpdir):
     project_path = os.path.join(tmpdir, "be-bi-pyqt-template")
-    create_template_files(project_path, "be-bi-pyqt-template", True)
+    create_template_files(project_path, "be-bi-pyqt-template")
 
     create_project.generate_readme(project_path=project_path,
                                    project_name="test-project",

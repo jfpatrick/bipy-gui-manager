@@ -29,7 +29,6 @@ def create_project(parameters: argparse.Namespace):
 
         get_template(project_path=valid_project_data["project_path"],
                      clone_protocol=parameters.clone_protocol,
-                     demo=valid_project_data["demo"],
                      template_path=valid_project_data.get("template_path", None),
                      template_url=valid_project_data.get("template_url", None))
 
@@ -63,12 +62,6 @@ def create_project(parameters: argparse.Namespace):
             valid_project_data["project_name"]), newline=False)
         cli.draw_line()
 
-        what_you_see: str
-        if valid_project_data["demo"]:
-            what_you_see = "a window with the demo app inside"
-        else:
-            what_you_see = "an empty window"
-
         cli.positive_feedback("What now?\n\n"
                               "Your project now lives under '{}'. \n".format(valid_project_data["project_path"]) +
                               "To make sure the installation was successful, you should move into that \nfolder and " +
@@ -76,7 +69,7 @@ def create_project(parameters: argparse.Namespace):
                               "   > source activate.sh        (activates acc-py and your virtual env)\n" +
                               "   > {}        (launches your PyQt application)\n\n".format(
                                   valid_project_data["project_name"]) +
-                              "You should see {}. \n".format(what_you_see) +
+                              "You should see a small template application with a plot. \n" +
                               "If you don't, or you see and error of some kind, please report it to us.\n\n" +
                               "Once this is done, you can start working on your new app. If you have \n" +
                               "already the virtualenv active in you shell, type from your project's directory:\n\n" +
@@ -104,13 +97,12 @@ def create_project(parameters: argparse.Namespace):
         cli.negative_feedback("Exiting\n")
 
 
-def get_template(project_path, clone_protocol, demo, template_path: Optional[str] = None,
+def get_template(project_path: str, clone_protocol: str, template_path: Optional[str] = None,
                  template_url: Optional[str] = None) -> None:
     """
     Retrieves the template code for the new project.
     :param project_path: Where to create the new project
     :param clone_protocol: Which protocol to use to clone the template from GitLab (https, ssh, kerberos)
-    :param demo: whether to include the demo in the project
     :param template_path: If given, points to a local path to copy the content of, instead of cloning from GitLab
     :param template_path: If given, points to a URL to copy the content of, instead of cloning from the regular repo
     :return: Nothing, but creates a folder with the template code
@@ -123,19 +115,18 @@ def get_template(project_path, clone_protocol, demo, template_path: Optional[str
 
     elif template_url is not None:
         cli.positive_feedback("Downloading the template from {}".format(template_url), newline=False)
-        download_template(project_path, clone_protocol, demo)
+        download_template(project_path, clone_protocol)
 
     else:
         cli.positive_feedback("Downloading the template from GitLab", newline=False)
-        download_template(project_path, clone_protocol, demo)
+        download_template(project_path, clone_protocol)
 
 
-def download_template(project_path: str, clone_protocol: str, get_demo: bool, custom_url: Optional[str] = None) -> None:
+def download_template(project_path: str, clone_protocol: str, custom_url: Optional[str] = None) -> None:
     """
     Downloads the template code from its GitLab repository
     :param project_path: Where to clone the template (folder must not exists)
     :param clone_protocol: use HTTPS, SSH or Kerberos
-    :param get_demo: Clone the template with the demo application or without.
     :param custom_url: Clone the template from the specified repo.
     """
     if custom_url is not None:
@@ -151,11 +142,7 @@ def download_template(project_path: str, clone_protocol: str, get_demo: bool, cu
         raise ValueError("Clone protocol not recognized: {}".format(clone_protocol))
     logging.debug("Template URL set to {}".format(template_url))
 
-    if get_demo:
-        git_command = ['clone', template_url, project_path]
-    else:
-        git_command = ['clone', '--single-branch', '--branch', 'no-demo', template_url,
-                       project_path]
+    git_command = ['clone', template_url, project_path]
 
     version_control.invoke_git(
         parameters=git_command,

@@ -91,14 +91,6 @@ def collect(parameters: argparse.Namespace) -> Mapping[str, Union[str, bool]]:
     cli.positive_feedback("The project will be created under \033[0;32m{}\033[0;m".format(
         project_parameters["project_path"]))
 
-    # Demo is required
-    logging.debug("Collecting demo request")
-    project_parameters["demo"] = validation.validate_demo_flags(parameters.demo, parameters.interactive)
-    if project_parameters["demo"]:
-        cli.positive_feedback("Your project will contain a demo application.")
-    else:
-        cli.positive_feedback("Your project will not contain the demo application.")
-
     # GitLab URL
     if parameters.gitlab:
         logging.debug("Collecting GitLab configuration")

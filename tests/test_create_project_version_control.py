@@ -66,7 +66,7 @@ def test_authenticate_on_gitlab_invalid_credentials(tmpdir, monkeypatch):
 
 def test_git_init_and_push(tmpdir, mock_git):
     project_path = os.path.join(tmpdir, "test-project")
-    create_template_files(project_path, "test-project", True)
+    create_template_files(project_path, "test-project")
     version_control.init_local_repo(project_path)
     version_control.push_first_commit(project_path, "https://gitlab.cern.ch/test-project.git")
 
