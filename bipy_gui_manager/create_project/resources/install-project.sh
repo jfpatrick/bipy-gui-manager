@@ -24,6 +24,11 @@ if pip install -e . -qqq; then
   # Success!
   exit 0
 else
-  # Failure
-  exit 1
+  # Failure - try another time:
+  if pip install -e . -qqq; then
+    # Success!
+    exit 0
+  else
+    # Really failed :(
+    exit 1
 fi
