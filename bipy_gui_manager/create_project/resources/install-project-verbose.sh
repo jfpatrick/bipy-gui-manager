@@ -25,13 +25,7 @@ if pip install -e . ; then
   echo -e "[DEBUG] pip install succeeded"
   exit 0
 else
-  # Failure - try another time:
-  echo -e "[DEBUG] pip install failed! Retrying..."
-  if pip install -e . ; then
-    # Success!
-    exit 0
-  else
-    # Really failed :(
-    echo -e "[DEBUG] pip install failed again, leaving"
-    exit 1
+  # Failure
+  echo -e "[DEBUG] pip install failed"
+  exit 1
 fi
