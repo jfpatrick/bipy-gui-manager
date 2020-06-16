@@ -25,7 +25,8 @@ REQUIREMENTS: dict = {
     'dev': [
     ],
     'doc': [
-        # 'sphinx',
+        "sphinx",
+        "acc-py-sphinx",
     ],
 }
 

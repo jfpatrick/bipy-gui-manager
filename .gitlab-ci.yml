@@ -12,8 +12,9 @@ Tests:
    - yum install -y openldap-devel python-devel
    - pip install .[core,test]
    - python -m pytest --log-cli-level=DEBUG --random-order --junitxml=report.xml --cov-report
-     html:coverage --cov-report term-missing:skip-covered --cov=${project_name} -vx --color=yes
-  coverage: '/TOTAL.+ ([0-9]{1,3}%)/'
+     html:coverage --cov-report term-missing:skip-covered --cov=${project_name} -vx
+     --color=yes
+  coverage: /TOTAL.+ ([0-9]{1,3}%)/
   artifacts:
     name: coverage-report
     paths:
@@ -26,3 +27,13 @@ Tests:
     changes:
      - '*.md'
 
+
+
+# A dev build of the documentation, made available through cern.ch/acc-py.
+build_docs:
+  extends: .acc_py_build_docs
+
+
+# A release build of the documentation, made available through cern.ch/acc-py.
+build_docs_on_tag:
+  extends: .acc_py_build_docs_on_tag
