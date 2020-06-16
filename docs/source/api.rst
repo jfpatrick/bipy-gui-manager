@@ -1,13 +1,12 @@
 .. _API_docs:
 
-bipy_gui_manager API documentation
-===================================
+==========================================================
+BE/BI Python Expert GUI Manager Internal API Documentation
+==========================================================
 
 .. rubric:: Modules
 
 .. autosummary::
    :toctree: api
-
-   .. Add the sub-packages that you wish to document below
 
    bipy_gui_manager

@@ -1,11 +1,10 @@
 import datetime
-
-import bipy_gui_manager
+import pkg_resources
 
 
 project = "BE/BI Python Expert GUI Manager"
 author = "Sara Zanzottera"
-version = bipy_gui_manager.__version__
+version = pkg_resources.get_distribution("be_bi_pyqt_template").version
 
 copyright = "{0}, CERN".format(datetime.datetime.now().year)
 
