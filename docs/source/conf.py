@@ -4,7 +4,7 @@ import pkg_resources
 
 project = "BE/BI Python Expert GUI Manager"
 author = "Sara Zanzottera"
-version = pkg_resources.get_distribution("be_bi_pyqt_template").version
+version = pkg_resources.get_distribution("bipy_gui_manager").version
 
 copyright = "{0}, CERN".format(datetime.datetime.now().year)
 
