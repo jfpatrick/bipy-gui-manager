@@ -28,12 +28,10 @@ Tests:
      - '*.md'
 
 
-
 # A dev build of the documentation, made available through cern.ch/acc-py.
-build_docs:
+Docs:
+  image: gitlab-registry.cern.ch/acc-co/accsoft/gui/accsoft-gui-pyqt-distro/acc-py-pyqt:ci
+  before_script:
+    - source /opt/venv/bin/activate
+    - yum install -y openldap-devel python-devel
   extends: .acc_py_build_docs
-
-
-# A release build of the documentation, made available through cern.ch/acc-py.
-build_docs_on_tag:
-  extends: .acc_py_build_docs_on_tag
