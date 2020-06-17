@@ -9,4 +9,4 @@ BE/BI Python Expert GUI Manager Internal API Documentation
 .. autosummary::
    :toctree: api
 
-   bipy_gui_manager
+   bipy_gui_manager.create_project
