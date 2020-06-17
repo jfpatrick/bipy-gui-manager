@@ -3,7 +3,7 @@ import signal
 import argparse
 
 from bipy_gui_manager import cli_utils as cli
-from bipy_gui_manager.create_project.create_project import create_project
+from bipy_gui_manager import create_project
 
 
 # Gracefully handle Ctrl+C and other kill signals

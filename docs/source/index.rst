@@ -22,19 +22,19 @@ A stable version of this script is available under
 In order to use it, you should add it to your ``PATH`` or alias it.
 Choose one of the following options:
 
-# Add it to ``PATH`` under ``~/.local/bin``:  this method assumes that ``~/.local/bin`` is already in your ``PATH``,
+* **Add it to PATH under ~/.local/bin**:  this method assumes that ``~/.local/bin`` is already in your ``PATH``,
   or that you can add it yourself. It will create a symlink to
   ``bipy-gui-manager`` under ``~/.local/bin``. Simply type::
 
         ln -s /user/bdisoft/development/python/gui/bipy-gui-manager ~/.local/bin/bipy-gui-manager
 
-# Add it to ``PATH`` under ``/usr/local/bin``:  This method assumes that ``/usr/local/bin`` is already in your
+* **Add it to PATH under /usr/local/bin**:  This method assumes that ``/usr/local/bin`` is already in your
   ``PATH``, which is true for most users, and that you can perform operations as sudo. It will create a symlink
   to ``bipy-gui-manager`` under ``/usr/local/bin``. Simply type::
 
         sudo ln -s /user/bdisoft/development/python/gui/bipy-gui-manager /usr/local/bin/bipy-gui-manager
 
-# Alias it: This method will not modify your ``PATH`` and won't create symlinks, but requires you to edit your
+* **Alias it**: This method will not modify your ``PATH`` and won't create symlinks, but requires you to edit your
   ``~/.bashrc``. Add the following line to your ``~/.bashrc``::
 
         alias bipy-gui-manager="/user/bdisoft/development/python/gui/bipy-gui-manager"

@@ -38,7 +38,8 @@ exclude_patterns = []
 # a list of builtin themes.
 #
 html_theme = "acc_py"
-html_favicon = '../../images/pyqt-logo-inverted-smaller.png'
+html_logo = '../images/pyqt-logo-inverted-smaller.png'
+html_favicon = '../images/pyqt-logo.png'
 
 
 # Add any paths that contain custom static files (such as style sheets) here,
