@@ -10,7 +10,7 @@ except ImportError:
     pass
 from subprocess import Popen, PIPE
 from bipy_gui_manager import cli_utils as cli
-from bipy_gui_manager.create_project import GROUP_ID
+from bipy_gui_manager.create_project.constants import GROUP_ID
 
 
 def invoke_git(parameters=(), cwd=os.getcwd(), neg_feedback="An error occurred in Git!"):
