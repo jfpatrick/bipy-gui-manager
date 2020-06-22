@@ -20,7 +20,7 @@ source venv/bin/activate
 
 # Install with pip
 echo -e "\033[0;32m=>\033[0;m Installing (can take a minute - PLEASE IGNORE ACC-PY REQUIREMENTS ERRORS)"
-if pip install -e . -qqq; then
+if pip install -e .[all] -qqq; then
   # Success!
   exit 0
 else
