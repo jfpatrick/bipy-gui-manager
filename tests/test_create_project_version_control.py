@@ -3,7 +3,7 @@ import io
 import pytest
 from urllib.error import HTTPError
 import subprocess
-from bipy_gui_manager.create_project import version_control
+from bipy_gui_manager.utils import version_control
 from .conftest import create_template_files
 
 
@@ -49,7 +49,7 @@ def test_post_to_gitlab(tmpdir, monkeypatch):
 
 
 def test_authenticate_on_gitlab_valid_credentials(tmpdir, monkeypatch):
-    monkeypatch.setattr('bipy_gui_manager.create_project.version_control.post_to_gitlab',
+    monkeypatch.setattr('bipy_gui_manager.utils.version_control.post_to_gitlab',
                         lambda *a, **k: dict({'access_token': 'test-token'}))
     token = version_control.authenticate_on_gitlab("valid_username", "valid_password")
     assert token == "access_token=test-token"
@@ -59,7 +59,7 @@ def test_authenticate_on_gitlab_invalid_credentials(tmpdir, monkeypatch):
     def raise_urllib_http_error(*args, **kwargs):
         raise HTTPError(url="test-url/", code=401, msg="Test error", hdrs="", fp=None)
 
-    monkeypatch.setattr('bipy_gui_manager.create_project.version_control.post_to_gitlab', raise_urllib_http_error)
+    monkeypatch.setattr('bipy_gui_manager.utils.version_control.post_to_gitlab', raise_urllib_http_error)
     data = version_control.authenticate_on_gitlab("valid_username", "valid_password")
     assert data is None
     
@@ -77,7 +77,7 @@ def test_create_gitlab_repo(monkeypatch, mock_gitlab):
     except ModuleNotFoundError:
         # requests is not installed in the test environment
         pass
-    monkeypatch.setattr('bipy_gui_manager.create_project.version_control.authenticate_on_gitlab', lambda *a, **k: 1/0)
+    monkeypatch.setattr('bipy_gui_manager.utils.version_control.authenticate_on_gitlab', lambda *a, **k: 1/0)
     version_control.create_gitlab_repository(repo_type="test",
                                              project_name="test-project",
                                              project_desc="A test project",

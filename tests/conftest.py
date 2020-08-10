@@ -1,5 +1,4 @@
 import os
-import json
 import pytest
 from argparse import Namespace
 from pyphonebook import PhoneBookEntry
@@ -27,13 +26,13 @@ def mock_phonebook(monkeypatch):
 
 @pytest.fixture
 def mock_git(monkeypatch, mock_cwd):
-    monkeypatch.setattr('bipy_gui_manager.create_project.version_control.invoke_git', mock_git_invocation)
+    monkeypatch.setattr('bipy_gui_manager.utils.version_control.invoke_git', mock_git_invocation)
 
 
 @pytest.fixture
 def mock_gitlab(monkeypatch, mock_cwd):
-    monkeypatch.setattr('bipy_gui_manager.create_project.version_control.authenticate_on_gitlab', mock_gitlab_auth)
-    monkeypatch.setattr('bipy_gui_manager.create_project.version_control.post_to_gitlab',
+    monkeypatch.setattr('bipy_gui_manager.utils.version_control.authenticate_on_gitlab', mock_gitlab_auth)
+    monkeypatch.setattr('bipy_gui_manager.utils.version_control.post_to_gitlab',
                         lambda *a, **k: {"id": "00000"})
 
 
@@ -122,6 +121,7 @@ def mock_git_invocation(parameters, cwd, neg_feedback):
         project_path = parameters[-1]
         project_name = "be_bi_pyqt_template"  #project_path.split(os.path.sep)[-1]
         create_template_files(project_path, project_name)
+    return f"mock call with parameters {parameters}", ""
 
 
 def mock_gitlab_auth(username, password):

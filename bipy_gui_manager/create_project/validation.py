@@ -2,7 +2,7 @@ from typing import Any, Optional, Tuple
 import os
 import shutil
 from pyphonebook import PhoneBook, PhoneBookEntry
-from bipy_gui_manager import cli_utils as cli
+from bipy_gui_manager.utils import cli as cli
 from bipy_gui_manager.create_project.constants import GROUP_NAME
 
 

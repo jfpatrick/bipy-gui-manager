@@ -1,5 +1,5 @@
 import pytest
-import bipy_gui_manager.cli_utils as cli
+import bipy_gui_manager.utils.cli as cli
 
 
 strings = []

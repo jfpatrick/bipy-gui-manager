@@ -1,4 +1,4 @@
-from bipy_gui_manager.gui_manager import main
+from bipy_gui_manager.main import main
 
 
 def test_main(monkeypatch):

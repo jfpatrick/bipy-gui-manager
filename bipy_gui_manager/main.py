@@ -2,8 +2,9 @@ import sys
 import signal
 import argparse
 
-from bipy_gui_manager import cli_utils as cli
+from bipy_gui_manager.utils import cli as cli
 from bipy_gui_manager.create_project.create_project import create_project
+from bipy_gui_manager.release.release import release
 
 
 # Gracefully handle Ctrl+C and other kill signals
@@ -22,6 +23,9 @@ def main():
     This function acts mainly as a frontend for the different subcommands.
     """
     parser = argparse.ArgumentParser(epilog="type 'pyqt-manager <command> --help' to learn more about their options.")
+    parser.add_argument('-v', '--verbose', dest='verbose', action='store_true',
+                        help="Set the logger to verbose mode (useful to report bugs).")
+
     subparsers = parser.add_subparsers()
 
     # 'create-project' subcommand
@@ -75,13 +79,13 @@ def main():
                                          "to the default one.")
     new_project_parser.add_argument('--crash', dest='crash', action='store_true',
                                     help="[DEBUG] Do not try to recover from errors.")
-    new_project_parser.add_argument('--verbose', dest='verbose', action='store_true',
-                                    help="Set the logger to verbose mode (useful to report bugs).")
 
     # 'release' subcommand
-    # release_parser = subparsers.add_parser('release',
-    #        help="Releases the application in the shared folders, to it becomes visible from BI's AppLauncher")
-    # release_parser.set_defaults(func=release)
+    release_parser = subparsers.add_parser('release',
+                                           help="Releases the application in a shared folder, so it can be started "
+                                                "from BI's AppLauncher")
+
+    release_parser.set_defaults(func=release)
 
     # Parse and call relevant subcommand
     arguments = parser.parse_args(args=None if sys.argv[1:] else ['--help'])

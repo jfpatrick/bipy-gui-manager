@@ -1,25 +1,27 @@
-from typing import Mapping, Optional
+from typing import Mapping, Optional, Tuple, Union
 import os
 import json
 import urllib
 import logging
+from pathlib import Path
 from urllib.error import HTTPError
 try:
     import requests  # requests might not be installed, but is needed only for the avatar upload
 except ImportError:
     pass
 from subprocess import Popen, PIPE
-from bipy_gui_manager import cli_utils as cli
+from bipy_gui_manager.utils import cli as cli
 from bipy_gui_manager.create_project.constants import GROUP_ID
 
 
-def invoke_git(parameters=(), cwd=os.getcwd(), neg_feedback="An error occurred in Git!"):
+def invoke_git(parameters=(), cwd=os.getcwd(), neg_feedback="An error occurred in Git!") -> Tuple[str, str]:
     """
     Perform a syscall to the local Git executable
     :param parameters: parameters to pass to Git, as an array
     :param cwd: working directory for Git
     :param neg_feedback: message to explain a potential failure
-    :return: Nothing if the command succeeds, OSError if it fails
+    :return (stdout, stderr) if successful
+    :raises OSError if it fails
     """
     logging.debug("invoke_git received the following parameters: {}".format(parameters))
     command = ['/usr/bin/git']
@@ -31,10 +33,83 @@ def invoke_git(parameters=(), cwd=os.getcwd(), neg_feedback="An error occurred i
 
         if git_query.poll() == 0:
             logging.debug("invoke_git was successful")
-            return
+            return stdout.decode('utf-8'), stderr.decode('utf-8')
         else:
             cli.negative_feedback(stderr.decode('utf-8'))
             raise OSError(neg_feedback)
+
+
+def is_git_folder(path_to_check: Union[str, Path]):
+    """
+    Checks if the given folder is a Git repo.
+    :param path_to_check: this path should be a Git repository
+    :return: True if 'git status' returns exit code 0, False otherwise
+    """
+    try:
+        invoke_git(parameters=['status'], cwd=path_to_check)
+        return True
+    except OSError:
+        return False
+
+
+def get_git_branch(path_to_check: Union[str, Path]):
+    """
+    Returns the branch the repo is currently on.
+    :param path_to_check: this path should be a Git repository
+    :return: the name of the current branch (i.e. master)
+    :raises OsError if it's not a Git repo or any other issue is encountered.
+    """
+    stdout, stderr = invoke_git(parameters=['status'], cwd=path_to_check)
+    if stderr:
+        raise OSError(f"Git raised an exception:\n{stderr}")
+
+    if not stdout.splitlines()[0].startswith("# On branch "):
+        raise OSError(f"Git returned an unexpected message:\n{stdout}")
+
+    return stdout.splitlines()[0].strip("# On branch ")
+
+
+def is_git_dir_clean(path_to_check: Union[str, Path]):
+    """
+    Checks if the repo is clean (i.e. no commits to push and no uncommitted changes.)
+    :param path_to_check: this path should be a Git repository
+    :return: True if there are no commits to push and no uncommitted changes, False otherwise
+    :raises OsError if it's not a Git repo or any other issue parsing Git's reply is encountered.
+    """
+    stdout, stderr = invoke_git(parameters=['status'], cwd=path_to_check)
+    if stderr:
+        raise OSError(f"Git raised an exception:\n{stderr}")
+
+    for line in stdout.splitlines():
+
+        # Unstaged modifications
+        if line.startswith("# Untracked files:"):
+            return False
+
+        # Staged modifications
+        if line.startswith("# Changes to be committed:"):
+            return False
+
+
+    return stdout.splitlines()[0].strip("# On branch ")
+
+
+def get_remote_url(path_to_repo: Union[str, Path]) -> Optional[str]:
+    """
+    Returns the remote URL of master for the given repo.
+    Assumes the remote is called 'origin' and returns the Fetch URL.
+    Returns None if the repo has no remote for origin.
+    Raises OsError if the path does not correspond to a Git repo.
+    :param path_to_repo: the repo to find the remote of
+    :return: the remote for origin if exists, None otherwise
+    """
+    stdout, stderr = invoke_git(parameters=['remote', 'show', 'origin'], cwd=path_to_repo)
+    if stderr:
+        return None
+    for line in stdout.splitlines():
+        if line.strip().startswith("Fetch URL:"):
+            return line.strip()[len("Fetch URL:"):].strip()
+    return None
 
 
 def authenticate_on_gitlab(username: str, password: str) -> Optional[str]:

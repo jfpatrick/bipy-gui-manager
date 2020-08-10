@@ -3,8 +3,8 @@ import os
 import shutil
 import logging
 import argparse
-from bipy_gui_manager import cli_utils as cli
-from bipy_gui_manager.create_project import project_info, version_control
+from bipy_gui_manager.create_project import project_info
+from bipy_gui_manager.utils import version_control, cli as cli
 
 
 def create_project(parameters: argparse.Namespace):
@@ -62,23 +62,21 @@ def create_project(parameters: argparse.Namespace):
             valid_project_data["project_name"]), newline=False)
         cli.draw_line()
 
-        cli.positive_feedback("What now?\n\n"
-                              "Your project now lives under '{}'. \n".format(valid_project_data["project_path"]) +
-                              "To make sure the installation was successful, you should move into that \nfolder and " +
-                              "type the following commands:\n\n" +
-                              "   > source activate.sh        (activates acc-py and your virtual env)\n" +
-                              "   > {}        (launches your PyQt application)\n\n".format(
-                                  valid_project_data["project_name"]) +
-                              "You should see a small template application with a plot. \n" +
-                              "If you don't, or you see and error of some kind, please report it to us.\n\n" +
-                              "Once this is done, you can start working on your new app. If you have \n" +
-                              "already the virtualenv active in you shell, type from your project's directory:\n\n" +
-                              "   > pycharm.sh . & \n\n" +
-                              "This will launch PyCharm and make it load the right project \n" +
-                              "directly. \n" +
-                              "Remember also to activate your virtual env with 'source activate.sh'\n" +
-                              "every time you start working.\n\n" +
-                              "Happy development!\033[1A", newline=False)
+        cli.positive_feedback(f"What now?\n\n"
+                              f"Your project now lives under '{valid_project_data['project_path']}'. \n"
+                              f"To make sure the installation was successful, you should move into that \nfolder and " 
+                              f"type the following commands:\n\n"
+                              f"   > source activate.sh        (activates acc-py and your virtual env)\n"
+                              f"   > {valid_project_data['project_name']}        (launches your PyQt application)\n\n"
+                              f"You should see a small template application with a plot. If you don't, or you see an \n"
+                              f"error of some kind, please report it to us.\n\n" 
+                              f"Once this is done, you can start working on your new app. If you have already the \n" 
+                              f"virtualenv active in you shell, type from your project's directory:\n\n"
+                              f"   > pycharm.sh . & \n\n" 
+                              f"This will launch PyCharm and make it load the right project directly.\n" 
+                              f"Remember also to activate your virtual env with 'source activate.sh' every time you\n" 
+                              f"start working.\n\n"
+                              f"Happy development!\033[1A", newline=False)
         cli.draw_line()
 
     except Exception as e:
@@ -104,13 +102,13 @@ def get_template(project_path: str, clone_protocol: str, template_path: Optional
     :param project_path: Where to create the new project
     :param clone_protocol: Which protocol to use to clone the template from GitLab (https, ssh, kerberos)
     :param template_path: If given, points to a local path to copy the content of, instead of cloning from GitLab
-    :param template_path: If given, points to a URL to copy the content of, instead of cloning from the regular repo
+    :param template_url: If given, points to a URL to copy the content of, instead of cloning from the regular repo
     :return: Nothing, but creates a folder with the template code
     """
     if template_path is not None:
         cli.positive_feedback("Copying the template from {}".format(template_path), newline=False)
         shutil.copytree(template_path, project_path)
-        # Change this into a os.rename operation?
+        # FIXME Change this into a os.rename operation?
         shutil.move(template_path, os.path.join(os.path.dirname(template_path), os.path.basename(project_path)))
 
     elif template_url is not None:
@@ -218,7 +216,7 @@ def apply_customizations(project_path: str, project_name: str, project_desc: str
 def generate_readme(project_path: str, project_name: str, project_desc: str, project_author: str,
                     project_email: str, gitlab_repo: str) -> None:
     """
-    Generate a README with the invariant informations, like how to install, run tests, debug, etc...
+    Generate a README with the invariant information, like how to install, run tests, debug, etc...
     :param project_path: path to the project folder
     :param project_name: name of the project
     :param project_desc: description of the project
@@ -269,6 +267,7 @@ def setup_version_control(project_path: str, gitlab: bool, project_name: Optiona
     :param project_desc: Description of the project
     :param gitlab: True if the project needs to be uploaded to GitLab
     :param gitlab_token: Authentication token to login into GitLab
+    :param repo_url: URL to the GitLab repo
     :param repo_type: Repository URL
     :return:
     """
@@ -295,18 +294,19 @@ def install_project(project_path: str, verbose: bool) -> None:
     The bash script will activate the venvs and install the project in its own
     virtual environment.
     :param project_path: Path to the project root
+    :param verbose: if True, does not reduce the output generated by the installation process.
     """
     # Copy shell script in project
     logging.debug("Copying bash script .tmp.sh into the new project tree")
-    script_temp_location = os.path.join(project_path, ".tmp.sh")
+    script_location = os.path.join(project_path, ".tmp.sh")
     if verbose:
-        shutil.copy(os.path.join(os.path.dirname(__file__), "resources", "install-project-verbose.sh"), script_temp_location)
+        shutil.copy(os.path.join(os.path.dirname(__file__), "resources", "install-project-verbose.sh"), script_location)
     else:
-        shutil.copy(os.path.join(os.path.dirname(__file__), "resources", "install-project.sh"), script_temp_location)
+        shutil.copy(os.path.join(os.path.dirname(__file__), "resources", "install-project.sh"), script_location)
 
     # Execute it (create venvs and install folder in venv)
     logging.debug("Make .tmp.sh executable")
-    os.chmod(script_temp_location, 0o777)
+    os.chmod(script_location, 0o777)
     logging.debug("Save current working directory: {}".format(os.getcwd()))
     current_dir = os.getcwd()
     logging.debug("Move in the project's directory: {}".format(project_path))
@@ -318,7 +318,7 @@ def install_project(project_path: str, verbose: bool) -> None:
 
     # Remove temporary script
     logging.debug("Remove .tmp.sh")
-    os.remove(script_temp_location)
+    os.remove(script_location)
 
     # Render error if present
     if error:

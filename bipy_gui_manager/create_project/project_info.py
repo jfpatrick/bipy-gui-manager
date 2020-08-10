@@ -4,9 +4,8 @@ import os
 import logging
 import getpass
 import argparse
-from bipy_gui_manager import cli_utils as cli
 from bipy_gui_manager.create_project import validation
-from bipy_gui_manager.create_project import version_control
+from bipy_gui_manager.utils import version_control, cli as cli
 
 
 def collect(parameters: argparse.Namespace) -> Mapping[str, Union[str, bool]]:

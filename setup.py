@@ -62,7 +62,7 @@ setup(
     include_package_data=True,  # For 'install-project.sh'
     entry_points={
         'console_scripts': [
-            'bipy-gui-manager=bipy_gui_manager.gui_manager:main',
+            'bipy-gui-manager=bipy_gui_manager.main:main',
         ],
     },
 )
