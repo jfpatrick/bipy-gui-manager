@@ -35,7 +35,6 @@ def invoke_git(parameters=(), cwd=os.getcwd(), neg_feedback="An error occurred i
             logging.debug("invoke_git was successful")
             return stdout.decode('utf-8'), stderr.decode('utf-8')
         else:
-            cli.negative_feedback(stderr.decode('utf-8'))
             raise OSError(neg_feedback)
 
 
@@ -66,7 +65,7 @@ def get_git_branch(path_to_check: Union[str, Path]):
     if not stdout.splitlines()[0].startswith("# On branch "):
         raise OSError(f"Git returned an unexpected message:\n{stdout}")
 
-    return stdout.splitlines()[0].strip("# On branch ")
+    return stdout.splitlines()[0].lstrip("# On branch ").strip()
 
 
 def is_git_dir_clean(path_to_check: Union[str, Path]):
@@ -82,16 +81,26 @@ def is_git_dir_clean(path_to_check: Union[str, Path]):
 
     for line in stdout.splitlines():
 
-        # Unstaged modifications
+        # Unstaged, uncommitted modifications
         if line.startswith("# Untracked files:"):
             return False
 
-        # Staged modifications
+        # Staged, uncommitted modifications
         if line.startswith("# Changes to be committed:"):
             return False
 
+        # Untracked files
+        if line.startswith("# Untracked files:"):
+            return False
 
-    return stdout.splitlines()[0].strip("# On branch ")
+        # Commits not pushed
+        if line.startswith("# Your branch is ahead of"):
+            return False
+
+    if "nothing to commit" in stdout.splitlines()[-1]:
+        return True
+
+    return False
 
 
 def get_remote_url(path_to_repo: Union[str, Path]) -> Optional[str]:
@@ -103,13 +112,19 @@ def get_remote_url(path_to_repo: Union[str, Path]) -> Optional[str]:
     :param path_to_repo: the repo to find the remote of
     :return: the remote for origin if exists, None otherwise
     """
-    stdout, stderr = invoke_git(parameters=['remote', 'show', 'origin'], cwd=path_to_repo)
-    if stderr:
+    try:
+        stdout, stderr = invoke_git(parameters=['remote', 'show', 'origin'], cwd=path_to_repo)
+        if stderr:
+            return None
+        for line in stdout.splitlines():
+            if line.strip().startswith("Fetch URL:"):
+                return line.strip()[len("Fetch URL:"):].strip()
         return None
-    for line in stdout.splitlines():
-        if line.strip().startswith("Fetch URL:"):
-            return line.strip()[len("Fetch URL:"):].strip()
-    return None
+
+    except OSError as e:
+        logging.debug("Git raised 'origin does not appear to be a git repository' error.")
+        if "'origin' does not appear to be a git repository" in str(e):
+            return None
 
 
 def authenticate_on_gitlab(username: str, password: str) -> Optional[str]:
