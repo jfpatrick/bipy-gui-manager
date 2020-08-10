@@ -16,6 +16,7 @@ with (HERE / 'README.md').open('rt') as fh:
 REQUIREMENTS: dict = {
     'core': [
         "pyphonebook",
+        "pyasn1>=-0.4.6",  # IDK why this is necessary, check again later
     ],
     'test': [
         "pytest",

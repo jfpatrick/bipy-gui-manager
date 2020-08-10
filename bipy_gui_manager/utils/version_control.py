@@ -10,7 +10,6 @@ try:
 except ImportError:
     pass
 from subprocess import Popen, PIPE
-from bipy_gui_manager.utils import cli as cli
 from bipy_gui_manager.create_project.constants import GROUP_ID
 
 
@@ -35,6 +34,7 @@ def invoke_git(parameters=(), cwd=os.getcwd(), neg_feedback="An error occurred i
             logging.debug("invoke_git was successful")
             return stdout.decode('utf-8'), stderr.decode('utf-8')
         else:
+            logging.debug(stdout.decode('utf-8') + "  -  " + stderr.decode('utf-8'))
             raise OSError(neg_feedback)
 
 
@@ -49,6 +49,30 @@ def is_git_folder(path_to_check: Union[str, Path]):
         return True
     except OSError:
         return False
+
+
+def init_local_repo(project_path: str) -> None:
+    """
+    Initialize the project's git repo.
+    :param project_path: Path to the project root
+    :return nothing, but inits the local Git repository
+    """
+    invoke_git(
+        parameters=['init'],
+        cwd=project_path,
+        neg_feedback="Failed to init the repo in the project folder."
+    )
+    invoke_git(
+        parameters=['add', '--all'],
+        cwd=project_path,
+        neg_feedback="Failed to stage the template."
+    )
+    invoke_git(
+        parameters=['commit', '-m', 'Initial commit ' +
+                    '(from bipy-gui-manager https://gitlab.cern.ch/bisw-python/bipy_gui_manager)'],
+        cwd=project_path,
+        neg_feedback="Failed to commit the template."
+    )
 
 
 def get_git_branch(path_to_check: Union[str, Path]):
@@ -163,30 +187,6 @@ def post_to_gitlab(endpoint: str, post_fields: Mapping[str, str]) -> Mapping[str
     response = urllib.request.urlopen(request).read().decode()
     logging.info("Server responds: {}".format(response))
     return json.loads(response)
-
-
-def init_local_repo(project_path: str) -> None:
-    """
-    Initialize the project's git repo.
-    :param project_path: Path to the project root
-    :return nothing, but inits the local Git repository
-    """
-    invoke_git(
-        parameters=['init'],
-        cwd=project_path,
-        neg_feedback="Failed to init the repo in the project folder."
-    )
-    invoke_git(
-        parameters=['add', '--all'],
-        cwd=project_path,
-        neg_feedback="Failed to stage the template."
-    )
-    invoke_git(
-        parameters=['commit', '-m', 'Initial commit ' +
-                    '(from bipy-gui-manager https://gitlab.cern.ch/bisw-python/bipy_gui_manager)'],
-        cwd=project_path,
-        neg_feedback="Failed to commit the template."
-    )
 
 
 def create_gitlab_repository(repo_type: str, project_name: str, project_desc: str, auth_token: str):

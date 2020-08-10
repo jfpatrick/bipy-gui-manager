@@ -1,5 +1,6 @@
 import os
 import io
+import shutil
 import pytest
 from urllib.error import HTTPError
 import subprocess
@@ -34,10 +35,70 @@ class MockFailingPopen:
 def test_invoke_git(tmpdir, monkeypatch):
     version_control.Popen = MockSuccessfulPopen
     version_control.invoke_git(['not_a_git_command'], cwd=tmpdir, neg_feedback="Test Feedback")
+
     version_control.Popen = MockFailingPopen
     with pytest.raises(OSError):
         version_control.invoke_git(['not_a_git_command'], cwd=tmpdir, neg_feedback="Test Feedback")
     version_control.Popen = subprocess.Popen
+
+
+def test_is_git_folder(tmpdir):
+    assert not version_control.is_git_folder(tmpdir)
+    version_control.invoke_git(['init'], cwd=tmpdir)
+    assert version_control.is_git_folder(tmpdir)
+
+
+def test_init_local_repo(tmpdir):
+    # A file must exist in the folder or Git will refuse to commit
+    with open(tmpdir / "testfile", 'w') as f:
+        f.write("test")
+    version_control.init_local_repo(tmpdir)
+    assert os.path.exists(tmpdir / ".git")
+
+
+def test_get_git_branch(tmpdir):
+    with pytest.raises(OSError):
+        version_control.get_git_branch(tmpdir)
+    version_control.invoke_git(['init'], cwd=tmpdir)
+    assert version_control.get_git_branch(tmpdir) == "master"
+    version_control.invoke_git(['checkout', '-b', 'test-branch'], cwd=tmpdir)
+    assert version_control.get_git_branch(tmpdir) == "test-branch"
+
+
+def test_is_git_dir_clean(tmpdir, monkeypatch):
+    version_control.invoke_git(['init'], cwd=tmpdir)
+    assert version_control.is_git_dir_clean(tmpdir)
+
+    with open(tmpdir / "testfile", 'w') as f:
+        f.write("test")
+    assert not version_control.is_git_dir_clean(tmpdir)
+
+    version_control.invoke_git(["add", '--all'], cwd=tmpdir)
+    assert not version_control.is_git_dir_clean(tmpdir)
+
+    version_control.invoke_git(['commit', '-m', "test"], cwd=tmpdir)
+    assert version_control.is_git_dir_clean(tmpdir)
+
+    with open(tmpdir / "testfile2", 'w') as f:
+        f.write("test")
+    assert not version_control.is_git_dir_clean(tmpdir)
+
+    # TODO check the same for a repo with a remote
+    version_control.invoke_git(["remote", "add", "origin", "https://:@gitlab.cern.ch:8443/bisw-python/bipy-gui-manager.git"],
+                               cwd=tmpdir)
+    assert not version_control.is_git_dir_clean(tmpdir)
+
+
+def test_get_remote_url(tmpdir, monkeypatch):
+    assert version_control.get_remote_url(tmpdir) is None
+
+    version_control.invoke_git(['init'], cwd=tmpdir)
+    assert version_control.get_remote_url(tmpdir) is None
+
+    version_control.invoke_git(["remote", "add", "origin",
+                                "https://:@gitlab.cern.ch:8443/bisw-python/bipy-gui-manager.git"],
+                               cwd=tmpdir)
+    assert version_control.get_remote_url(tmpdir) == "https://:@gitlab.cern.ch:8443/bisw-python/bipy-gui-manager.git"
 
 
 def test_post_to_gitlab(tmpdir, monkeypatch):

@@ -36,7 +36,3 @@ def give_hint(string):
 
 def negative_feedback(string):
     print("\033[0;31m=> Error!\033[0;33m {}\033[0;m".format(string))
-
-
-def throw_warning(string):
-    print("\033[0;33m=>{}\033[0;m Warning!".format(string))
