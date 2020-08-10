@@ -84,7 +84,8 @@ def test_is_git_dir_clean(tmpdir, monkeypatch):
     assert not version_control.is_git_dir_clean(tmpdir)
 
     # TODO check the same for a repo with a remote
-    version_control.invoke_git(["remote", "add", "origin", "https://:@gitlab.cern.ch:8443/bisw-python/bipy-gui-manager.git"],
+    version_control.invoke_git(["remote", "add", "origin",
+                                "ssh://git@gitlab.cern.ch:7999/bisw-python/bipy-gui-manager.git"],
                                cwd=tmpdir)
     assert not version_control.is_git_dir_clean(tmpdir)
 
@@ -96,9 +97,9 @@ def test_get_remote_url(tmpdir, monkeypatch):
     assert version_control.get_remote_url(tmpdir) is None
 
     version_control.invoke_git(["remote", "add", "origin",
-                                "https://:@gitlab.cern.ch:8443/bisw-python/bipy-gui-manager.git"],
+                                "ssh://git@gitlab.cern.ch:7999/bisw-python/bipy-gui-manager.git"],
                                cwd=tmpdir)
-    assert version_control.get_remote_url(tmpdir) == "https://:@gitlab.cern.ch:8443/bisw-python/bipy-gui-manager.git"
+    assert version_control.get_remote_url(tmpdir) == "ssh://git@gitlab.cern.ch:7999/bisw-python/bipy-gui-manager.git"
 
 
 def test_post_to_gitlab(tmpdir, monkeypatch):
