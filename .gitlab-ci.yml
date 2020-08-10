@@ -9,6 +9,8 @@ Tests:
   image: gitlab-registry.cern.ch/acc-co/accsoft/gui/accsoft-gui-pyqt-distro/acc-py-pyqt:ci
   script:
    - source /opt/venv/bin/activate
+   - git config --global user.email "gitlab-ci@cern.ch"
+   - git config --global user.name "gitlab ci"
    - yum install -y openldap-devel python-devel
    - pip install .[core,test]
    - python -m pytest --log-cli-level=DEBUG --random-order --junitxml=report.xml --cov-report
