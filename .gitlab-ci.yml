@@ -11,12 +11,12 @@ before_script:
 Tests:
   image: gitlab-registry.cern.ch/acc-co/accsoft/gui/accsoft-gui-pyqt-distro/acc-py-pyqt:ci
   script:
-#   - source /opt/venv/bin/activate
+   - source /opt/venv/bin/activate
    - git config --global user.email "gitlab-ci@cern.ch"
    - git config --global user.name "gitlab ci"
    - yum install -y openldap-devel python-devel
-   - /opt/venv/bin/pip install .[core,test]
-   - /opt/venv/bin/python -m pytest --log-cli-level=DEBUG --random-order --junitxml=report.xml --cov-report
+   - pip install .[core,test]
+   - python -m pytest --log-cli-level=DEBUG --random-order --junitxml=report.xml --cov-report
      html:coverage --cov-report term-missing:skip-covered --cov=${project_name} -vx
      --color=yes
   coverage: /TOTAL.+ ([0-9]{1,3}%)/

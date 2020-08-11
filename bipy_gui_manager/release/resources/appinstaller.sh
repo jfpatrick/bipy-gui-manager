@@ -13,10 +13,7 @@ if git clone $GIT_URL $APP_NAME; then
 
     ACCPY_WORKS=$(acc-py venv $VENV_NAME)
     if ! [[ $ACCPY_WORKS ]]; then
-        echo -e " -> An error occurred activating Acc-Py. Close and reopen the terminal and retry."
-        rm -rf ./$APP_NAME
-        rm -rf ./$VENV_NAME
-        exit 1
+        echo -e " -> An error occurred activating Acc-Py. The process might fail!"
     fi
 
     source $VENV_NAME/bin/activate
