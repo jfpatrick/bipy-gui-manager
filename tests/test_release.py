@@ -94,7 +94,7 @@ def test_release_dir_with_setup_and_git(project_dir, deploy_dir):
 
 def test_release_dir_succeeds_with_real_repo(project_dir, deploy_dir, monkeypatch):
     monkeypatch.setattr('bipy_gui_manager.release.release.vcs.get_remote_url',
-                        lambda p: "ssh://git@gitlab.cern.ch:7999/bisw-python/be-bi-pyqt-template.git")
+                        lambda p: "https://:@gitlab.cern.ch:8443/bisw-python/be-bi-pyqt-template.git")
     monkeypatch.setattr('bipy_gui_manager.release.release.DEPLOY_FOLDER', deploy_dir)
     create_template_files(project_dir, "project")
     vcs.init_local_repo(project_dir)
