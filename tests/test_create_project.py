@@ -13,7 +13,7 @@ def test_create_project_defaults_all_in_flags(monkeypatch, tmpdir, mock_git, moc
     # Runs the entire script mocking only the necessary
     # all params come from CLI and should succeed, even though interactive=True
     params = create_project_parameters(path=tmpdir, name="test-project", desc="That's a test project!",
-                                       author="me",repo_type="test", clone_protocol="https", gitlab_token="fake-token",
+                                       author="me", repo_type="test", clone_protocol="https", gitlab_token="fake-token",
                                        upload_protocol="https", gitlab=True, crash=True)
     create_project.create_project(params)
 

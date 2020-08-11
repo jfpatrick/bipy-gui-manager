@@ -4,7 +4,7 @@ import shutil
 import logging
 import argparse
 from bipy_gui_manager.create_project import project_info
-from bipy_gui_manager.utils import version_control, cli as cli
+from bipy_gui_manager.utils import version_control, cli
 
 
 def create_project(parameters: argparse.Namespace):

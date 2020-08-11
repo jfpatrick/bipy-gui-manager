@@ -27,6 +27,7 @@ def mock_phonebook(monkeypatch):
 @pytest.fixture
 def mock_git(monkeypatch, mock_cwd):
     monkeypatch.setattr('bipy_gui_manager.utils.version_control.invoke_git', mock_git_invocation)
+    monkeypatch.setattr('bipy_gui_manager.create_project.create_project.version_control.invoke_git', mock_git_invocation)
 
 
 @pytest.fixture

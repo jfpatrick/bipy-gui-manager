@@ -2,8 +2,10 @@ import os
 import io
 import shutil
 import pytest
+from time import sleep
 from urllib.error import HTTPError
 import subprocess
+
 from bipy_gui_manager.utils import version_control
 from .conftest import create_template_files
 
@@ -99,6 +101,7 @@ def test_get_remote_url(tmpdir, monkeypatch):
     version_control.invoke_git(["remote", "add", "origin",
                                 "ssh://git@gitlab.cern.ch:7999/bisw-python/bipy-gui-manager.git"],
                                cwd=tmpdir)
+    sleep(1)
     assert version_control.get_remote_url(tmpdir) == "ssh://git@gitlab.cern.ch:7999/bisw-python/bipy-gui-manager.git"
 
 
