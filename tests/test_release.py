@@ -1,5 +1,6 @@
 import os
 import pytest
+import logging
 from argparse import Namespace
 from pathlib import Path
 
@@ -100,5 +101,6 @@ def test_release_dir_succeeds_with_real_repo(project_dir, deploy_dir, monkeypatc
     vcs.init_local_repo(project_dir)
 
     release.release(Namespace(verbose=True, path=project_dir))
+    logging.debug(os.listdir(deploy_dir))
     assert os.path.exists(deploy_dir / "project")
     assert os.path.exists(deploy_dir / ".project-venv")
