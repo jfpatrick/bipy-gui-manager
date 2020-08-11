@@ -100,4 +100,5 @@ def test_release_dir_succeeds_with_real_repo(project_dir, deploy_dir, monkeypatc
     vcs.init_local_repo(project_dir)
 
     release.release(Namespace(verbose=True, path=project_dir))
-    assert len(os.listdir(deploy_dir)) == 1
+    assert os.path.exists(deploy_dir / "project")
+    assert os.path.exists(deploy_dir / ".project-venv")

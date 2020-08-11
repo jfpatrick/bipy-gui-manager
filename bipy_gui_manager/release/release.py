@@ -65,13 +65,13 @@ def release(parameters: argparse.Namespace):
                                   f" - cd {DEPLOY_FOLDER}\n"
                                   f" - ./appinstaller.sh <entry point name> <gitlab URL of the project>\n"
                                   "If you observe errors, please report them immediately to the maintainers.")
-            logging.debug("Move back to original working directory: {}".format(current_dir))
+            logging.debug("Deploy failed. Move back to original working directory: {}".format(current_dir))
             os.chdir(current_dir)
             return
 
         # Remove appinstaller.sh
         os.remove('appinstaller.sh')
-        logging.debug("Move back to original working directory: {}".format(current_dir))
+        logging.debug("Deploy successful. Move back to original working directory: {}".format(current_dir))
         os.chdir(current_dir)
 
         cli.positive_feedback(f"New project {os.path.basename(path)} deployed successfully. "
