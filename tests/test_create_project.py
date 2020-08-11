@@ -23,6 +23,7 @@ def test_create_project_handles_exceptions_ask_cleanup(monkeypatch, tmpdir, mock
     params = create_project_parameters(path=tmpdir, name="test-project", desc="That's a test project!",
                                        author="me", repo_type="test", clone_protocol="https", gitlab_token="fake-token",
                                        upload_protocol="https", gitlab=True, crash=False, interactive=True)
+
     def fail(*args, **kwargs):
         raise AttributeError("Imagine this function fails...")
     monkeypatch.setattr('bipy_gui_manager.create_project.create_project.get_template', fail)
@@ -38,6 +39,7 @@ def test_create_project_handles_exceptions_cleanup_no(monkeypatch, tmpdir, mock_
                                        author="me", repo_type="test", clone_protocol="https",
                                        gitlab_token="fake-token",
                                        upload_protocol="https", gitlab=True, crash=False, interactive=True)
+
     def fail(*args, **kwargs):
         tmpdir.mkdir("test-project")
         raise AttributeError("Imagine this function fails...")
@@ -55,6 +57,7 @@ def test_create_project_handles_exceptions_cleanup_yes(monkeypatch, tmpdir, mock
                                        author="me", repo_type="test", clone_protocol="https",
                                        gitlab_token="fake-token",
                                        upload_protocol="https", gitlab=True, crash=False, interactive=True)
+
     def fail(*args, **kwargs):
         tmpdir.mkdir("test-project")
         raise AttributeError("Imagine this function fails...")

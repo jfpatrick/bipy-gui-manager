@@ -138,6 +138,7 @@ def get_remote_url(path_to_repo: Union[str, Path]) -> Optional[str]:
     """
     try:
         stdout, stderr = invoke_git(parameters=['remote', 'show', 'origin'], cwd=path_to_repo)
+        logging.debug(stdout + "  -  " + stderr)
         for line in stdout.splitlines():
             if line.strip().startswith("Fetch URL:"):
                 return line.strip()[len("Fetch URL:"):].strip()
