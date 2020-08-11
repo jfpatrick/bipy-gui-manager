@@ -14,7 +14,7 @@ Tests:
    - source /opt/venv/bin/activate
    - git config --global user.email "gitlab-ci@cern.ch"
    - git config --global user.name "gitlab ci"
-   - yum install -y openldap-devel python-devel python-virtualenv
+   - yum install -y openldap-devel python-devel
    - pip install .[core,test]
    - python -m pytest --log-cli-level=DEBUG --random-order --junitxml=report.xml --cov-report
      html:coverage --cov-report term-missing:skip-covered --cov=${project_name} -vx
