@@ -1,3 +1,5 @@
+#!/bin/bash
+
 APP_NAME=$1
 GIT_URL=$2
 VENV_NAME="."$APP_NAME"-venv"
@@ -6,6 +8,7 @@ VENV_NAME="."$APP_NAME"-venv"
 if git clone $GIT_URL $APP_NAME; then
 
     # Setup venvs
+    deactivate
     source /acc/local/share/python/acc-py-pyqt/setup.sh
 
     ACCPY_WORKS=$(acc-py venv $VENV_NAME)

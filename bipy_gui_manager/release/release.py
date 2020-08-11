@@ -20,9 +20,14 @@ def release(parameters: argparse.Namespace):
     if parameters.verbose:
         logging.basicConfig(format='[%(levelname)s] %(message)s', level=logging.DEBUG)
 
+    if not parameters.path:
+        raise ValueError("Path was not specified as a CLI argument and the default (os.getcwd()) was not applied. "
+                         "Please debug.")
+    path = Path(parameters.path)
+
     try:
         # Ensures the current project is a releasable project
-        if not vcs.is_git_folder(os.getcwd()) or not is_python_project(os.getcwd()):
+        if not vcs.is_git_folder(path) or not is_python_project(path):
             cli.negative_feedback("You are not in a project that can be released. Please cd into your expert GUIs "
                                   "folder and run this command again.")
             cli.give_hint("NOTE: this command checks for the presence of a Git repository and verifies that it "
@@ -30,20 +35,20 @@ def release(parameters: argparse.Namespace):
                           "necessary.")
             return
 
-        cli.positive_feedback(f"Running checks on {os.path.basename(os.getcwd())}...", newline=False)
+        cli.positive_feedback(f"Running checks on {os.path.basename(path)}...", newline=False)
 
-        if not is_ready_to_deploy(os.getcwd()):
+        if not is_ready_to_deploy(path):
             # The method itself provides feedback on failure already
             return
         cli.positive_feedback("The project is ready to deploy")
-        cli.positive_feedback(f"Deploying {os.path.basename(os.getcwd())}..", newline=False)
+        cli.positive_feedback(f"Deploying {os.path.basename(path)}..", newline=False)
 
-        entry_point = get_entry_point(os.getcwd())
-        repo_url = vcs.get_remote_url(os.getcwd())
+        entry_point = get_entry_point(path)
+        repo_url = vcs.get_remote_url(path)
 
         # Get the remote for the current directory
         logging.debug("Getting remote URL...")
-        remote_url = vcs.get_remote_url(os.getcwd())
+        remote_url = vcs.get_remote_url(path)
         logging.debug(f"The remote URL is {remote_url}")
 
         logging.debug(f"Saving current directory: {os.getcwd()}")
@@ -69,7 +74,7 @@ def release(parameters: argparse.Namespace):
         logging.debug("Move back to original working directory: {}".format(current_dir))
         os.chdir(current_dir)
 
-        cli.positive_feedback(f"New project {os.path.basename(os.getcwd())} deployed successfully. "
+        cli.positive_feedback(f"New project {os.path.basename(path)} deployed successfully. "
                               "It should now be available to the AppLauncher.")
     except OSError as e:
         logging.debug(e)

@@ -32,6 +32,8 @@ def invoke_git(parameters=(), cwd=os.getcwd(), neg_feedback="An error occurred i
 
         if git_query.poll() == 0:
             logging.debug("invoke_git was successful")
+            logging.debug(f"Err: {stderr.decode('utf-8')}")
+            logging.debug(f"Out: {stdout.decode('utf-8')}")
             return stdout.decode('utf-8'), stderr.decode('utf-8')
         else:
             logging.debug(stdout.decode('utf-8') + "  -  " + stderr.decode('utf-8'))
@@ -100,6 +102,8 @@ def is_git_dir_clean(path_to_check: Union[str, Path]):
     :raises OsError if it's not a Git repo or any other issue parsing Git's reply is encountered.
     """
     stdout, stderr = invoke_git(parameters=['status'], cwd=path_to_check)
+    logging.debug(stdout + "  -  " + stderr)
+
     if stderr:
         raise OSError(f"Git raised an exception:\n{stderr}")
 

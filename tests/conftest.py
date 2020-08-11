@@ -1,5 +1,6 @@
 import os
 import pytest
+import logging
 from argparse import Namespace
 from pyphonebook import PhoneBookEntry
 
@@ -111,6 +112,7 @@ setup(
             "https://:@gitlab.cern.ch:8443/cern-username/project-name.git\n",
             "Something that does not change"
         ])
+    logging.debug(f"Files created in {project_path}")
 
 
 def mock_git_invocation(parameters, cwd, neg_feedback):

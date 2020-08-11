@@ -1,3 +1,5 @@
+#!/bin/bash
+
 APP_NAME=$1
 VENV="."$APP_NAME"-venv"
 

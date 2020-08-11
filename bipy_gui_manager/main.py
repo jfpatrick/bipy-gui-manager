@@ -1,3 +1,4 @@
+import os
 import sys
 import signal
 import argparse
@@ -84,6 +85,8 @@ def main():
     release_parser = subparsers.add_parser('release',
                                            help="Releases the application in a shared folder, so it can be started "
                                                 "from BI's AppLauncher")
+    release_parser.add_argument('path', default=os.getcwd(),
+                                help="Path to the folder to release. Defaults to the current directory.")
 
     release_parser.set_defaults(func=release)
 
