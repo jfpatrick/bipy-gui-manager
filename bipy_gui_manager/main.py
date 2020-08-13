@@ -6,6 +6,7 @@ import argparse
 from bipy_gui_manager.utils import cli as cli
 from bipy_gui_manager.create_project.create_project import create_project
 from bipy_gui_manager.release.release import release
+from bipy_gui_manager.launch.launch import launch
 
 
 # Gracefully handle Ctrl+C and other kill signals
@@ -85,10 +86,23 @@ def main():
     release_parser = subparsers.add_parser('release',
                                            help="Releases the application in a shared folder, so it can be started "
                                                 "from BI's AppLauncher")
-    release_parser.add_argument('path', default=os.getcwd(),
-                                help="Path to the folder to release. Defaults to the current directory.")
-
     release_parser.set_defaults(func=release)
+    release_parser.add_argument('path', nargs='?', default=os.getcwd(),
+                                help="Path to the folder to release. Defaults to the current directory.")
+    release_parser.add_argument('--entry-point', dest='entry_point', default=None, type=str,
+                                help="The entry point name. This parameter is required only if the entry point name"
+                                     "differs from the project name.")
+    release_parser.add_argument('--debug', dest='debug', action='store_true',
+                                help="Activate debug mode: releases in a local folder.")
+
+    # 'launch' subcommand
+    launch_parser = subparsers.add_parser('launch',
+                                           help="Launcher the application from a shared folder.")
+    launch_parser.set_defaults(func=launch)
+    launch_parser.add_argument('app', nargs='?',
+                                help="App to launch.")
+    launch_parser.add_argument('--debug', dest='debug', action='store_true',
+                                help="Activate debug mode: launches from a local folder.")
 
     # Parse and call relevant subcommand
     arguments = parser.parse_args(args=None if sys.argv[1:] else ['--help'])

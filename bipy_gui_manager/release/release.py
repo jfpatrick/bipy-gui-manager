@@ -1,13 +1,16 @@
 import os
+import sys
 import shutil
 import logging
 import argparse
+import pkg_resources
 from pathlib import Path
 
 from bipy_gui_manager.utils import cli as cli
 from bipy_gui_manager.utils import version_control as vcs
 
 DEPLOY_FOLDER = "/user/bdisoft/development/python/gui/expert/" # "/afs/cern.ch/work/s/szanzott/public/GUI/deploy-folder"
+DEPLOY_FOLDER_DEBUG = Path(__file__).parent.parent.parent / "deploy-folder-debug"
 
 
 def release(parameters: argparse.Namespace):
@@ -17,13 +20,20 @@ def release(parameters: argparse.Namespace):
     :param parameters: the parameters passed through the CLI, if any
     :return: None, but deploys the GUI on a BI-owned shared folder.
     """
-    if parameters.verbose:
+    if parameters.verbose or parameters.debug:
         logging.basicConfig(format='[%(levelname)s] %(message)s', level=logging.DEBUG)
+
+    deploy_folder: Path
+    if parameters.debug:
+        os.makedirs(DEPLOY_FOLDER_DEBUG, exist_ok=True)
+        deploy_folder = Path(DEPLOY_FOLDER_DEBUG)
+    else:
+        deploy_folder = Path(DEPLOY_FOLDER)
 
     if not parameters.path:
         raise ValueError("Path was not specified as a CLI argument and the default (os.getcwd()) was not applied. "
                          "Please debug.")
-    path = Path(parameters.path)
+    path = Path(parameters.path).absolute()
 
     try:
         # Ensures the current project is a releasable project
@@ -43,7 +53,11 @@ def release(parameters: argparse.Namespace):
         cli.positive_feedback("The project is ready to deploy")
         cli.positive_feedback(f"Deploying {os.path.basename(path)}..", newline=False)
 
-        entry_point = get_entry_point(path)
+        # Find the entry point
+        if parameters.entry_point:
+            entry_point = parameters.entry_point
+        else:
+            entry_point = os.path.basename(path)
         repo_url = vcs.get_remote_url(path)
 
         # Get the remote for the current directory
@@ -53,16 +67,16 @@ def release(parameters: argparse.Namespace):
 
         logging.debug(f"Saving current directory: {os.getcwd()}")
         current_dir = os.getcwd()
-        logging.debug(f"Moving to the shared GUI deploy folder: {DEPLOY_FOLDER}")
-        os.chdir(DEPLOY_FOLDER)
+        logging.debug(f"Moving to the shared GUI deploy folder: {deploy_folder}")
+        os.chdir(str(deploy_folder))
         logging.debug("Copying appinstaller.sh into target folder")
-        shutil.copy(Path(__file__).parent / 'resources' / 'appinstaller.sh', DEPLOY_FOLDER)
+        shutil.copy(str(Path(__file__).parent / 'resources' / 'appinstaller.sh'), str(deploy_folder))
         logging.debug("Execute appinstaller.sh")
         error = os.WEXITSTATUS(os.system(f"/bin/bash -c \"./appinstaller.sh {entry_point} {repo_url}\""))
         if error:
             cli.negative_feedback("Deploy failed: {}.".format(error))
             cli.negative_feedback("You can still try a manual install. To do so, follow these steps:\n"
-                                  f" - cd {DEPLOY_FOLDER}\n"
+                                  f" - cd {deploy_folder}\n"
                                   f" - ./appinstaller.sh <entry point name> <gitlab URL of the project>\n"
                                   "If you observe errors, please report them immediately to the maintainers.")
             logging.debug("Deploy failed. Move back to original working directory: {}".format(current_dir))
@@ -91,19 +105,7 @@ def is_python_project(path_to_check: str):
     """
     if not os.path.exists(path_to_check) or not os.path.exists(os.path.join(path_to_check, "setup.py")):
         return False
-    # TODO check that it contains an entry point with a proper name
     return True
-
-
-def get_entry_point(path_to_check: str):
-    """
-    Returns True if the path is a releasable Python project, i.e. has a setup.py with an entry point.
-    :param path_to_check: path that should contain the Python project.
-    :return: True if the path contains a setup.py with an entry point (in the directory itself, not
-        in a subdir), False otherwise
-    """
-    # FIXME
-    return os.path.basename(path_to_check)
 
 
 def is_ready_to_deploy(path_to_check: str):

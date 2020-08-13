@@ -31,13 +31,6 @@ def test_is_python_project(tmpdir):
     assert release.is_python_project(tmpdir)
 
 
-def test_get_entry_point(tmpdir):
-    # FIXME once the original method is also fixed
-    nested = tmpdir / 'nested' / 'project'
-    os.makedirs(nested)
-    assert release.get_entry_point(nested) == 'project'
-
-
 def test_is_ready_to_deploy_conditions_met(project_dir, monkeypatch):
     vcs.invoke_git(['init'], cwd=project_dir)
     monkeypatch.setattr('bipy_gui_manager.release.release.vcs.get_remote_url',
@@ -68,20 +61,20 @@ def test_is_ready_to_deploy_dirty_folder(project_dir, monkeypatch):
 
 
 def test_release_empty_dir(project_dir, deploy_dir):
-    release.release(Namespace(verbose=True, path=project_dir))
+    release.release(Namespace(verbose=True, path=project_dir, debug=True, entry_point=None))
     assert len(os.listdir(deploy_dir)) == 0
 
 
 def test_release_dir_with_setup_only(project_dir, deploy_dir):
     with open(project_dir / 'setup.py', 'w') as f:
         f.write("hello")
-    release.release(Namespace(verbose=True, path=project_dir))
+    release.release(Namespace(verbose=True, path=project_dir, debug=True, entry_point=None))
     assert len(os.listdir(deploy_dir)) == 0
 
 
 def test_release_dir_with_git_only(project_dir, deploy_dir):
     vcs.invoke_git(['init'], cwd=project_dir)
-    release.release(Namespace(verbose=True, path=project_dir))
+    release.release(Namespace(verbose=True, path=project_dir, debug=True, entry_point=None))
     assert len(os.listdir(deploy_dir)) == 0
 
 
@@ -89,18 +82,50 @@ def test_release_dir_with_setup_and_git(project_dir, deploy_dir):
     with open(project_dir / 'setup.py', 'w') as f:
         f.write("hello")
     vcs.invoke_git(['init'], cwd=project_dir)
-    release.release(Namespace(verbose=True, path=project_dir))
+    release.release(Namespace(verbose=True, path=project_dir, debug=True, entry_point=None))
     assert len(os.listdir(deploy_dir)) == 0
 
 
-def test_release_dir_succeeds_with_real_repo(project_dir, deploy_dir, monkeypatch):
+def test_release_dir_succeeds_with_real_repo_no_debug(project_dir, deploy_dir, monkeypatch):
     monkeypatch.setattr('bipy_gui_manager.release.release.vcs.get_remote_url',
                         lambda p: "https://:@gitlab.cern.ch:8443/bisw-python/be-bi-pyqt-template.git")
     monkeypatch.setattr('bipy_gui_manager.release.release.DEPLOY_FOLDER', deploy_dir)
     create_template_files(project_dir, "project")
     vcs.init_local_repo(project_dir)
 
-    release.release(Namespace(verbose=True, path=project_dir))
+    release.release(Namespace(verbose=True, path=project_dir, debug=True, entry_point=None))
     logging.debug(os.listdir(deploy_dir))
     assert os.path.exists(deploy_dir / "project")
     # assert os.path.exists(deploy_dir / ".project-venv")  # FIXME Does not work on the CI (?!?)
+
+
+def test_release_dir_succeeds_with_real_repo_debug(project_dir, deploy_dir, monkeypatch):
+    monkeypatch.setattr('bipy_gui_manager.release.release.vcs.get_remote_url',
+                        lambda p: "https://:@gitlab.cern.ch:8443/bisw-python/be-bi-pyqt-template.git")
+    monkeypatch.setattr('bipy_gui_manager.release.release.DEPLOY_FOLDER_DEBUG', deploy_dir)
+    create_template_files(project_dir, "project")
+    vcs.init_local_repo(project_dir)
+
+    release.release(Namespace(verbose=True, path=project_dir, debug=True, entry_point=None))
+    logging.debug(os.listdir(deploy_dir))
+    assert os.path.exists(deploy_dir / "project")
+
+    # FIXME Does not work on the CI (virtualenvs hell)
+    #  Locally works invoking pytest as venv/bin/python -m pytest
+    # assert os.path.exists(deploy_dir / ".project-venv")
+
+
+def test_release_dir_succeeds_with_entry_point(project_dir, deploy_dir, monkeypatch):
+    monkeypatch.setattr('bipy_gui_manager.release.release.vcs.get_remote_url',
+                        lambda p: "https://:@gitlab.cern.ch:8443/bisw-python/be-bi-pyqt-template.git")
+    monkeypatch.setattr('bipy_gui_manager.release.release.DEPLOY_FOLDER_DEBUG', deploy_dir)
+    create_template_files(project_dir, "project")
+    vcs.init_local_repo(project_dir)
+
+    release.release(Namespace(verbose=True, path=project_dir, debug=True, entry_point="entry-point"))
+    logging.debug(os.listdir(deploy_dir))
+    assert os.path.exists(deploy_dir / "entry-point")
+
+    # FIXME Does not work on the CI (virtualenvs hell)
+    #  Locally works invoking pytest as venv/bin/python -m pytest
+    assert os.path.exists(deploy_dir / ".entry-point-venv")
