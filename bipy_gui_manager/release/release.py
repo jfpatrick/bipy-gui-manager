@@ -9,7 +9,7 @@ from pathlib import Path
 from bipy_gui_manager.utils import cli as cli
 from bipy_gui_manager.utils import version_control as vcs
 
-DEPLOY_FOLDER = "/user/bdisoft/development/python/gui/expert/" # "/afs/cern.ch/work/s/szanzott/public/GUI/deploy-folder"
+DEPLOY_FOLDER = "/user/bdisoft/development/python/gui/deployments" # "/afs/cern.ch/work/s/szanzott/public/GUI/deploy-folder"
 DEPLOY_FOLDER_DEBUG = Path(__file__).parent.parent.parent / "deploy-folder-debug"
 
 
@@ -54,39 +54,37 @@ def release(parameters: argparse.Namespace):
         cli.positive_feedback(f"Deploying {os.path.basename(path)}..", newline=False)
 
         # Find the entry point
-        if parameters.entry_point:
-            entry_point = parameters.entry_point
-        else:
-            entry_point = os.path.basename(path)
-        repo_url = vcs.get_remote_url(path)
+        # if parameters.entry_point:
+        #     entry_point = parameters.entry_point
+        # else:
+        #     entry_point = os.path.basename(path)
+        # repo_url = vcs.get_remote_url(path)
+        #
+        # # Get the remote for the current directory
+        # logging.debug("Getting remote URL...")
+        # remote_url = vcs.get_remote_url(path)
+        # logging.debug(f"The remote URL is {remote_url}")
 
-        # Get the remote for the current directory
-        logging.debug("Getting remote URL...")
-        remote_url = vcs.get_remote_url(path)
-        logging.debug(f"The remote URL is {remote_url}")
-
-        logging.debug(f"Saving current directory: {os.getcwd()}")
-        current_dir = os.getcwd()
-        logging.debug(f"Moving to the shared GUI deploy folder: {deploy_folder}")
-        os.chdir(str(deploy_folder))
-        logging.debug("Copying appinstaller.sh into target folder")
-        shutil.copy(str(Path(__file__).parent / 'resources' / 'appinstaller.sh'), str(deploy_folder))
-        logging.debug("Execute appinstaller.sh")
-        error = os.WEXITSTATUS(os.system(f"/bin/bash -c \"./appinstaller.sh {entry_point} {repo_url}\""))
+        # logging.debug(f"Saving current directory: {os.getcwd()}")
+        # current_dir = os.getcwd()
+        # logging.debug(f"Moving to the shared GUI deploy folder: {deploy_folder}")
+        # os.chdir(str(deploy_folder))
+        # logging.debug("Copying appinstaller.sh into target folder")
+        # shutil.copy(str(Path(__file__).parent / 'resources' / 'appinstaller.sh'), str(deploy_folder))
+        logging.debug("Executing appinstaller.sh")
+        #error = os.WEXITSTATUS(os.system(f"/bin/bash -c \"./appinstaller.sh {entry_point} {repo_url}\""))
+        appinstaller = (Path(__file__).parent / "resources" / "appinstaller.sh").absolute()
+        error = os.WEXITSTATUS(os.system(f"/bin/bash -c \"{appinstaller} {path}\""))
         if error:
             cli.negative_feedback("Deploy failed: {}.".format(error))
-            cli.negative_feedback("You can still try a manual install. To do so, follow these steps:\n"
-                                  f" - cd {deploy_folder}\n"
-                                  f" - ./appinstaller.sh <entry point name> <gitlab URL of the project>\n"
-                                  "If you observe errors, please report them immediately to the maintainers.")
-            logging.debug("Deploy failed. Move back to original working directory: {}".format(current_dir))
-            os.chdir(current_dir)
+            logging.debug("Deploy failed.")
+            #os.chdir(current_dir)
             return
 
         # Remove appinstaller.sh
-        os.remove('appinstaller.sh')
-        logging.debug("Deploy successful. Move back to original working directory: {}".format(current_dir))
-        os.chdir(current_dir)
+        # os.remove('appinstaller.sh')
+        # logging.debug("Deploy successful. Move back to original working directory: {}".format(current_dir))
+        # os.chdir(current_dir)
 
         cli.positive_feedback(f"New project {os.path.basename(path)} deployed successfully. "
                               "It should now be available to the AppLauncher.")
@@ -135,5 +133,5 @@ def is_ready_to_deploy(path_to_check: str):
                       "         - Click on the Clone button and copy one of the links\n"
                       "         - In this terminal, execute `git remote add -f origin <the URL you copied>`\n"
                       "         - Execute `git push`.\n")
-        return False
+        #return False
     return True

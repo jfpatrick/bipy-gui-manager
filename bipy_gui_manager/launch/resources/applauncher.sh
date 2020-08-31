@@ -1,13 +1,8 @@
 #!/bin/bash
 
 APP_NAME=$1
-DEPLOY_FOLDER=$2
-VENV="."$APP_NAME"-venv"
+REPO_PATH=/user/bdisoft/development/python/gui/deployments
+ACC_PY_PATH=/acc/local/share/python/tmp/deploy-beta/acc-py-cli/pro/bin
 
-# Setup venvs
-source /acc/local/share/python/acc-py-pyqt/setup.sh
-source $DEPLOY_FOLDER/$VENV/bin/activate
-
-# Launch app
-$APP_NAME
+$ACC_PY_PATH/acc-py app run --deploy-base $REPO_PATH $APP_NAME
 
