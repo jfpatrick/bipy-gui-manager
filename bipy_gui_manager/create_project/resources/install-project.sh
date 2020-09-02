@@ -18,9 +18,6 @@ acc-py venv venv  >/dev/null 2>&1
 echo -e "\033[0;32m=>\033[0;m Activating local virtualenv"
 source venv/bin/activate
 
-# Bugfix for pip 50.0
-export SETUPTOOLS_USE_DISTUTILS=stdlib
-
 # Install with pip
 echo -e "\033[0;32m=>\033[0;m Installing (can take a minute - PLEASE IGNORE ACC-PY REQUIREMENTS ERRORS)"
 if pip install -e .[all] -qqq; then
