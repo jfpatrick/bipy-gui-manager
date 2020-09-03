@@ -10,7 +10,7 @@ BLUE='\033[0;34m'
 
 # Setup venvs
 # echo -e "    - Activating Acc-Py"
-source /acc/local/share/python/acc-py-pyqt/setup.sh  #>/dev/null 2>&1
+source /acc/local/share/python/acc-py-pyqt/setup.sh  >/dev/null 2>&1
 # echo -e "    - Creating local virtualenv"
 acc-py venv venv  >/dev/null 2>&1
 
