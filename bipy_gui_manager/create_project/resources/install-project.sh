@@ -14,7 +14,6 @@ source /acc/local/share/python/acc-py-pyqt/setup.sh  #>/dev/null 2>&1
 # echo -e "    - Creating local virtualenv"
 acc-py venv venv  >/dev/null 2>&1
 
-
 echo -e "\033[0;32m=>\033[0;m Activating local virtualenv"
 source venv/bin/activate
 

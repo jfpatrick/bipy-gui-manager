@@ -89,45 +89,11 @@ def test_release_dir_with_setup_and_git(project_dir, deploy_dir):
 def test_release_dir_succeeds_with_real_repo_no_debug(project_dir, deploy_dir, monkeypatch):
     monkeypatch.setattr('bipy_gui_manager.deploy.deploy.vcs.get_remote_url',
                         lambda p: "https://:@gitlab.cern.ch:8443/bisw-python/be-bi-pyqt-template.git")
-    monkeypatch.setattr('bipy_gui_manager.deploy.deploy.DEPLOY_FOLDER', deploy_dir)
+    monkeypatch.setattr('bipy_gui_manager.deploy.deploy.REPO_PATH', deploy_dir)
     create_template_files(project_dir, "project")
     vcs.init_local_repo(project_dir)
 
     deploy.deploy(Namespace(verbose=True, path=project_dir, debug=True, entry_point=None))
     logging.debug(os.listdir(deploy_dir))
-    assert os.path.exists(deploy_dir / "project")
-    # assert os.path.exists(deploy_dir / ".project-venv")  # FIXME Does not work on the CI (?!?)
-
-
-@pytest.mark.skip("Does not work on the CI (virtualenvs hell)")
-def test_release_dir_succeeds_with_real_repo_debug(project_dir, deploy_dir, monkeypatch):
-    monkeypatch.setattr('bipy_gui_manager.deploy.deploy.vcs.get_remote_url',
-                        lambda p: "https://:@gitlab.cern.ch:8443/bisw-python/be-bi-pyqt-template.git")
-    monkeypatch.setattr('bipy_gui_manager.deploy.deploy.DEPLOY_FOLDER_DEBUG', deploy_dir)
-    create_template_files(project_dir, "project")
-    vcs.init_local_repo(project_dir)
-
-    deploy.deploy(Namespace(verbose=True, path=project_dir, debug=True, entry_point=None))
-    logging.debug(os.listdir(deploy_dir))
-    assert os.path.exists(deploy_dir / "project")
-
-    # FIXME Does not work on the CI (virtualenvs hell)
-    #  Locally works invoking pytest as venv/bin/python -m pytest
-    assert os.path.exists(deploy_dir / ".project-venv")
-
-
-@pytest.mark.skip("Does not work on the CI (virtualenvs hell)")
-def test_release_dir_succeeds_with_entry_point(project_dir, deploy_dir, monkeypatch):
-    monkeypatch.setattr('bipy_gui_manager.deploy.deploy.vcs.get_remote_url',
-                        lambda p: "https://:@gitlab.cern.ch:8443/bisw-python/be-bi-pyqt-template.git")
-    monkeypatch.setattr('bipy_gui_manager.deploy.deploy.DEPLOY_FOLDER_DEBUG', deploy_dir)
-    create_template_files(project_dir, "project")
-    vcs.init_local_repo(project_dir)
-
-    deploy.deploy(Namespace(verbose=True, path=project_dir, debug=True, entry_point="entry-point"))
-    logging.debug(os.listdir(deploy_dir))
-    assert os.path.exists(deploy_dir / "entry-point")
-
-    # FIXME Does not work on the CI (virtualenvs hell)
-    #  Locally works invoking pytest as venv/bin/python -m pytest
-    assert os.path.exists(deploy_dir / ".entry-point-venv")
+    # Acc-py creates a folder named as declared in setup.py
+    assert os.path.exists(deploy_dir / "be-bi-pyqt-template")
