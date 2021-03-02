@@ -86,6 +86,7 @@ def test_release_dir_with_setup_and_git(project_dir, deploy_dir):
     assert len(os.listdir(deploy_dir)) == 0
 
 
+@pytest.mark.skip("CI has no access to Acc-Py")
 def test_release_dir_succeeds_with_real_repo_no_debug(project_dir, deploy_dir, monkeypatch):
     monkeypatch.setattr('bipy_gui_manager.deploy.deploy.vcs.get_remote_url',
                         lambda p: "https://:@gitlab.cern.ch:8443/bisw-python/be-bi-pyqt-template.git")
