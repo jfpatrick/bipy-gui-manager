@@ -183,7 +183,7 @@ def post_to_gitlab(endpoint: str, post_fields: Mapping[str, str]) -> Mapping[str
     :return: the eventual response, decoded from JSON
     """
     logging.debug("POSTing to GitLab's endpoint https://gitlab.cern.ch/{} the following fields: {}".format(endpoint,
-                                                                                                           post_fields))
+                                                                                                   post_fields.keys()))
     url = 'https://gitlab.cern.ch/{}'.format(endpoint)
     request_data = urllib.parse.urlencode(post_fields).encode()
     request = urllib.request.Request(url, data=request_data)

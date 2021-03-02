@@ -3,6 +3,10 @@ import sys
 import signal
 import argparse
 
+# Here to avoid circular dependency issues
+REPO_PATH = "/user/bdisoft/development/python/gui/deployments"
+ACC_PY_PATH = "/acc/local/share/python/acc-py/apps/acc-py-cli/pro/bin/"
+
 from bipy_gui_manager.utils import cli as cli
 from bipy_gui_manager.create_project.create_project import create_project
 from bipy_gui_manager.deploy.deploy import deploy
@@ -44,6 +48,8 @@ def main():
                                     help="Sets the project's short description.")
     new_project_parser.add_argument('--author', dest='project_author', default=None,
                                     help="Sets the project author's CERN ID (must be valid).")
+    new_project_parser.add_argument('--verbose', dest='verbose', action='store_true',
+                                    help="Raises the logging level to the maximum")
     repo_commands = new_project_parser.add_mutually_exclusive_group()
     repo_commands.add_argument('--repo', dest='gitlab_repo', default=None,
                                help="Sets the project's GitLab repository address."
@@ -90,7 +96,7 @@ def main():
     deploy_parser.add_argument('path', nargs='?', default=os.getcwd(),
                                help="Path to the folder to deploy. Defaults to the current directory.")
     deploy_parser.add_argument('--entry-point', dest='entry_point', default=None, type=str,
-                               help="The entry point name. This parameter is required only if the entry point name"
+                               help="The entry point name. This parameter is required only if the entry point name "
                                     "differs from the project name.")
 
     # 'run' subcommand
@@ -98,7 +104,7 @@ def main():
                                        help="Executes the application from a shared folder.")
     run_parser.set_defaults(func=run)
     run_parser.add_argument('app', nargs='?',
-                            help="App to run.")
+                            help="Name of the deployed app to run.")
 
     # Parse and call relevant subcommand
     arguments = parser.parse_args(args=None if sys.argv[1:] else ['--help'])

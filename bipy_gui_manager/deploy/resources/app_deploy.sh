@@ -5,6 +5,7 @@ REPO_PATH=$2
 ACC_PY_PATH=$3
 VERBOSE=$4
 
+
 if [ $VERBOSE = "1" ]; then
 
     # Lock dependencies

@@ -3,12 +3,11 @@ import logging
 import argparse
 from pathlib import Path
 
+from bipy_gui_manager.main import REPO_PATH, ACC_PY_PATH
 from bipy_gui_manager.utils import cli as cli
 from bipy_gui_manager.utils import version_control as vcs
 
 APP_DEPLOY_SCRIPT = (Path(__file__).parent / "resources" / "app_deploy.sh").absolute()
-REPO_PATH = "/user/bdisoft/development/python/gui/deployments"
-ACC_PY_PATH = "/acc/local/share/python/tmp/deploy-beta/acc-py-cli/pro/bin"
 
 
 def deploy(parameters: argparse.Namespace):

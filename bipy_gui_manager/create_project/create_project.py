@@ -3,6 +3,7 @@ import os
 import shutil
 import logging
 import argparse
+
 from bipy_gui_manager.create_project import project_info
 from bipy_gui_manager.utils import version_control, cli
 
@@ -131,11 +132,11 @@ def download_template(project_path: str, clone_protocol: str, custom_url: Option
         template_url = custom_url
 
     elif clone_protocol == 'https':
-        template_url = 'https://gitlab.cern.ch/bisw-python/be-bi-pyqt-template.git'
+        template_url = 'https://gitlab.cern.ch/bisw-python/sy-bi-pyqt-template.git'
     elif clone_protocol == 'kerberos':
-        template_url = 'https://:@gitlab.cern.ch:8443/bisw-python/be-bi-pyqt-template.git'
+        template_url = 'https://:@gitlab.cern.ch:8443/bisw-python/sy-bi-pyqt-template.git'
     elif clone_protocol == 'ssh':
-        template_url = 'ssh://git@gitlab.cern.ch:7999/bisw-python/be-bi-pyqt-template.git'
+        template_url = 'ssh://git@gitlab.cern.ch:7999/bisw-python/sy-bi-pyqt-template.git'
     else:
         raise ValueError("Clone protocol not recognized: {}".format(clone_protocol))
     logging.debug("Template URL set to {}".format(template_url))
@@ -168,8 +169,8 @@ def apply_customizations(project_path: str, project_name: str, project_desc: str
     logging.debug("Python package name is set to {} and the name in capitals is {}".format(project_name_underscores,
                                                                                            project_name_capitals))
     try:
-        logging.debug("Renaming the root dir from be_bi_pyqt_template to {}".format(project_name_underscores))
-        shutil.move("{}/be_bi_pyqt_template".format(project_path),
+        logging.debug("Renaming the root dir from sy_bi_pyqt_template to {}".format(project_name_underscores))
+        shutil.move("{}/sy_bi_pyqt_template".format(project_path),
                     "{}/{}".format(project_path, project_name_underscores))
 
         logging.debug("Remove images/ folder")
@@ -186,10 +187,10 @@ def apply_customizations(project_path: str, project_name: str, project_desc: str
                     logging.debug("Processing file {}".format(filepath))
                     with open(filepath, 'r') as f:
                         s = f.read()
-                    s = s.replace("be-bi-pyqt-template", project_name)
-                    s = s.replace("be_bi_pyqt_template", project_name_underscores)
-                    s = s.replace("BE BI PyQt Template Code", project_desc)
-                    s = s.replace("BE BI PyQt Template", project_name_capitals)
+                    s = s.replace("sy-bi-pyqt-template", project_name)
+                    s = s.replace("sy_bi_pyqt_template", project_name_underscores)
+                    s = s.replace("SY BI PyQt Template Code", project_desc)
+                    s = s.replace("SY BI PyQt Template", project_name_capitals)
                     s = s.replace("Sara Zanzottera", project_author)
                     s = s.replace("sara.zanzottera@cern.ch", project_email)
                     s = s.replace("gitlab-group", gitlab_space)
@@ -197,16 +198,16 @@ def apply_customizations(project_path: str, project_name: str, project_desc: str
                         f.write(s)
 
             for dirname in dirs:
-                if "be_bi_pyqt_template" in dirname:
+                if "sy_bi_pyqt_template" in dirname:
                     dirpath = os.path.join(rootdir, dirname)
-                    logging.debug("Replacing 'be_bi_pyqt_template' with '{}' in the folder '{}'".format(
+                    logging.debug("Replacing 'sy_bi_pyqt_template' with '{}' in the folder '{}'".format(
                         project_name_underscores, dirpath))
-                    os.rename(dirpath, dirpath.replace("be_bi_pyqt_template", project_name_underscores))
-                if "be-bi-pyqt-template" in dirname:
+                    os.rename(dirpath, dirpath.replace("sy_bi_pyqt_template", project_name_underscores))
+                if "sy-bi-pyqt-template" in dirname:
                     dirpath = os.path.join(rootdir, dirname)
-                    logging.debug("Replacing 'be-bi-pyqt-template' with '{}' in the folder named '{}'".format(
+                    logging.debug("Replacing 'sy-bi-pyqt-template' with '{}' in the folder named '{}'".format(
                         project_name, dirpath))
-                    os.rename(dirpath, dirpath.replace("be-bi-pyqt-template", project_name))
+                    os.rename(dirpath, dirpath.replace("sy-bi-pyqt-template", project_name))
 
     except Exception as e:
         cli.negative_feedback("Failed to apply customizations")
@@ -299,10 +300,7 @@ def install_project(project_path: str, verbose: bool) -> None:
     # Copy shell script in project
     logging.debug("Copying bash script .tmp.sh into the new project tree")
     script_location = os.path.join(project_path, ".tmp.sh")
-    if verbose:
-        shutil.copy(os.path.join(os.path.dirname(__file__), "resources", "install-project-verbose.sh"), script_location)
-    else:
-        shutil.copy(os.path.join(os.path.dirname(__file__), "resources", "install-project.sh"), script_location)
+    shutil.copy(os.path.join(os.path.dirname(__file__), "resources", "install-project.sh"), script_location)
 
     # Execute it (create venvs and install folder in venv)
     logging.debug("Make .tmp.sh executable")
@@ -312,7 +310,7 @@ def install_project(project_path: str, verbose: bool) -> None:
     logging.debug("Move in the project's directory: {}".format(project_path))
     os.chdir(project_path)
     logging.debug("Execute .tmp.sh with Bash source")
-    error = os.WEXITSTATUS(os.system("/bin/bash -c \"source ./.tmp.sh\""))
+    error = os.WEXITSTATUS(os.system(f"/bin/bash -c \"source ./.tmp.sh {verbose}\""))
     logging.debug("Move back to original working directory: {}".format(current_dir))
     os.chdir(current_dir)
 

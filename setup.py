@@ -33,11 +33,11 @@ REQUIREMENTS: dict = {
 
 setup(
     name='bipy_gui_manager',
-    version="0.3.0",
+    version="0.4.0",
 
     author="Sara Zanzottera",
     author_email="sara.zanzottera@cern.ch",
-    description="Project Manager for BE-BI Python GUIs",
+    description="Project Manager for SY-BI Python GUIs",
     long_description=LONG_DESCRIPTION,
     long_description_content_type='text/markdown',
     url='',
