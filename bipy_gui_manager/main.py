@@ -8,7 +8,7 @@ REPO_PATH = "/user/bdisoft/development/python/gui/deployments"
 ACC_PY_PATH = "/acc/local/share/python/acc-py/apps/acc-py-cli/pro/bin/"
 
 from bipy_gui_manager.utils import cli as cli
-from bipy_gui_manager.create_project.create_project import create_project
+from bipy_gui_manager.new.new_project import new_project
 from bipy_gui_manager.deploy.deploy import deploy
 from bipy_gui_manager.run.run import run
 
@@ -28,17 +28,17 @@ def main():
     """
     This function acts mainly as a frontend for the different subcommands.
     """
-    parser = argparse.ArgumentParser(epilog="type 'pyqt-manager <command> --help' to learn more about their options.")
+    parser = argparse.ArgumentParser(epilog=f"type '{sys.argv[0]} <command> --help' to learn more about their options.")
     parser.add_argument('-v', '--verbose', dest='verbose', action='store_true',
                         help="Set the logger to verbose mode (useful to report bugs).")
 
     subparsers = parser.add_subparsers()
 
-    # 'create-project' subcommand
-    new_project_parser = subparsers.add_parser('create-project',
+    # 'new' subcommand
+    new_project_parser = subparsers.add_parser('new',
                                                help='Start a wizard that guides you through the setup of a new PyQt '
                                                     'project.')
-    new_project_parser.set_defaults(func=create_project)
+    new_project_parser.set_defaults(func=new_project)
     new_project_parser.add_argument('--path', dest='base_path', default=None,
                                     help="Specify the path to the new project. "
                                          "If not set, uses the current working directory.")

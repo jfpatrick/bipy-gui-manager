@@ -1,6 +1,6 @@
 import os
 import pytest
-from bipy_gui_manager.create_project import project_info
+from bipy_gui_manager.new import project_info
 
 from .conftest import create_project_parameters
 

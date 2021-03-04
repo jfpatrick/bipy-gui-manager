@@ -22,13 +22,13 @@ def mock_phonebook_entry(i):
 
 @pytest.fixture()
 def mock_phonebook(monkeypatch):
-    monkeypatch.setattr('bipy_gui_manager.create_project.validation.validate_cern_id', mock_phonebook_entry)
+    monkeypatch.setattr('bipy_gui_manager.new.validation.validate_cern_id', mock_phonebook_entry)
 
 
 @pytest.fixture
 def mock_git(monkeypatch, mock_cwd):
     monkeypatch.setattr('bipy_gui_manager.utils.version_control.invoke_git', mock_git_invocation)
-    monkeypatch.setattr('bipy_gui_manager.create_project.create_project.version_control.invoke_git', mock_git_invocation)
+    monkeypatch.setattr('bipy_gui_manager.new.new.version_control.invoke_git', mock_git_invocation)
 
 
 @pytest.fixture

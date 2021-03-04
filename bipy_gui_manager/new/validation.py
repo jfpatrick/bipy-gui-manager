@@ -3,7 +3,7 @@ import os
 import shutil
 from pyphonebook import PhoneBook, PhoneBookEntry
 from bipy_gui_manager.utils import cli as cli
-from bipy_gui_manager.create_project.constants import GROUP_NAME
+from bipy_gui_manager.new.constants import GROUP_NAME
 
 
 def resolve_as_arg_or_ask(initial_value, resolver, question, neg_feedback, hints=(),

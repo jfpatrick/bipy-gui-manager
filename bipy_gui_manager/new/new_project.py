@@ -4,11 +4,11 @@ import shutil
 import logging
 import argparse
 
-from bipy_gui_manager.create_project import project_info
+from bipy_gui_manager.new import project_info
 from bipy_gui_manager.utils import version_control, cli
 
 
-def create_project(parameters: argparse.Namespace):
+def new_project(parameters: argparse.Namespace):
     """
     Main 'script' for the creation process. Calls, in order, all the functions required to setup a project properly.
     :param parameters: the parameters passed through the CLI
@@ -53,7 +53,8 @@ def create_project(parameters: argparse.Namespace):
                               project_desc=valid_project_data["project_desc"],
                               gitlab_token=valid_project_data.get("author_token", None),
                               repo_type=valid_project_data.get("repo_type", "test"),
-                              repo_url=valid_project_data.get("repo_url", None))
+                              repo_url=valid_project_data.get("repo_url", None),
+                              author_name=valid_project_data["author_cern_id"])
 
         install_project(project_path=valid_project_data["project_path"],
                         verbose=parameters.verbose)
@@ -73,7 +74,7 @@ def create_project(parameters: argparse.Namespace):
                               f"error of some kind, please report it to us.\n\n" 
                               f"Once this is done, you can start working on your new app. If you have already the \n" 
                               f"virtualenv active in you shell, type from your project's directory:\n\n"
-                              f"   > pycharm.sh . & \n\n" 
+                              f"   > pycharm . & \n\n" 
                               f"This will launch PyCharm and make it load the right project directly.\n" 
                               f"Remember also to activate your virtual env with 'source activate.sh' every time you\n" 
                               f"start working.\n\n"
@@ -260,7 +261,8 @@ def generate_readme(project_path: str, project_name: str, project_desc: str, pro
 
 
 def setup_version_control(project_path: str, gitlab: bool, project_name: Optional[str], project_desc: Optional[str],
-                          gitlab_token: Optional[str], repo_type: Optional[str], repo_url: Optional[str]) -> None:
+                          gitlab_token: Optional[str], repo_type: Optional[str], repo_url: Optional[str],
+                          author_name: str) -> None:
     """
     Sets up the local and remote version control for the project.
     :param project_path: Path to the new project
@@ -270,6 +272,7 @@ def setup_version_control(project_path: str, gitlab: bool, project_name: Optiona
     :param gitlab_token: Authentication token to login into GitLab
     :param repo_url: URL to the GitLab repo
     :param repo_type: Repository URL
+    :param author_name: the name (CERN ID) of the user creating the project
     :return:
     """
     cli.positive_feedback("Setting up local Git repository", newline=False)
@@ -283,7 +286,7 @@ def setup_version_control(project_path: str, gitlab: bool, project_name: Optiona
 
     if gitlab:
         cli.positive_feedback("Creating repository on GitLab", newline=False)
-        version_control.create_gitlab_repository(repo_type, project_name, project_desc, auth_token=gitlab_token)
+        version_control.create_gitlab_repository(repo_type, project_name, project_desc, auth_token=gitlab_token, author_name=author_name)
 
         cli.positive_feedback("Uploading project on GitLab", newline=False)
         version_control.push_first_commit(project_path, repo_url)

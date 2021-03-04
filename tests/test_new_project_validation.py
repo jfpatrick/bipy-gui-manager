@@ -1,12 +1,12 @@
 import os
 import pytest
-from bipy_gui_manager.create_project import validation
+from bipy_gui_manager.new import validation
 
 
 @pytest.fixture()
 def mock_group_name(monkeypatch):
     # NOTE: this fixture lives here because it's custom to the validation module.
-    monkeypatch.setattr('bipy_gui_manager.create_project.validation.GROUP_NAME', 'test-group')
+    monkeypatch.setattr('bipy_gui_manager.new.validation.GROUP_NAME', 'test-group')
 
 
 # ################################

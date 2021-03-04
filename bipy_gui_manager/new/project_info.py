@@ -4,7 +4,7 @@ import os
 import logging
 import getpass
 import argparse
-from bipy_gui_manager.create_project import validation
+from bipy_gui_manager.new import validation
 from bipy_gui_manager.utils import version_control, cli as cli
 
 

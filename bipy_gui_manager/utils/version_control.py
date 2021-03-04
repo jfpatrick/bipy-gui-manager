@@ -10,7 +10,7 @@ try:
 except ImportError:
     pass
 from subprocess import Popen, PIPE
-from bipy_gui_manager.create_project.constants import GROUP_ID
+from bipy_gui_manager.new.constants import GROUP_ID
 
 
 def invoke_git(parameters=(), cwd=os.getcwd(), neg_feedback="An error occurred in Git!") -> Tuple[str, str]:
@@ -192,7 +192,7 @@ def post_to_gitlab(endpoint: str, post_fields: Mapping[str, str]) -> Mapping[str
     return json.loads(response)
 
 
-def create_gitlab_repository(repo_type: str, project_name: str, project_desc: str, auth_token: str):
+def create_gitlab_repository(repo_type: str, project_name: str, project_desc: str, auth_token: str, author_name: str):
     """
     Create a GitLab repo under bisw-python
     :param project_name: Name of the project
@@ -227,6 +227,24 @@ def create_gitlab_repository(repo_type: str, project_name: str, project_desc: st
         requests.put(url, files=avatar)
     except Exception as e:
         print("  - Avatar upload failed: {}.".format(e))
+
+    # The badges as well are not critical: if it fails, let go
+    try:
+        if repo_type == "operational":
+            group = "bisw-python"
+        else:
+            group = author_name
+        # Coverage badge
+        post_fields = {'id': project_id,
+                       'link_url': f"https://gitlab.cern.ch/{group}/{project_name}/-/pipelines",
+                       'image_url': f"https://gitlab.cern.ch/{group}/{project_name}/badges/master/coverage.svg"}
+        post_to_gitlab(endpoint=f'api/v4/projects/{project_id}/badges?{auth_token}', post_fields=post_fields)
+
+        # Pipeline badge
+        post_fields['image_url'] = f"https://gitlab.cern.ch/{group}/{project_name}/badges/master/pipeline.svg"
+        post_to_gitlab(endpoint=f'api/v4/projects/{project_id}/badges?{auth_token}', post_fields=post_fields)
+    except Exception as e:
+        print("  - Badges creation failed: {}.".format(e))
 
 
 def push_first_commit(project_path: str, repo_url: str) -> None:
