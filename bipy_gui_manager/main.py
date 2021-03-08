@@ -3,10 +3,6 @@ import sys
 import signal
 import argparse
 
-# Here to avoid circular dependency issues
-REPO_PATH = "/user/bdisoft/development/python/gui/deployments"
-ACC_PY_PATH = "/acc/local/share/python/acc-py/apps/acc-py-cli/pro/bin/"
-
 from bipy_gui_manager.utils import cli as cli
 from bipy_gui_manager.new.new_project import new_project
 from bipy_gui_manager.deploy.deploy import deploy

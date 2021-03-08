@@ -28,7 +28,7 @@ def mock_phonebook(monkeypatch):
 @pytest.fixture
 def mock_git(monkeypatch, mock_cwd):
     monkeypatch.setattr('bipy_gui_manager.utils.version_control.invoke_git', mock_git_invocation)
-    monkeypatch.setattr('bipy_gui_manager.new.new.version_control.invoke_git', mock_git_invocation)
+    monkeypatch.setattr('bipy_gui_manager.new.new_project.version_control.invoke_git', mock_git_invocation)
 
 
 @pytest.fixture
@@ -38,7 +38,7 @@ def mock_gitlab(monkeypatch, mock_cwd):
                         lambda *a, **k: {"id": "00000"})
 
 
-def create_project_parameters(path=None, name=None, desc=None, author=None, repo_type=None,
+def new_project_parameters(path=None, name=None, desc=None, author=None, repo_type=None,
                               clone_protocol="https", upload_protocol="https", gitlab=True,
                               gitlab_token=None, interactive=True, overwrite=False, cleanup_on_failure=False,
                               template_path=None, template_url=None, crash=True, verbose=False, gitlab_space=""):
@@ -84,16 +84,16 @@ REQUIREMENTS = {
     'test': [  ],
 }
 setup(
-    name='be-bi-pyqt-template', 
+    name='sy-bi-pyqt-template', 
     version="0.0.1.dev1", 
     author="Sara Zanzottera", 
     author_email="sara.zanzottera@cern.ch", 
-    description="BE BI PyQt Template Code", 
+    description="SY BI PyQt Template Code", 
     long_description="LONG_DESCRIPTION", 
     install_requires=REQUIREMENTS['core'], 
     entry_points={ 
         'console_scripts': [ 
-            'be-bi-pyqt-template=be_bi_pyqt_template.main:main' 
+            'sy-bi-pyqt-template=sy_bi_pyqt_template.main:main' 
         ] 
     }
 ) """
@@ -122,7 +122,7 @@ def mock_git_invocation(parameters, cwd, neg_feedback):
     # Only the clone operation really has some visible effect
     if 'clone' in parameters:
         project_path = parameters[-1]
-        project_name = "be_bi_pyqt_template"  #project_path.split(os.path.sep)[-1]
+        project_name = "sy_bi_pyqt_template"
         create_template_files(project_path, project_name)
     return f"mock call with parameters {parameters}", ""
 

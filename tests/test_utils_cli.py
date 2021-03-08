@@ -46,7 +46,7 @@ def test_ask_input(catch_stdout):
 
 def test_handle_failure(catch_stdout):
     cli.handle_failure("what shall I do then?")
-    assert strings == ["\033[0;31m=> Error!\033[0;33m what shall I do then?  \033[0;m"]
+    assert strings == ["\033[0;31m=> Error!\033[0;33m what shall I do then? \033[0;m"]
 
 
 def test_positive_feedback_no_newline(catch_stdout):
@@ -61,7 +61,7 @@ def test_positive_feedback_with_newline(catch_stdout):
 
 def test_list_subtask(catch_stdout):
     cli.list_subtask("A small thing was done")
-    assert strings == ["    -  A small thing was done"]
+    assert strings == ["    - A small thing was done"]
 
 
 def test_give_hint(catch_stdout):

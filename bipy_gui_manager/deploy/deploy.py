@@ -3,7 +3,7 @@ import logging
 import argparse
 from pathlib import Path
 
-from bipy_gui_manager.main import REPO_PATH, ACC_PY_PATH
+from bipy_gui_manager import REPO_PATH, ACC_PY_PATH
 from bipy_gui_manager.utils import cli as cli
 from bipy_gui_manager.utils import version_control as vcs
 

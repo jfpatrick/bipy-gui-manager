@@ -146,6 +146,7 @@ def test_create_gitlab_repo(monkeypatch, mock_gitlab):
     version_control.create_gitlab_repository(repo_type="test",
                                              project_name="test-project",
                                              project_desc="A test project",
-                                             auth_token="access_token=auth-token")
+                                             auth_token="access_token=auth-token",
+                                             author_name="me")
 
 

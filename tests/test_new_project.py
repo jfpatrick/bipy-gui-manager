@@ -3,39 +3,39 @@ import time
 import pytest
 from bipy_gui_manager.new import new_project
 
-from .conftest import create_project_parameters, create_template_files
+from .conftest import new_project_parameters, create_template_files
 
 
 # ###############################
 # #      Create Project         #
 # ###############################
-def test_create_project_defaults_all_in_flags(monkeypatch, tmpdir, mock_git, mock_gitlab, mock_phonebook):
+def test_new_project_defaults_all_in_flags(monkeypatch, tmpdir, mock_git, mock_gitlab, mock_phonebook):
     # Runs the entire script mocking only the necessary
     # all params come from CLI and should succeed, even though interactive=True
-    params = create_project_parameters(path=tmpdir, name="test-project", desc="That's a test project!",
+    params = new_project_parameters(path=tmpdir, name="test-project", desc="That's a test project!",
                                        author="me", repo_type="test", clone_protocol="https", gitlab_token="fake-token",
                                        upload_protocol="https", gitlab=True, crash=True)
-    new_project.create_project(params)
+    new_project.new_project(params)
 
 
-def test_create_project_handles_exceptions_ask_cleanup(monkeypatch, tmpdir, mock_git, mock_gitlab, mock_phonebook):
+def test_new_project_handles_exceptions_ask_cleanup(monkeypatch, tmpdir, mock_git, mock_gitlab, mock_phonebook):
     # Check if it fails in a controlled way and asks the user whether to cleanup
-    params = create_project_parameters(path=tmpdir, name="test-project", desc="That's a test project!",
+    params = new_project_parameters(path=tmpdir, name="test-project", desc="That's a test project!",
                                        author="me", repo_type="test", clone_protocol="https", gitlab_token="fake-token",
                                        upload_protocol="https", gitlab=True, crash=False, interactive=True)
 
     def fail(*args, **kwargs):
         raise AttributeError("Imagine this function fails...")
-    monkeypatch.setattr('bipy_gui_manager.new.new.get_template', fail)
+    monkeypatch.setattr('bipy_gui_manager.new.new_project.get_template', fail)
 
     monkeypatch.setattr('builtins.input', lambda _: 1 / 0)
     with pytest.raises(ZeroDivisionError):
-        new_project.create_project(params)
+        new_project.new_project(params)
 
 
-def test_create_project_handles_exceptions_cleanup_no(monkeypatch, tmpdir, mock_git, mock_gitlab, mock_phonebook):
+def test_new_project_handles_exceptions_cleanup_no(monkeypatch, tmpdir, mock_git, mock_gitlab, mock_phonebook):
     # Check if it fails in a controlled way and asks the user whether to cleanup
-    params = create_project_parameters(path=tmpdir, name="test-project", desc="That's a test project!",
+    params = new_project_parameters(path=tmpdir, name="test-project", desc="That's a test project!",
                                        author="me", repo_type="test", clone_protocol="https",
                                        gitlab_token="fake-token",
                                        upload_protocol="https", gitlab=True, crash=False, interactive=True)
@@ -43,17 +43,17 @@ def test_create_project_handles_exceptions_cleanup_no(monkeypatch, tmpdir, mock_
     def fail(*args, **kwargs):
         tmpdir.mkdir("test-project")
         raise AttributeError("Imagine this function fails...")
-    monkeypatch.setattr('bipy_gui_manager.new.new.get_template', fail)
+    monkeypatch.setattr('bipy_gui_manager.new.new_project.get_template', fail)
 
     monkeypatch.setattr('builtins.input', lambda _: "no")
-    new_project.create_project(params)
+    new_project.new_project(params)
     time.sleep(0.1)
     assert os.path.isdir(os.path.join(tmpdir, "test-project"))
 
 
-def test_create_project_handles_exceptions_cleanup_yes(monkeypatch, tmpdir, mock_git, mock_gitlab, mock_phonebook):
+def test_new_project_handles_exceptions_cleanup_yes(monkeypatch, tmpdir, mock_git, mock_gitlab, mock_phonebook):
     # Check if it fails in a controlled way and asks the user whether to cleanup
-    params = create_project_parameters(path=tmpdir, name="test-project", desc="That's a test project!",
+    params = new_project_parameters(path=tmpdir, name="test-project", desc="That's a test project!",
                                        author="me", repo_type="test", clone_protocol="https",
                                        gitlab_token="fake-token",
                                        upload_protocol="https", gitlab=True, crash=False, interactive=True)
@@ -61,10 +61,10 @@ def test_create_project_handles_exceptions_cleanup_yes(monkeypatch, tmpdir, mock
     def fail(*args, **kwargs):
         tmpdir.mkdir("test-project")
         raise AttributeError("Imagine this function fails...")
-    monkeypatch.setattr('bipy_gui_manager.new.new.get_template', fail)
+    monkeypatch.setattr('bipy_gui_manager.new.new_project.get_template', fail)
 
     monkeypatch.setattr('builtins.input', lambda _: "yes")
-    new_project.create_project(params)
+    new_project.new_project(params)
     time.sleep(0.1)
     assert not os.path.isdir(os.path.join(tmpdir, "test-project"))
 
@@ -78,7 +78,7 @@ def test_get_template_call_download_template(tmpdir, monkeypatch):
     create_template_files(template_folder, "test-project")
 
     # Monkeypatch download_template
-    monkeypatch.setattr('bipy_gui_manager.new.new.download_template',
+    monkeypatch.setattr('bipy_gui_manager.new.new_project.download_template',
                         lambda path, protocol: os.makedirs(os.path.join(tmpdir, path, "downloaded-files")))
 
     # Ensure it's calling download_template instead of copying
@@ -107,7 +107,7 @@ def test_get_template_copy_from_path_valid(tmpdir, monkeypatch):
         assert testfile.read() != ""
     with open(os.path.join(project_path, ".hidden_file"), "r") as testfile:
         assert testfile.read() == "Something hidden"
-    assert not os.path.exists(os.path.join(project_path, "be_bi_pyqt_template"))
+    assert not os.path.exists(os.path.join(project_path, "sy_bi_pyqt_template"))
 
 
 def test_get_template_copy_from_path_wrong(tmpdir, monkeypatch):
@@ -127,7 +127,7 @@ def test_download_template_kerberos(tmpdir, mock_git):
     project_path = os.path.join(tmpdir, "be-bi-pyqt-template")
     new_project.download_template(project_path, "kerberos")
     assert os.path.isdir(project_path)
-    assert os.path.isdir(os.path.join(project_path, "be_bi_pyqt_template"))
+    assert os.path.isdir(os.path.join(project_path, "sy_bi_pyqt_template"))
     assert os.path.exists(os.path.join(project_path, "README-template.md"))
 
 
@@ -135,7 +135,7 @@ def test_download_template_ssh(tmpdir, mock_git):
     project_path = os.path.join(tmpdir, "be-bi-pyqt-template")
     new_project.download_template(project_path, "ssh")
     assert os.path.isdir(project_path)
-    assert os.path.isdir(os.path.join(project_path, "be_bi_pyqt_template"))
+    assert os.path.isdir(os.path.join(project_path, "sy_bi_pyqt_template"))
     assert os.path.exists(os.path.join(project_path, "README-template.md"))
 
 
@@ -143,7 +143,7 @@ def test_download_template_https(tmpdir, mock_git):
     project_path = os.path.join(tmpdir, "be-bi-pyqt-template")
     new_project.download_template(project_path, "https")
     assert os.path.isdir(project_path)
-    assert os.path.isdir(os.path.join(project_path, "be_bi_pyqt_template"))
+    assert os.path.isdir(os.path.join(project_path, "sy_bi_pyqt_template"))
     assert os.path.exists(os.path.join(project_path, "README-template.md"))
 
 
@@ -164,10 +164,10 @@ def test_download_template_custom_url(tmpdir, mock_git):
 # #     Apply Customizations    #
 # ###############################
 def test_apply_customizations_valid_template(tmpdir):
-    project_path = os.path.join(tmpdir, "be-bi-pyqt-template")
-    create_template_files(project_path, "be-bi-pyqt-template")
-    assert os.path.isdir(os.path.join(tmpdir, "be-bi-pyqt-template"))
-    assert os.path.isdir(os.path.join(tmpdir, "be-bi-pyqt-template", "be_bi_pyqt_template"))
+    project_path = os.path.join(tmpdir, "sy-bi-pyqt-template")
+    create_template_files(project_path, "sy-bi-pyqt-template")
+    assert os.path.isdir(os.path.join(tmpdir, "sy-bi-pyqt-template"))
+    assert os.path.isdir(os.path.join(tmpdir, "sy-bi-pyqt-template", "sy_bi_pyqt_template"))
 
     new_project.apply_customizations(project_path=project_path,
                                      project_name="test-project",
@@ -181,12 +181,12 @@ def test_apply_customizations_valid_template(tmpdir):
     with open(os.path.join(project_path, "setup.py"), "r") as setup:
         content = setup.read()
         not_present = [
-            "be-bi-pyqt-template",
-            "be_bi_pyqt_template",
+            "sy-bi-pyqt-template",
+            "sy_bi_pyqt_template",
             "Sara Zanzottera",
             "sara.zanzottera@cern.ch",
-            "BE BI PyQt Template",
-            "BE BI PyQt Template Code"
+            "SY BI PyQt Template",
+            "SY BI PyQt Template Code"
         ]
         present = [
             "test-project",
@@ -204,8 +204,8 @@ def test_apply_customizations_valid_template(tmpdir):
 
 
 def test_readme(tmpdir):
-    project_path = os.path.join(tmpdir, "be-bi-pyqt-template")
-    create_template_files(project_path, "be-bi-pyqt-template")
+    project_path = os.path.join(tmpdir, "sy-bi-pyqt-template")
+    create_template_files(project_path, "sy-bi-pyqt-template")
 
     new_project.generate_readme(project_path=project_path,
                                 project_name="test-project",
