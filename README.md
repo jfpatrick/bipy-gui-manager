@@ -80,6 +80,7 @@ If you are a developer and want to contribute, or you're taking over this projec
 #### Install
 First, activate Acc-Py. Then:
 ```bash
+sudo yum install -y openldap-devel python-devel   # Required for pyphonebook, one of the dependencies
 git clone https://:@gitlab.cern.ch:8443/bisw-python/bipy-gui-manager.git
 cd bipy-gui-manager
 acc-py venv venv
