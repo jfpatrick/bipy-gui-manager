@@ -58,7 +58,7 @@ bipy-gui-manager --help
 ```
 
 The most important are:
- - `bipy-gui-manager create-project`: starts a wizard that guides
+ - `bipy-gui-manager new`: starts a wizard that guides
 you through the setup of a new PyQt project.
  - `bipy-gui-manager deploy <path>`: deploys the specified application 
    on a BI custom Acc-Py repository on NFS. Applications
@@ -68,9 +68,9 @@ you through the setup of a new PyQt project.
    that was deployed with the above command.
 
 Each of these commands have their own options. For example, to know more about the
-options available for `create-project`, type
+options available for `new`, type
 ```bash
-bipy-gui-manager create-project --help
+bipy-gui-manager new --help
 ```
 
 
