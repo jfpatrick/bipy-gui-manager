@@ -20,6 +20,12 @@ def mock_phonebook_entry(i):
     return None, False
 
 
+@pytest.fixture(autouse=True)
+def mock_deployment_paths(monkeypatch, tmpdir):
+    monkeypatch.setattr('bipy_gui_manager.OPERATIONAL_DEPLOY_PATH', tmpdir)
+    monkeypatch.setattr('bipy_gui_manager.DEVELOPMENT_DEPLOY_PATH', tmpdir)
+
+
 @pytest.fixture()
 def mock_phonebook(monkeypatch):
     monkeypatch.setattr('bipy_gui_manager.new.validation.validate_cern_id', mock_phonebook_entry)
