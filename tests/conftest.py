@@ -1,6 +1,7 @@
 import os
 import pytest
 import logging
+import bipy_gui_manager
 from argparse import Namespace
 from pyphonebook import PhoneBookEntry
 
@@ -22,8 +23,8 @@ def mock_phonebook_entry(i):
 
 @pytest.fixture(autouse=True)
 def mock_deployment_paths(monkeypatch, tmpdir):
-    monkeypatch.setattr('bipy_gui_manager.OPERATIONAL_DEPLOY_PATH', tmpdir)
-    monkeypatch.setattr('bipy_gui_manager.DEVELOPMENT_DEPLOY_PATH', tmpdir)
+    bipy_gui_manager.OPERATIONAL_DEPLOY_PATH = tmpdir
+    bipy_gui_manager.DEVELOPMENT_DEPLOY_PATH = tmpdir
 
 
 @pytest.fixture()
@@ -45,9 +46,9 @@ def mock_gitlab(monkeypatch, mock_cwd):
 
 
 def new_project_parameters(path=None, name=None, desc=None, author=None, repo_type=None,
-                              clone_protocol="https", upload_protocol="https", gitlab=True,
-                              gitlab_token=None, interactive=True, overwrite=False, cleanup_on_failure=False,
-                              template_path=None, template_url=None, crash=True, verbose=False, gitlab_space=""):
+                           clone_protocol="https", upload_protocol="https", gitlab=True,
+                           gitlab_token=None, interactive=True, overwrite=False, cleanup_on_failure=False,
+                           template_path=None, template_url=None, crash=True, verbose=False, gitlab_space=""):
     args = Namespace(
         base_path=path,
         project_name=name,
