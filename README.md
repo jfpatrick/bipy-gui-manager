@@ -42,6 +42,14 @@ Add the following line to your `~/.bashrc`:
 ```bash
 alias bipy-gui-manager="/user/bdisoft/development/python/gui/bipy-gui-manager"
 ```
+
+#### BONUS: Autocompletion
+To have autocompletion for `bipy-gui-manager`, execute the following line in your console:
+```bash
+eval "$(register-python-argcomplete bipy-gui-manager)"
+```
+
+
 ## Verify
 
 Once you did one of the above, typing

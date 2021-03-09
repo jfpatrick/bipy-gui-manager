@@ -1,12 +1,16 @@
+#!/usr/bin/env python
+# PYTHON_ARGCOMPLETE_OK
+
 import os
 import sys
 import signal
 import argparse
+import argcomplete
 
 from bipy_gui_manager.utils import cli as cli
 from bipy_gui_manager.new.new_project import new_project
 from bipy_gui_manager.deploy.deploy import deploy
-from bipy_gui_manager.run.run import run
+from bipy_gui_manager.run.run import run, get_runnable_apps_for_argcomplete
 
 
 # Gracefully handle Ctrl+C and other kill signals
@@ -24,7 +28,8 @@ def main():
     """
     This function acts mainly as a frontend for the different subcommands.
     """
-    parser = argparse.ArgumentParser(epilog=f"type '{sys.argv[0]} <command> --help' to learn more about their options.")
+    parser = argparse.ArgumentParser(epilog=f"type '{os.path.basename(sys.argv[0])} "
+                                            f"<command> --help' to learn more about their options.")
     parser.add_argument('-v', '--verbose', dest='verbose', action='store_true',
                         help="Set the logger to verbose mode (useful to report bugs).")
 
@@ -84,8 +89,17 @@ def main():
     new_project_parser.add_argument('--crash', dest='crash', action='store_true',
                                     help="[DEBUG] Do not try to recover from errors.")
 
+    # Separate parser for duplicate flags
+    # (https://stackoverflow.com/questions/7498595/python-argparse-add-argument-to-multiple-subparsers)
+    op_dev_parser = argparse.ArgumentParser(add_help=False)
+    op_dev = op_dev_parser.add_mutually_exclusive_group(required=True)
+    op_dev.add_argument('--operational', '-o', action="store_true",
+                        help="Use the operational deployments path")
+    op_dev.add_argument('--development', '-d', action="store_true",
+                        help="Use the development deployments path")
+
     # 'deploy' subcommand
-    deploy_parser = subparsers.add_parser('deploy',
+    deploy_parser = subparsers.add_parser('deploy', parents=[op_dev_parser],
                                           help="Deploys the application in a shared folder, so it can be started "
                                                "from BI's AppLauncher")
     deploy_parser.set_defaults(func=deploy)
@@ -96,12 +110,16 @@ def main():
                                     "differs from the project name.")
 
     # 'run' subcommand
-    run_parser = subparsers.add_parser('run',
+
+    run_parser = subparsers.add_parser('run', parents=[op_dev_parser],
                                        help="Executes the application from a shared folder.")
     run_parser.set_defaults(func=run)
-    run_parser.add_argument('app', nargs='?',
+    run_parser.add_argument('app', nargs='?', metavar="APP_NAME",
+                            choices=get_runnable_apps_for_argcomplete(),
                             help="Name of the deployed app to run.")
 
     # Parse and call relevant subcommand
+    argcomplete.autocomplete(parser)
+    argcomplete.autocomplete(op_dev_parser)
     arguments = parser.parse_args(args=None if sys.argv[1:] else ['--help'])
     arguments.func(arguments)  # Necessary for the subparsers

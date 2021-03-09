@@ -61,20 +61,20 @@ def test_is_ready_to_deploy_dirty_folder(project_dir, monkeypatch):
 
 
 def test_release_empty_dir(project_dir, deploy_dir):
-    deploy.deploy(Namespace(verbose=True, path=project_dir, debug=True, entry_point=None))
+    deploy.deploy(Namespace(verbose=True, path=project_dir, debug=True, entry_point=None, operational=False))
     assert len(os.listdir(deploy_dir)) == 0
 
 
 def test_release_dir_with_setup_only(project_dir, deploy_dir):
     with open(project_dir / 'setup.py', 'w') as f:
         f.write("hello")
-    deploy.deploy(Namespace(verbose=True, path=project_dir, debug=True, entry_point=None))
+    deploy.deploy(Namespace(verbose=True, path=project_dir, debug=True, entry_point=None, operational=False))
     assert len(os.listdir(deploy_dir)) == 0
 
 
 def test_release_dir_with_git_only(project_dir, deploy_dir):
     vcs.invoke_git(['init'], cwd=project_dir)
-    deploy.deploy(Namespace(verbose=True, path=project_dir, debug=True, entry_point=None))
+    deploy.deploy(Namespace(verbose=True, path=project_dir, debug=True, entry_point=None, operational=False))
     assert len(os.listdir(deploy_dir)) == 0
 
 
@@ -82,7 +82,7 @@ def test_release_dir_with_setup_and_git(project_dir, deploy_dir):
     with open(project_dir / 'setup.py', 'w') as f:
         f.write("hello")
     vcs.invoke_git(['init'], cwd=project_dir)
-    deploy.deploy(Namespace(verbose=True, path=project_dir, debug=True, entry_point=None))
+    deploy.deploy(Namespace(verbose=True, path=project_dir, debug=True, entry_point=None, operational=False))
     assert len(os.listdir(deploy_dir)) == 0
 
 
@@ -94,7 +94,7 @@ def test_release_dir_succeeds_with_real_repo_no_debug(project_dir, deploy_dir, m
     create_template_files(project_dir, "project")
     vcs.init_local_repo(project_dir)
 
-    deploy.deploy(Namespace(verbose=True, path=project_dir, debug=True, entry_point=None))
+    deploy.deploy(Namespace(verbose=True, path=project_dir, debug=True, entry_point=None, operational=False))
     logging.debug(os.listdir(deploy_dir))
     # Acc-py creates a folder named as declared in setup.py
     assert os.path.exists(deploy_dir / "be-bi-pyqt-template")

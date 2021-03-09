@@ -3,7 +3,7 @@ import logging
 import argparse
 from pathlib import Path
 
-from bipy_gui_manager import REPO_PATH, ACC_PY_PATH
+from bipy_gui_manager import OPERATIONAL_DEPLOY_PATH, DEVELOPMENT_DEPLOY_PATH, ACC_PY_PATH
 from bipy_gui_manager.utils import cli as cli
 from bipy_gui_manager.utils import version_control as vcs
 
@@ -24,6 +24,7 @@ def deploy(parameters: argparse.Namespace):
         raise ValueError("Path was not specified as a CLI argument and the default (os.getcwd()) was not applied. "
                          "Please debug.")
     path = Path(parameters.path).absolute()
+    repo_path = OPERATIONAL_DEPLOY_PATH if parameters.operational else DEVELOPMENT_DEPLOY_PATH
 
     try:
         # Ensures the current project is a releasable project
@@ -47,7 +48,7 @@ def deploy(parameters: argparse.Namespace):
         logging.debug("Executing app_deploy.sh")
         verbose = "1" if parameters.verbose else "0"
         error = os.WEXITSTATUS(
-            os.system(f"/bin/bash -c \"{APP_DEPLOY_SCRIPT} {path} {REPO_PATH} {ACC_PY_PATH} {verbose}\""))
+            os.system(f"/bin/bash -c \"{APP_DEPLOY_SCRIPT} {path} {repo_path} {ACC_PY_PATH} {verbose}\""))
         if error:
             cli.negative_feedback("Deploy failed: {}.".format(error))
             logging.debug("Deploy failed.")
