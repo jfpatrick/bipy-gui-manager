@@ -40,3 +40,6 @@ Docs:
     - source /opt/venv/bin/activate
     - yum install -y openldap-devel python-devel
   extends: .acc_py_build_docs
+  except:
+    changes:
+     - '*.md'
