@@ -1,5 +1,5 @@
 ===============================
-BE/BI Python Expert GUI Manager
+SY/BI Python Expert GUI Manager
 ===============================
 
 This is the documentation page for the BE/BI Expert GUI Manager.
