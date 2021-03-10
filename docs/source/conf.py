@@ -2,7 +2,7 @@ import datetime
 import pkg_resources
 
 
-project = "BE/BI Python Expert GUI Manager"
+project = "SY/BI Python Expert GUI Manager"
 author = "Sara Zanzottera"
 version = pkg_resources.get_distribution("bipy_gui_manager").version
 
