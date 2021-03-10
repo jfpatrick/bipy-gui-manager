@@ -35,7 +35,7 @@ REQUIREMENTS: dict = {
 
 setup(
     name='bipy_gui_manager',
-    version="0.4.0",
+    version="1.0.0",
 
     author="Sara Zanzottera",
     author_email="sara.zanzottera@cern.ch",
