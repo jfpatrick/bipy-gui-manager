@@ -2,7 +2,7 @@
 SY/BI Python Expert GUI Manager
 ===============================
 
-This is the documentation page for the BE/BI Expert GUI Manager.
+This is the documentation page for the SY/BI Expert GUI Manager.
 It is a tool for bootstrapping PyQt GUI projects which:
 
 * Provides a wizard to create and setup new Python-based BI Expert
