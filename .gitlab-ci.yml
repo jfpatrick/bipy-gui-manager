@@ -28,9 +28,6 @@ Tests:
     expire_in: 1 month
     reports:
       junit: report.xml
-  except:
-    changes:
-     - '*.md'
 
 
 # A dev build of the documentation, made available through cern.ch/acc-py.
@@ -40,6 +37,3 @@ Docs:
     - source /opt/venv/bin/activate
     - yum install -y openldap-devel python-devel
   extends: .acc_py_build_docs
-  except:
-    changes:
-     - '*.md'
