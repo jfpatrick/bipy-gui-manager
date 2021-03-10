@@ -7,13 +7,13 @@ It is a tool for bootstrapping PyQt GUI projects, which:
 see [SY BI Pyqt Template](https://gitlab.cern.ch/bisw-python/sy-bi-pyqt-template))
 - Configures existing projects (modify author name, email description, GitLab repo, etc...)
 - Releases the project under the shared folder used by the BI Launcher for Python apps
-  (`/user/bdisoft/development/python/gui/deployments`).
+  (`/user/bdisoft/operational/python/gui/deployments` or `/user/bdisoft/development/python/gui/deployments`).
 - Manages the project's entry points (commands available in the console to launch the PyQt application)
   and tries to ensure full compatibility with Acc-Py.
 
 ## Setup
 
-A stable version of this script is available under `/user/bdisoft/development/python/gui/bipy-gui-manager`.
+A stable version of this script is available under `/user/bdisoft/operational/python/gui/bipy-gui-manager`.
 
 In order to use it, you should add it to your PATH or alias it - you can follow 1), 2) or 3) below:
 
@@ -23,7 +23,7 @@ create a symlink to `bipy-gui-manager` under `~/.local/bin`
 
 Simply type:
 ```bash
-ln -s /user/bdisoft/development/python/gui/bipy-gui-manager ~/.local/bin/bipy-gui-manager
+ln -s /user/bdisoft/operational/python/gui/bipy-gui-manager ~/.local/bin/bipy-gui-manager
 ```
 
 #### 2) Add it to PATH under '/usr/local/bin'
@@ -32,7 +32,7 @@ perform operations as `sudo`. It will create a symlink to `bipy-gui-manager` und
 
 Simply type:
 ```bash
-sudo ln -s /user/bdisoft/development/python/gui/bipy-gui-manager /usr/local/bin/bipy-gui-manager
+sudo ln -s /user/bdisoft/operational/python/gui/bipy-gui-manager /usr/local/bin/bipy-gui-manager
 ```
 
 #### 3) Alias it
@@ -40,15 +40,14 @@ This method will not modify your PATH and won't create symlinks, but requires yo
 
 Add the following line to your `~/.bashrc`:
 ```bash
-alias bipy-gui-manager="/user/bdisoft/development/python/gui/bipy-gui-manager"
+alias bipy-gui-manager="/user/bdisoft/operational/python/gui/bipy-gui-manager"
 ```
 
 #### BONUS: Autocompletion
-To have autocompletion for `bipy-gui-manager`, execute the following line in your console:
+To have autocompletion for `bipy-gui-manager`, register the executable by executing the following line in your console:
 ```bash
 eval "$(register-python-argcomplete bipy-gui-manager)"
 ```
-
 
 ## Verify
 
@@ -66,11 +65,9 @@ bipy-gui-manager --help
 ```
 
 The most important are:
- - `bipy-gui-manager new`: starts a wizard that guides
-you through the setup of a new PyQt project.
- - `bipy-gui-manager deploy <path>`: deploys the specified application 
-   on a BI custom Acc-Py repository on NFS. Applications
-   deployed in this way can be later added to the 
+ - `bipy-gui-manager new`: starts a wizard that guides you through the setup of a new PyQt project.
+ - `bipy-gui-manager deploy <path>`: deploys the specified application on a BI custom Acc-Py repository on NFS. 
+   Applications deployed in this way can be later added to the 
    [BI AppLauncher](https://gitlab.cern.ch/bisw-java-fwk/bi-launcher).
  - `bipy-gui-manager run <app_name>`: uses Acc-Py to launch any application
    that was deployed with the above command.
