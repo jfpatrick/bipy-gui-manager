@@ -1,4 +1,4 @@
-include bipy-gui-manager/new/resources/install-project.sh
-include bipy-gui-manager/deploy/resources/app_deploy.sh
-include bipy-gui-manager/run/resources/app_run.sh
-include bipy-gui-manager/utils/resources/PyQt-logo-gray.png
+include bipy_gui_manager/new/resources/install-project.sh
+include bipy_gui_manager/deploy/resources/app_deploy.sh
+include bipy_gui_manager/run/resources/app_run.sh
+include bipy_gui_manager/utils/resources/PyQt-logo-gray.png
