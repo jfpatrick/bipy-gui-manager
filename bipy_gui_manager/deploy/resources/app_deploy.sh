@@ -36,11 +36,11 @@ else
 
     # Deploy to shared folder
     echo -e "-> Deploying application (can take a few minutes)..."
-    if ! $ACC_PY_PATH/acc-py app lock $APP_PATH; then
+    if ! $ACC_PY_PATH/acc-py app lock $APP_PATH &> /dev/null; then
         echo -e "   Dependency lock failed! Please try running 'acc-py app lock $APP_PATH' and check the logs."
         exit 1
     else
-        if ! $ACC_PY_PATH/acc-py app deploy --deploy-base $REPO_PATH $APP_PATH; then
+        if ! $ACC_PY_PATH/acc-py app deploy --deploy-base $REPO_PATH $APP_PATH &> /dev/null; then
             echo -e "   Deployment failed! Please try running 'acc-py app deploy --deploy-base $REPO_PATH $APP_PATH' and check the logs."
             echo -e "   If you are deploying a new version, make sure you increased the version number (re-deploy is not allowed)"
             exit 1
