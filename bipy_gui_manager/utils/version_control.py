@@ -71,7 +71,7 @@ def init_local_repo(project_path: str) -> None:
     )
     invoke_git(
         parameters=['commit', '-m', 'Initial commit ' +
-                    '(from bipy-gui-manager https://gitlab.cern.ch/bisw-python/bipy_gui_manager)'],
+                    '(from bipy-gui-manager https://gitlab.cern.ch/bisw-python/bipy-gui-manager)'],
         cwd=project_path,
         neg_feedback="Failed to commit the template."
     )
