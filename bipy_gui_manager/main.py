@@ -52,7 +52,7 @@ def main():
     new_project_parser.add_argument('--verbose', dest='verbose', action='store_true',
                                     help="Raises the logging level to the maximum")
     new_project_parser.add_argument('--type', dest='project_type', default=None,
-                                    help="Chooses between the ComRAD and the PyQt project template."
+                                    help="Chooses between the ComRAD and the PyQt project template. "
                                     "Set it to 'comrad' to have a setup ready for ComRAD, "
                                     "or to 'pyqt' to download the app template and the proper libraries.")
     repo_commands = new_project_parser.add_mutually_exclusive_group()
@@ -109,6 +109,13 @@ def main():
     deploy_parser.set_defaults(func=deploy)
     deploy_parser.add_argument('path', nargs='?', default=os.getcwd(),
                                help="Path to the folder to deploy. Defaults to the current directory.")
+
+    type_commands = deploy_parser.add_mutually_exclusive_group()
+    type_commands.add_argument('--as-pyqt', dest='project_type', action="store_const", const="pyqt",
+                               help="Deploy this project as a PyQt project even if it doesn't look like one.")
+    type_commands.add_argument('--as-comrad', dest='project_type', action="store_const", const="comrad",
+                               help="Deploy this project as a ComRAD project even if it doesn't look like one.")
+
     deploy_parser.add_argument('--entry-point', dest='entry_point', default=None, type=str,
                                help="The entry point name. This parameter is required only if the entry point name "
                                     "differs from the project name.")

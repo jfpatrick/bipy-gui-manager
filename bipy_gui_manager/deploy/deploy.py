@@ -42,13 +42,16 @@ def deploy(parameters: argparse.Namespace):
             # The method itself provides feedback on failure already
             return
 
+        if not parameters.project_type:
+            parameters.project_type = find_project_type(path)
+
         cli.positive_feedback("The project is ready to deploy")
         cli.positive_feedback(f"Deploying {os.path.basename(path)}..", newline=False)
 
         logging.debug("Executing app_deploy.sh")
         verbose = "1" if parameters.verbose else "0"
         error = os.WEXITSTATUS(
-            os.system(f"/bin/bash -c \"{APP_DEPLOY_SCRIPT} {path} {repo_path} {ACC_PY_PATH} {verbose}\""))
+            os.system(f"/bin/bash -c \"{APP_DEPLOY_SCRIPT} {path} {repo_path} {ACC_PY_PATH} {parameters.project_type} {verbose}\""))
         if error:
             cli.negative_feedback("Deploy failed: {}.".format(error))
             logging.debug("Deploy failed.")
@@ -64,14 +67,35 @@ def deploy(parameters: argparse.Namespace):
 
 def is_python_project(path_to_check: str):
     """
-    Returns True if the path is a deployable Python project, i.e. has a setup.py with an entry point.
     :param path_to_check: path that should contain the Python project.
-    :return: True if the path contains a setup.py with an entry point (in the directory itself, not
-        in a subdir), False otherwise
+    :return: True if the path contains a setup.py or a pyproject.toml in the expected location, False otherwise
     """
-    if not os.path.exists(path_to_check) or not os.path.exists(os.path.join(path_to_check, "setup.py")):
-        return False
-    return True
+    if os.path.isdir(path_to_check) and \
+            (
+                os.path.exists(os.path.join(path_to_check, "setup.py")) or
+                os.path.exists(os.path.join(path_to_check, "app/pyproject.toml"))
+            ):
+        return True
+    return False
+
+
+def find_project_type(path_to_check: str):
+    """
+    :param path_to_check: path that should contain the Python project.
+    :return: 'pyqt' if the path contains a setup.py, 'comrad' if it contains a pyproject.toml under the folder app/.
+    :raises ValueError if the folder does not exist or contains neither file.
+    """
+    if not os.path.isdir(path_to_check):
+        raise ValueError(f"The folder '{path_to_check}' does not exist")
+
+    if os.path.exists(os.path.join(path_to_check, "setup.py")):
+        return 'pyqt'
+
+    if os.path.exists(os.path.join(path_to_check, "app/pyproject.toml")):
+        return 'comrad'
+
+    raise ValueError(f"Cannot identify the project type: '{path_to_check}' contains neither a setup.py "
+                     "nor a pyptoject.toml")
 
 
 def is_ready_to_deploy(path_to_check: str):

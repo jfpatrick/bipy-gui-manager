@@ -193,8 +193,9 @@ def apply_customizations(project_path: str, project_name: str, project_desc: str
     logging.debug("Python package name is set to {} and the name in capitals is {}".format(project_name_underscores,
                                                                                            project_name_capitals))
     try:
-        logging.debug("Renaming the root dir from sy_bi_pyqt_template to {}".format(project_name_underscores))
-        shutil.move(f"{project_path}/sy_bi_pyqt_template", f"{project_path}/{project_name_underscores}")
+        if os.path.exists(f"{project_path}/sy_bi_pyqt_template"):
+            logging.debug("Renaming the root dir from sy_bi_pyqt_template to {}".format(project_name_underscores))
+            shutil.move(f"{project_path}/sy_bi_pyqt_template", f"{project_path}/{project_name_underscores}")
 
         logging.debug("Remove images/ folder")
         shutil.rmtree("{}/images".format(project_path))
