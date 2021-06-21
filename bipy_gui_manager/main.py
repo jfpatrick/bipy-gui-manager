@@ -51,6 +51,10 @@ def main():
                                     help="Sets the project author's CERN ID (must be valid).")
     new_project_parser.add_argument('--verbose', dest='verbose', action='store_true',
                                     help="Raises the logging level to the maximum")
+    new_project_parser.add_argument('--type', dest='project_type', default=None,
+                                    help="Chooses between the ComRAD and the PyQt project template."
+                                    "Set it to 'comrad' to have a setup ready for ComRAD, "
+                                    "or to 'pyqt' to download the app template and the proper libraries.")
     repo_commands = new_project_parser.add_mutually_exclusive_group()
     repo_commands.add_argument('--repo', dest='gitlab_repo', default=None,
                                help="Sets the project's GitLab repository address."

@@ -31,7 +31,8 @@ def new_project(parameters: argparse.Namespace):
         get_template(project_path=valid_project_data["project_path"],
                      clone_protocol=parameters.clone_protocol,
                      template_path=valid_project_data.get("template_path", None),
-                     template_url=valid_project_data.get("template_url", None))
+                     template_url=valid_project_data.get("template_url", None),
+                     project_type=valid_project_data.get("project_type", None))
 
         apply_customizations(project_path=valid_project_data["project_path"],
                              project_name=valid_project_data["project_name"],
@@ -64,18 +65,28 @@ def new_project(parameters: argparse.Namespace):
             valid_project_data["project_name"]), newline=False)
         cli.draw_line()
 
+        if valid_project_data["project_type"] == 'pyqt':
+            launch_command = f"{valid_project_data['project_name']}        (launches your PyQt application)"
+            ide_command = "pycharm . &"
+            ide_name = "PyCharm"
+        else:
+            project_name_underscores = valid_project_data['project_name'].replace("-", "_")
+            launch_command = f"comrad run {project_name_underscores}/main.ui        (launches your ComRAD application)"
+            ide_command = f"comrad designer {project_name_underscores}/main.ui &"
+            ide_name = "ComRAD Designer"
+
         cli.positive_feedback(f"What now?\n\n"
                               f"Your project now lives under '{valid_project_data['project_path']}'. \n"
                               f"To make sure the installation was successful, you should move into that \nfolder and " 
                               f"type the following commands:\n\n"
                               f"   > source activate.sh        (activates acc-py and your virtual env)\n"
-                              f"   > {valid_project_data['project_name']}        (launches your PyQt application)\n\n"
+                              f"   > {launch_command}\n\n"
                               f"You should see a small template application with a plot. If you don't, or you see an \n"
                               f"error of some kind, please report it to us.\n\n" 
                               f"Once this is done, you can start working on your new app. If you have already the \n" 
                               f"virtualenv active in you shell, type from your project's directory:\n\n"
-                              f"   > pycharm . & \n\n" 
-                              f"This will launch PyCharm and make it load the right project directly.\n" 
+                              f"   > {ide_command} \n\n" 
+                              f"This will launch {ide_name} and make it load the right project directly.\n" 
                               f"Remember also to activate your virtual env with 'source activate.sh' every time you\n" 
                               f"start working.\n\n"
                               f"Happy development!\033[1A", newline=False)
@@ -98,13 +109,14 @@ def new_project(parameters: argparse.Namespace):
 
 
 def get_template(project_path: str, clone_protocol: str, template_path: Optional[str] = None,
-                 template_url: Optional[str] = None) -> None:
+                 template_url: Optional[str] = None, project_type: Optional[str] = None) -> None:
     """
     Retrieves the template code for the new project.
     :param project_path: Where to create the new project
     :param clone_protocol: Which protocol to use to clone the template from GitLab (https, ssh, kerberos)
     :param template_path: If given, points to a local path to copy the content of, instead of cloning from GitLab
     :param template_url: If given, points to a URL to copy the content of, instead of cloning from the regular repo
+    :param project_type: Whether this is a ComRAD or a PyQt project
     :return: Nothing, but creates a folder with the template code
     """
     if template_path is not None:
@@ -119,28 +131,39 @@ def get_template(project_path: str, clone_protocol: str, template_path: Optional
 
     else:
         cli.positive_feedback("Downloading the template from GitLab", newline=False)
-        download_template(project_path, clone_protocol)
+        download_template(project_path=project_path, clone_protocol=clone_protocol, project_type=project_type)
 
 
-def download_template(project_path: str, clone_protocol: str, custom_url: Optional[str] = None) -> None:
+def download_template(project_path: str, clone_protocol: str, custom_url: Optional[str] = None,
+                      project_type: Optional[str] = None) -> None:
     """
     Downloads the template code from its GitLab repository
     :param project_path: Where to clone the template (folder must not exists)
     :param clone_protocol: use HTTPS, SSH or Kerberos
     :param custom_url: Clone the template from the specified repo.
+    :param project_type: Whether this is a ComRAD or a PyQt project.
     """
     if custom_url is not None:
         template_url = custom_url
 
-    elif clone_protocol == 'https':
-        template_url = 'https://gitlab.cern.ch/bisw-python/sy-bi-pyqt-template.git'
-    elif clone_protocol == 'kerberos':
-        template_url = 'https://:@gitlab.cern.ch:8443/bisw-python/sy-bi-pyqt-template.git'
-    elif clone_protocol == 'ssh':
-        template_url = 'ssh://git@gitlab.cern.ch:7999/bisw-python/sy-bi-pyqt-template.git'
     else:
-        raise ValueError("Clone protocol not recognized: {}".format(clone_protocol))
-    logging.debug("Template URL set to {}".format(template_url))
+        if not project_type or project_type.lower() == "comrad":
+            repo_name = "sy-bi-comrad-template.git"
+        elif project_type.lower() == "pyqt":
+            repo_name = "sy-bi-pyqt-template.git"
+        else:
+            raise ValueError(f"Project type {project_type} not recognized")
+
+        if clone_protocol == 'https':
+            template_url = f'https://gitlab.cern.ch/bisw-python/{repo_name}'
+        elif clone_protocol == 'kerberos':
+            template_url = f'https://:@gitlab.cern.ch:8443/bisw-python/{repo_name}'
+        elif clone_protocol == f'ssh':
+            template_url = f'ssh://git@gitlab.cern.ch:7999/bisw-python/{repo_name}'
+        else:
+            raise ValueError(f"Clone protocol not recognized: {clone_protocol}")
+
+    logging.debug(f"Template URL set to {template_url}")
 
     git_command = ['clone', template_url, project_path]
 
@@ -171,8 +194,7 @@ def apply_customizations(project_path: str, project_name: str, project_desc: str
                                                                                            project_name_capitals))
     try:
         logging.debug("Renaming the root dir from sy_bi_pyqt_template to {}".format(project_name_underscores))
-        shutil.move("{}/sy_bi_pyqt_template".format(project_path),
-                    "{}/{}".format(project_path, project_name_underscores))
+        shutil.move(f"{project_path}/sy_bi_pyqt_template", f"{project_path}/{project_name_underscores}")
 
         logging.debug("Remove images/ folder")
         shutil.rmtree("{}/images".format(project_path))
@@ -292,13 +314,14 @@ def setup_version_control(project_path: str, gitlab: bool, project_name: Optiona
         version_control.push_first_commit(project_path, repo_url)
 
 
-def install_project(project_path: str, verbose: bool) -> None:
+def install_project(project_path: str, verbose: bool, project_type: str = 'comrad') -> None:
     """
     Copies a bash script into the project, executes it and remove it.
     The bash script will activate the venvs and install the project in its own
     virtual environment.
     :param project_path: Path to the project root
     :param verbose: if True, does not reduce the output generated by the installation process.
+    :param project_type: Whether this is a ComRAD or a PyQt project
     """
     # Copy shell script in project
     logging.debug("Copying bash script .tmp.sh into the new project tree")
@@ -308,13 +331,13 @@ def install_project(project_path: str, verbose: bool) -> None:
     # Execute it (create venvs and install folder in venv)
     logging.debug("Make .tmp.sh executable")
     os.chmod(script_location, 0o777)
-    logging.debug("Save current working directory: {}".format(os.getcwd()))
+    logging.debug(f"Save current working directory: {os.getcwd()}")
     current_dir = os.getcwd()
-    logging.debug("Move in the project's directory: {}".format(project_path))
+    logging.debug(f"Move in the project's directory: {project_path}")
     os.chdir(project_path)
     logging.debug("Execute .tmp.sh with Bash source")
-    error = os.WEXITSTATUS(os.system(f"/bin/bash -c \"source ./.tmp.sh {verbose}\""))
-    logging.debug("Move back to original working directory: {}".format(current_dir))
+    error = os.WEXITSTATUS(os.system(f"/bin/bash -c \"source ./.tmp.sh {project_type.lower()} {verbose}\""))
+    logging.debug(f"Move back to original working directory: {current_dir}")
     os.chdir(current_dir)
 
     # Remove temporary script
@@ -323,10 +346,11 @@ def install_project(project_path: str, verbose: bool) -> None:
 
     # Render error if present
     if error:
-        cli.negative_feedback("New project failed to install: {}.".format(error))
-        cli.negative_feedback("Please execute 'source activate.sh' and 'pip install -e .'"
-                              "in the project's root and, if it fails, send the log to the maintainers.")
-        raise OSError("New project failed to install: {}.".format(error))
+        cli.negative_feedback(f"New project failed to install: {error}.")
+        cli.negative_feedback("Please execute 'source activate.sh' and 'pip install -e .' "
+                              "(or 'pip install comrad' if this is a ComRAD project) "
+                              "in the project's root. If it fails, send the log to the maintainers.")
+        raise OSError(f"New project failed to install: {error}.")
 
 
 def cleanup_on_failure(project_path: str, interactive: bool, force_cleanup: bool) -> None:

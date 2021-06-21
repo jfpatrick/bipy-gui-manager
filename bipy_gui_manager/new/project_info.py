@@ -73,6 +73,16 @@ def collect(parameters: argparse.Namespace) -> Mapping[str, Union[str, bool]]:
     cli.positive_feedback("The project description is set to: \033[0;32m{}\033[0;m".format(
         project_parameters["project_desc"]))
 
+    # Project type
+    logging.debug("Collecting project type")
+    project_parameters["project_type"] = validation.resolve_as_arg_or_ask(
+        initial_value=parameters.project_type,
+        resolver=lambda v: (v, v == "pyqt" or v == "comrad"),
+        question="Is this a \033[0;33mComRAD\033[0;m project or a \033[0;33mPyQt\033[0;m one? (comrad/pyqt)",
+        neg_feedback="Please type 'comrad' or 'pyqt'",
+        interactive=parameters.interactive
+    )
+
     # Path to project
     logging.debug("Collecting project base path")
     project_parameters["base_path"] = validation.resolve_as_arg_or_ask(
