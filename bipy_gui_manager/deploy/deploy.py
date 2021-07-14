@@ -31,9 +31,11 @@ def deploy(parameters: argparse.Namespace):
         if not vcs.is_git_folder(path) or not is_python_project(path):
             cli.negative_feedback("You are not in a project that can be deployed. Please cd into your expert GUIs "
                                   "folder and run this command again.")
-            cli.give_hint("NOTE: this command checks for the presence of a Git repository and verifies that it "
-                          "contains a Python project. Use `bipy-gui-manager -v deploy` to enable debug messages if "
-                          "necessary.")
+            cli.give_hint("this command checks for the presence of a Git repository and verifies that it "
+                          "contains either:"
+                          "\n             - a setup.py"
+                          "\n             - a folder called 'app' containing your ComRAD app and a 'pyproject.toml'."
+                          "\n            Use `bipy-gui-manager -v deploy` to enable debug messages if necessary.")
             return
 
         cli.positive_feedback(f"Running checks on {os.path.basename(path)}...", newline=False)
