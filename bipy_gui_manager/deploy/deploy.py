@@ -70,12 +70,14 @@ def is_python_project(path_to_check: str):
     :param path_to_check: path that should contain the Python project.
     :return: True if the path contains a setup.py or a pyproject.toml in the expected location, False otherwise
     """
-    if os.path.isdir(path_to_check) and \
-            (
-                os.path.exists(os.path.join(path_to_check, "setup.py")) or
-                os.path.exists(os.path.join(path_to_check, "app/pyproject.toml"))
-            ):
-        return True
+    if os.path.isdir(path_to_check):
+        if os.path.exists(os.path.join(path_to_check, "setup.py")):
+            logging.debug(f"{path_to_check} is a PyQt application.")
+            return True
+        if os.path.exists(os.path.join(path_to_check, "app/pyproject.toml")):
+            logging.debug(f"{path_to_check} is a ComRAD application.")
+            return True
+    logging.debug(f"Neither setup.py nor app/pyproject.toml were found under {path_to_check}")
     return False
 
 

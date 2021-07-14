@@ -79,7 +79,8 @@ def test_get_template_call_download_template(tmpdir, monkeypatch):
 
     # Monkeypatch download_template
     monkeypatch.setattr('bipy_gui_manager.new.new_project.download_template',
-                        lambda path, protocol: os.makedirs(os.path.join(tmpdir, path, "downloaded-files")))
+                        lambda project_path=None, clone_protocol=None, template_path=None, project_type=None:
+                            os.makedirs(os.path.join(tmpdir, project_path, "downloaded-files")))
 
     # Ensure it's calling download_template instead of copying
     project_path = os.path.join(tmpdir, "test_project")

@@ -48,8 +48,10 @@ def is_git_folder(path_to_check: Union[str, Path]):
     """
     try:
         invoke_git(parameters=['status'], cwd=path_to_check)
+        logging.debug(f"{path_to_check} is a Git repository.")
         return True
     except OSError:
+        logging.debug(f"{path_to_check} is NOT a Git repository.")
         return False
 
 

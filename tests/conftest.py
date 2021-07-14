@@ -45,7 +45,7 @@ def mock_gitlab(monkeypatch, mock_cwd):
                         lambda *a, **k: {"id": "00000"})
 
 
-def new_project_parameters(path=None, name=None, desc=None, author=None, repo_type=None,
+def new_project_parameters(path=None, name=None, desc=None, author=None, repo_type=None, project_type='pyqt',
                            clone_protocol="https", upload_protocol="https", gitlab=True,
                            gitlab_token=None, interactive=True, overwrite=False, cleanup_on_failure=False,
                            template_path=None, template_url=None, crash=True, verbose=False, gitlab_space=""):
@@ -54,6 +54,7 @@ def new_project_parameters(path=None, name=None, desc=None, author=None, repo_ty
         project_name=name,
         project_desc=desc,
         project_author=author,
+        project_type=project_type,
         gitlab_repo=repo_type,
         clone_protocol=clone_protocol,
         upload_protocol=upload_protocol,
