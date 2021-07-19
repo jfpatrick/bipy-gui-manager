@@ -57,11 +57,12 @@ if [ $TYPE = "pyqt" ]; then
 # Deploy as ComRAD
 else
 
-    echo -e "-> *************************************************************************************"
-    echo -e "   HINT: have you updated your pyproject.toml before running this command? "
-    echo -e "   if not, stop here and type 'comrad package app/main.ui' (or main.py if you have one) "
-    echo -e "-> *************************************************************************************\n"
+    if ! comrad package app/main.py ; then
+        echo -e "   Failed to launch 'comrad package'. Make sure your virtualenv is active before proceeding and that you have ComRAD installed."
+        exit 1
+    fi
 
+    echo -e "\nDeploying application..."
     echo -e "-> NOTE: This step may take several minutes.\n"
 
     if [ $VERBOSE = "1" ]; then

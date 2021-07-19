@@ -35,7 +35,7 @@ def deploy(parameters: argparse.Namespace):
                           "contains either:"
                           "\n             - a setup.py"
                           "\n             - a folder called 'app' containing your ComRAD app and a 'pyproject.toml'."
-                          "\n            Use `bipy-gui-manager -v deploy` to enable debug messages if necessary.")
+                          "\n            Use `bipy-gui-manager -v deploy [ARGS]` to enable debug messages if needed.")
             return
 
         cli.positive_feedback(f"Running checks on {os.path.basename(path)}...", newline=False)
@@ -50,12 +50,16 @@ def deploy(parameters: argparse.Namespace):
         cli.positive_feedback("The project is ready to deploy")
         cli.positive_feedback(f"Deploying {os.path.basename(path)}..", newline=False)
 
-        logging.debug("Executing app_deploy.sh")
         verbose = "1" if parameters.verbose else "0"
-        error = os.WEXITSTATUS(
-            os.system(f"/bin/bash -c \"{APP_DEPLOY_SCRIPT} {path} {repo_path} {ACC_PY_PATH} {parameters.project_type} {verbose}\""))
+        bash = f"/bin/bash -c \"{APP_DEPLOY_SCRIPT} {path} {repo_path} {ACC_PY_PATH} {parameters.project_type} " \
+               f"{verbose}\""
+        logging.debug(f"Executing app_deploy.sh: {bash}")
+        error = os.WEXITSTATUS(os.system(bash))
         if error:
-            cli.negative_feedback("Deploy failed: {}.".format(error))
+            cli.negative_feedback(f"Deploy failed: {error}")
+            cli.give_hint("To be able to deploy, you must be in your virtualenv! Type 'source activate.sh' in the "
+                          "root of your project if you haven't done so already. If you see errors, do it again on a "
+                          "new terminal window.")
             logging.debug("Deploy failed.")
             return
 
@@ -73,6 +77,12 @@ def is_python_project(path_to_check: str):
     :return: True if the path contains a setup.py or a pyproject.toml in the expected location, False otherwise
     """
     if os.path.isdir(path_to_check):
+        if os.path.exists(os.path.join(path_to_check, "setup.py")) and \
+                os.path.exists(os.path.join(path_to_check, "app/pyproject.toml")):
+            cli.negative_feedback("Your application contains both a setup.py and a pyproject.toml file! "
+                                  "The setup.py is going to be ignored and the application is going to be "
+                                  "deployed as a ComRAD app.")
+            return True
         if os.path.exists(os.path.join(path_to_check, "setup.py")):
             logging.debug(f"{path_to_check} is a PyQt application.")
             return True
@@ -92,14 +102,15 @@ def find_project_type(path_to_check: str):
     if not os.path.isdir(path_to_check):
         raise ValueError(f"The folder '{path_to_check}' does not exist")
 
-    if os.path.exists(os.path.join(path_to_check, "setup.py")):
-        return 'pyqt'
+    if not is_python_project(path_to_check):
+        raise ValueError(f"Cannot identify the project type: '{path_to_check}' contains neither a setup.py "
+                         "nor a app/pyproject.toml")
 
     if os.path.exists(os.path.join(path_to_check, "app/pyproject.toml")):
         return 'comrad'
 
-    raise ValueError(f"Cannot identify the project type: '{path_to_check}' contains neither a setup.py "
-                     "nor a pyptoject.toml")
+    if os.path.exists(os.path.join(path_to_check, "setup.py")):
+        return 'pyqt'
 
 
 def is_ready_to_deploy(path_to_check: str):
