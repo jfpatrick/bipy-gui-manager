@@ -207,14 +207,16 @@ def apply_customizations(project_path: str, project_name: str, project_desc: str
                 filepath = os.path.join(rootdir, filename)
 
                 # Filtering to avoid binary files
-                if filename.split(".")[-1] in ["py", "md", "ui", "qrc", "yml", "gitignore", "sh", "in", "rst"]:
+                if filename.split(".")[-1] in ["py", "md", "ui", "qrc", "yml", "gitignore", "sh", "in", "rst", "toml"]:
                     logging.debug("Processing file {}".format(filepath))
                     with open(filepath, 'r') as f:
                         s = f.read()
                     s = s.replace("sy-bi-pyqt-template", project_name)
+                    s = s.replace("sy-bi-comrad-template", project_name)
                     s = s.replace("sy_bi_pyqt_template", project_name_underscores)
                     s = s.replace("SY BI PyQt Template Code", project_desc)
                     s = s.replace("SY BI PyQt Template", project_name_capitals)
+                    s = s.replace("SY BI ComRAD Template", project_desc)
                     s = s.replace("Sara Zanzottera", project_author)
                     s = s.replace("sara.zanzottera@cern.ch", project_email)
                     s = s.replace("gitlab-group", gitlab_space)
